@@ -1,0 +1,212 @@
+SMART CLASSROOM ENERGY OPTIMIZATION SYSTEM USING PREDICTIVE ANALYTICS
+Project Proposal
+Project Title
+Smart Classroom Energy Optimization System Using Predictive Analytics
+1. Introduction
+Energy conservation has become an important concern for educational institutions due to 
+rising electricity costs and environmental impact. In colleges and universities, classrooms 
+consume a significant amount of energy through lights, fans, and air conditioners. Often, 
+these devices remain operational even when classrooms are partially occupied or 
+completely vacant.
+Most existing energy management solutions depend on manual monitoring or expensive 
+IoT-based sensor systems. Manual control is inefficient, and hardware-based solutions are 
+costly and difficult to maintain. Therefore, there is a need for a software-based, intelligent, 
+and cost-effective system that can optimize classroom energy usage without relying on 
+physical sensors.
+This project proposes a Smart Classroom Energy Optimization System that uses class 
+schedules, historical attendance data, and predictive analytics to estimate classroom 
+occupancy and generate energy usage recommendations. The system helps 
+administrators reduce energy wastage while maintaining a comfortable learning 
+environment.
+2. Problem Statement
+Educational institutions experience significant energy wastage due to inefficient 
+classroom energy usage. Electrical appliances remain switched on even when classrooms 
+are underutilized or unused. There is no intelligent system that predicts classroom 
+occupancy in advance and optimizes energy usage accordingly.
+Manual supervision is unreliable and time-consuming, while IoT-based solutions require 
+additional infrastructure and cost. Hence, a software-driven system that predicts 
+occupancy and suggests energy optimization actions is required.
+3. Proposed Solution
+The proposed system analyzes: - Existing class timetables - Historical attendance records 
+- Classroom capacity and subject type
+Using this data, the system: 1. Predicts the probability of classroom occupancy 2. Applies 
+rule-based logic to decide optimal energy usage 3. Generates energy usage 
+recommendations 4. Produces energy consumption and savings reports
+The system does not create class schedules or physically control devices. Instead, it acts 
+as a decision-support system for administrators.
+4. Objectives
+1. To collect and organize classroom-related data, including class schedules, 
+classroom capacity, subject type, and historical attendance records.
+2. To preprocess and analyze the collected data by cleaning, formatting, and selecting 
+relevant features required for occupancy prediction.
+3. To design and implement a machine learning model that predicts classroom 
+occupancy levels based on timetable and historical usage patterns.
+4. To develop a rule-based energy optimization engine that generates energy usage 
+recommendations using predicted occupancy levels.
+5. To design and implement a backend system for managing classroom data, 
+schedules, and prediction results.
+6. To develop a user-friendly frontend interface for administrators to view occupancy 
+predictions, energy recommendations, and reports.
+7. To estimate classroom energy consumption and potential energy savings using 
+predefined power usage parameters.
+8. To evaluate the performance of the prediction model using appropriate metrics 
+such as accuracy and consistency.
+9. To integrate all system modules into a complete decision-support system for 
+classroom energy optimization.
+5. Scope of the Project
+The scope of this project includes: - Web-based or mobile-based application - Classroom 
+and timetable management - Occupancy prediction using machine learning - Rule-based 
+energy optimization - Visualization of energy usage and savings
+Out of Scope: - Real-time sensor-based monitoring - Automatic device switching - Physical 
+hardware integration
+6. System Overview
+Inputs
+•
+Class timetable (day, time slot, subject)
+•
+Classroom capacity
+•
+Historical attendance percentage
+•
+Subject type (theory/lab)
+Processing
+•
+Data preprocessing
+•
+Occupancy prediction using ML
+•
+Energy optimization using rule-based logic
+Outputs
+•
+Predicted occupancy percentage
+•
+Energy usage recommendation (lights/AC ON/OFF)
+•
+Estimated energy consumption
+•
+Energy saving reports and dashboards
+7. System Architecture (Module Description)
+1. User Authentication Module
+•
+Admin login
+•
+Role-based access
+2. Timetable & Classroom Management Module
+•
+Upload or enter class schedules
+•
+Manage classroom details
+3. Occupancy Prediction Module
+•
+Uses historical data
+•
+Predicts occupancy probability
+4. Energy Optimization Rule Engine
+•
+Applies predefined rules
+•
+Generates recommendations
+5. Analytics & Reporting Module
+•
+Energy usage charts
+•
+Daily/weekly/monthly reports
+8. Methodology
+1. Collect timetable and attendance data
+2. Preprocess data and extract features
+3. Train a machine learning model for occupancy prediction
+4. Apply rule-based logic for energy optimization
+5. Display results through dashboards and reports
+9. Machine Learning Approach
+Algorithm Used
+•
+Logistic Regression (primary)
+•
+Decision Tree (optional)
+Input Features
+•
+Day of the week
+•
+Time slot
+•
+Subject type
+•
+Attendance percentage
+•
+Room capacity
+Output
+•
+Occupancy probability (Low / Medium / High)
+Evaluation Metrics
+•
+Accuracy
+•
+Prediction consistency
+10. Energy Optimization Logic
+Occupancy Level
+Recommendation
+< 30%
+Lights OFF, AC OFF
+30–60%
+Lights ON, AC OFF
+> 60%
+Lights ON, AC ON
+Energy consumption is estimated using predefined power values for classroom devices.
+11. Technology Stack
+•
+Frontend: HTML, CSS, Bootstrap / Flutter
+•
+Backend: Flask or Django (Python)
+•
+Machine Learning: Python, Scikit-learn
+•
+Database: SQLite
+•
+Visualization: Chart.js
+12. Expected Outcomes
+•
+Accurate prediction of classroom occupancy
+•
+Reduction in energy wastage
+•
+Clear energy optimization recommendations
+•
+Analytical reports for decision-making
+•
+Improved energy management efficiency
+13. Team Structure & Responsibilities
+•
+Member 1: Frontend design and user interface
+•
+Member 2: Backend development and database
+•
+Member 3: Machine learning and analytics
+14. Project Timeline
+Week
+Task
+1
+Requirement analysis & design
+2
+UI & database schema
+3
+Backend implementation
+4
+ML model development
+5
+Integration & testing
+6
+Documentation & presentation
+15. Future Enhancements
+•
+Integration with IoT sensors
+•
+Real-time occupancy tracking
+•
+Mobile app notifications
+•
+Automatic device control
+16. Conclusion
+The Smart Classroom Energy Optimization System offers a practical, scalable, and cost-
+effective approach to reducing energy wastage in educational institutions. By using 
+predictive analytics and intelligent decision-making, the system supports sustainable 
+energy usage without requiring expensive hardware.

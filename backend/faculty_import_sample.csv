@@ -1,0 +1,6 @@
+email,username,password,role
+dr.sarah@university.edu,Dr. Sarah Ahmed,pass123,faculty
+prof.imran@university.edu,Prof. Imran Shah,securePass!2,faculty
+engr.ali@university.edu,Engr. Ali Hassan,labMaster99,faculty
+student.john@university.edu,John Doe,student123,user
+dragonmaster.in@gmail.com,Dr. Hamid Ali Khan,welcome2026,faculty

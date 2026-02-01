@@ -1,0 +1,31 @@
+classroom_id,day,time,subject,type,teacher,email,attendance
+1,Monday,08:00,Database Systems,theory,Dr. Hamid Raza,hamid.raza@university.edu,85
+1,Monday,10:00,Software Engineering,theory,Dr. Sarah Ahmed,sarah.a@university.edu,78
+1,Monday,14:00,Data Structures Lab,lab,Engr. Ali Hassan,ali.h@university.edu,65
+1,Tuesday,09:00,Operating Systems,theory,Dr. Hamid Raza,hamid.raza@university.edu,90
+1,Tuesday,11:00,Network Security,theory,Prof. Amir Khan,amir.k@university.edu,72
+1,Tuesday,15:00,Web Development Lab,lab,Engr. Fatima Zahra,fatima.z@university.edu,58
+1,Wednesday,08:00,Advanced Algorithms,theory,Dr. Sarah Ahmed,sarah.a@university.edu,82
+1,Wednesday,10:00,Research Seminar,seminar,Dr. Hamid Raza,hamid.raza@university.edu,45
+1,Wednesday,14:00,Mobile App Development,lab,Engr. Usman Tariq,usman.t@university.edu,55
+1,Thursday,09:00,Artificial Intelligence,theory,Prof. Amir Khan,amir.k@university.edu,95
+1,Thursday,11:00,Machine Learning Lab,lab,Dr. Sarah Ahmed,sarah.a@university.edu,75
+1,Thursday,15:00,Project Presentation,seminar,Dr. Hamid Raza,hamid.raza@university.edu,88
+1,Friday,08:00,Cloud Computing,theory,Prof. Amir Khan,amir.k@university.edu,68
+1,Friday,10:00,IoT Lab,lab,Engr. Ali Hassan,ali.h@university.edu,52
+1,Friday,14:00,Industry Seminar,seminar,Guest Speaker,guest@industry.com,35
+2,Monday,08:00,Digital Electronics Lab,lab,Engr. Bilal Malik,bilal.m@university.edu,70
+2,Monday,10:00,Computer Architecture,theory,Dr. Asad Ullah,asad.u@university.edu,80
+2,Monday,14:00,VLSI Design Lab,lab,Engr. Bilal Malik,bilal.m@university.edu,62
+2,Tuesday,09:00,Embedded Systems,theory,Dr. Asad Ullah,asad.u@university.edu,85
+2,Tuesday,11:00,Robotics Lab,lab,Engr. Zara Noor,zara.n@university.edu,68
+2,Tuesday,15:00,Control Systems,theory,Prof. Imran Shah,imran.s@university.edu,75
+2,Wednesday,08:00,Signal Processing,theory,Dr. Asad Ullah,asad.u@university.edu,78
+2,Wednesday,10:00,DSP Lab,lab,Engr. Bilal Malik,bilal.m@university.edu,55
+2,Wednesday,14:00,Technical Writing,seminar,Dr. Fatima Naz,fatima.n@university.edu,40
+2,Thursday,09:00,Microcontroller Programming,lab,Engr. Zara Noor,zara.n@university.edu,82
+2,Thursday,11:00,Power Electronics,theory,Prof. Imran Shah,imran.s@university.edu,88
+2,Thursday,15:00,Capstone Project,seminar,Dr. Asad Ullah,asad.u@university.edu,92
+2,Friday,08:00,Sensors & Actuators Lab,lab,Engr. Bilal Malik,bilal.m@university.edu,48
+2,Friday,10:00,Communication Systems,theory,Prof. Imran Shah,imran.s@university.edu,58
+2,Friday,14:00,Career Guidance,seminar,Career Services,career@university.edu,28

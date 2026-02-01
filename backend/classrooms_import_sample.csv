@@ -1,0 +1,11 @@
+name,building,capacity,lights,acs
+Room 101,Building A,50,8,2
+Room 102,Building A,45,8,2
+Lab 201,Building B,30,6,1
+Lab 202,Building B,30,6,1
+Seminar Hall,Building C,120,16,4
+Staff Room,Building B,20,4,1
+Main Auditorium,Building D,350,24,8
+Room 301,Building A,60,10,2
+Room 302,Building A,40,8,2
+Computer Lab 3,Building B,25,8,2
