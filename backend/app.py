@@ -476,7 +476,7 @@ def get_recent_decisions():
 # =====================
 # ML DATASET ROUTES
 # =====================
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'data', 'uploads')
 ALLOWED_EXTENSIONS = {'csv'}
 
 if not os.path.exists(UPLOAD_FOLDER):

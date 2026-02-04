@@ -8,8 +8,14 @@ import joblib
 import os
 import json
 
-MODEL_PATH = 'occupancy_model.pkl'
-DATASET_PATH = 'uploaded_dataset.csv'
+# Organized data paths
+DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+MODEL_PATH = os.path.join(os.path.dirname(__file__), 'models', 'occupancy_model.pkl')
+DATASET_PATH = os.path.join(DATA_DIR, 'datasets', 'uploaded_dataset.csv')
+
+# Ensure directories exist
+os.makedirs(os.path.join(os.path.dirname(__file__), 'models'), exist_ok=True)
+os.makedirs(os.path.join(DATA_DIR, 'datasets'), exist_ok=True)
 
 class MLEngine:
     def __init__(self):
