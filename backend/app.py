@@ -8,20 +8,51 @@ import pandas as pd
 import os
 from dotenv import load_dotenv
 
+import logging
+from logging.handlers import RotatingFileHandler
+
 load_dotenv()
 
 app = Flask(__name__)
 
-# MySQL Configuration
+# Production Logging
+if not app.debug:
+    if not os.path.exists('logs'):
+        os.mkdir('logs')
+    file_handler = RotatingFileHandler('logs/smart_energy.log', maxBytes=10240, backupCount=10)
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    ))
+    file_handler.setLevel(logging.INFO)
+    app.logger.addHandler(file_handler)
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('SmartEnergy Backend Startup')
+
+# Database Configuration
 DB_USER = os.getenv('DB_USER', 'root')
 DB_PASSWORD = os.getenv('DB_PASSWORD', '')
 DB_HOST = os.getenv('DB_HOST', 'localhost')
 DB_PORT = os.getenv('DB_PORT', '3306')
 DB_NAME = os.getenv('DB_NAME', 'smart_class_energy_saver')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+# Try MySQL first, fallback to SQLite if needed
+MYSQL_URI = f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+SQLITE_URI = 'sqlite:///instance/database.db'
+
+# Simple check to see if we should use MySQL
+USE_MYSQL = os.getenv('USE_MYSQL', 'True').lower() == 'true'
+
+if USE_MYSQL:
+    app.config['SQLALCHEMY_DATABASE_URI'] = MYSQL_URI
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = SQLITE_URI
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fyp-secret-key')
+
+# Force create instance folder for SQLite
+if not os.path.exists('instance'):
+    os.makedirs('instance')
 
 CORS(app)
 db.init_app(app)
@@ -84,8 +115,61 @@ def get_users():
         'username': u.username,
         'email': u.email,
         'role': u.role,
-        'is_active': u.is_active_account
+        'is_active': u.is_active_account,
+        'is_pending_admin': u.is_pending_admin
     } for u in users])
+
+@app.route('/api/users/pending-admins', methods=['GET'])
+def get_pending_admins():
+    """Get list of users waiting for admin approval."""
+    users = User.query.filter_by(is_pending_admin=True).all()
+    return jsonify([{
+        'id': u.id,
+        'username': u.username,
+        'email': u.email,
+        'role': u.role,
+        'created_at': u.created_at.strftime('%Y-%m-%d %H:%M')
+    } for u in users])
+
+@app.route('/api/users/approve-admin/<int:id>', methods=['POST'])
+def approve_admin(id):
+    """Approve a pending admin registration."""
+    success, error = AuthService.approve_admin(id)
+    if not success:
+        return jsonify({'success': False, 'message': error}), 400
+    return jsonify({'success': True, 'message': 'Admin approved and activation email sent.'})
+
+@app.route('/api/users/activate-manual/<int:id>', methods=['POST'])
+def activate_user_manual(id):
+    """Manually activate a user (failover for email service)."""
+    user = User.query.get(id)
+    if not user:
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+    
+    user.is_active_account = True
+    user.activation_token = None
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'User {user.username} activated manually.'})
+
+@app.route('/api/users/create-single', methods=['POST'])
+def create_single_user():
+    """Admin manually adds a single user."""
+    data = request.json
+    user, error = AuthService.admin_create_user(
+        data.get('username'),
+        data.get('email'),
+        data.get('password'),
+        data.get('role', 'faculty'),
+        auto_activate=data.get('auto_activate', False)
+    )
+    if error:
+        return jsonify({'success': False, 'message': error}), 400
+    
+    msg = "User created successfully."
+    if not data.get('auto_activate'):
+        msg += " Activation email sent."
+        
+    return jsonify({'success': True, 'message': msg})
 
 @app.route('/api/users/bulk-import', methods=['POST'])
 def bulk_import_users():
@@ -141,6 +225,24 @@ def bulk_import_users():
             'errors': errors[:10]
         })
     except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/users/<int:id>', methods=['DELETE'])
+def delete_user(id):
+    user = User.query.get(id)
+    if not user:
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+    
+    # Policy: Cannot delete admin accounts
+    if user.role == 'admin':
+        return jsonify({'success': False, 'message': 'Administrator accounts cannot be deleted to maintain system access.'}), 403
+        
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'User {user.username} deleted successfully.'})
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
 
 # =====================
@@ -352,6 +454,16 @@ def get_recommendations():
         })
     return jsonify(results)
 
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """System health check endpoint."""
+    health = {
+        'status': 'healthy',
+        'database': 'connected',
+        'ml_engine': 'loaded' if ml.model else 'ready_to_train'
+    }
+    return jsonify(health)
+
 # =====================
 # ANALYTICS ROUTES
 # =====================
@@ -454,35 +566,48 @@ def get_ml_status():
 # =====================
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+            print(f"✅ Database connected using: {app.config['SQLALCHEMY_DATABASE_URI']}")
+        except Exception as e:
+            print(f"❌ Database error: {e}")
+            if USE_MYSQL:
+                print("⚠️ Falling back to SQLite for local development...")
+                app.config['SQLALCHEMY_DATABASE_URI'] = SQLITE_URI
+                db.create_all()
+                print("✅ SQLite database initialized.")
         
         # Seed admin with hashed password
-        if not User.query.filter_by(username='hamid').first():
-            hashed = PasswordService.hash_password('hamid123')
-            db.session.add(User(
-                username='hamid', email='admin@smart.com', 
-                password_hash=hashed, role='admin', is_active_account=True
-            ))
-            db.session.commit()
-            
-            c1 = Classroom(name='Room 101', building='A', capacity=50)
-            c2 = Classroom(name='Lab 202', building='B', capacity=30)
-            db.session.add_all([c1, c2])
-            db.session.commit()
-            
-            db.session.add(Timetable(
-                classroom_id=c1.id, day_of_week='Monday', time_slot='08:00', 
-                subject='Advanced Databases', subject_type='theory', 
-                teacher_name='Dr. Hamid Raza', teacher_email='hamid.raza@university.edu', 
-                expected_attendance=85
-            ))
-            db.session.add(Timetable(
-                classroom_id=c2.id, day_of_week='Tuesday', time_slot='10:30', 
-                subject='AI & Robotics Lab', subject_type='lab', 
-                teacher_name='Engr. Aisha Khan', teacher_email='aisha.k@university.edu', 
-                expected_attendance=40
-            ))
-            db.session.commit()
-            print("✅ Database seeded successfully!")
+        try:
+            if not User.query.filter_by(username='hamid').first():
+                hashed = PasswordService.hash_password('hamid123')
+                db.session.add(User(
+                    username='hamid', email='admin@smart.com', 
+                    password_hash=hashed, role='admin', is_active_account=True
+                ))
+                db.session.commit()
+                
+                c1 = Classroom(name='Room 101', building='A', capacity=50)
+                c2 = Classroom(name='Lab 202', building='B', capacity=30)
+                db.session.add_all([c1, c2])
+                db.session.commit()
+                
+                db.session.add(Timetable(
+                    classroom_id=c1.id, day_of_week='Monday', time_slot='08:00', 
+                    subject='Advanced Databases', subject_type='theory', 
+                    teacher_name='Dr. Hamid Raza', teacher_email='hamid.raza@university.edu', 
+                    expected_attendance=85
+                ))
+                db.session.add(Timetable(
+                    classroom_id=c2.id, day_of_week='Tuesday', time_slot='10:30', 
+                    subject='AI & Robotics Lab', subject_type='lab', 
+                    teacher_name='Engr. Aisha Khan', teacher_email='aisha.k@university.edu', 
+                    expected_attendance=40
+                ))
+                db.session.commit()
+                print("✅ Database seeded successfully!")
+        except Exception as seed_err:
+            print(f"⚠️ Seeding skipped or failed: {seed_err}")
+            db.session.rollback()
         
     app.run(debug=True, port=5000)

@@ -38,11 +38,52 @@ class MLEngine:
         joblib.dump(self.model, MODEL_PATH)
         return "Model trained with synthetic data"
 
+    def _preprocess_dataframe(self, df):
+        """Prepare dataframe for ML operations with robust type conversion."""
+        df = df.copy()
+        
+        # Day conversion: Monday -> 0, etc.
+        if 'day' in df.columns:
+            day_map = {'Monday':0, 'Tuesday':1, 'Wednesday':2, 'Thursday':3, 'Friday':4, 'Saturday':5, 'Sunday':6}
+            # Handle both string names and already numeric values
+            df['day'] = df['day'].apply(lambda x: day_map.get(str(x).strip().capitalize(), 0) if not str(x).isdigit() else int(x))
+            df['day'] = df['day'].fillna(0).astype(int)
+        
+        # Hour conversion: "08:00" -> 8
+        if 'hour' in df.columns:
+            def parse_hour(x):
+                try:
+                    s = str(x).strip()
+                    if ':' in s:
+                        return int(s.split(':')[0])
+                    return int(float(s))
+                except:
+                    return 8
+            df['hour'] = df['hour'].apply(parse_hour).astype(int)
+            
+        # Type conversion: theory -> 0, lab -> 1
+        if 'type' in df.columns:
+            def parse_type(x):
+                s = str(x).lower().strip()
+                if s in ['lab', 'practical', '1']:
+                    return 1
+                return 0
+            df['type'] = df['type'].apply(parse_type).astype(int)
+            
+        # Attendance: ensure float
+        if 'attendance' in df.columns:
+            df['attendance'] = pd.to_numeric(df['attendance'], errors='coerce').fillna(50).astype(float)
+            
+        # Label: ensure int if exists
+        if 'label' in df.columns:
+            df['label'] = pd.to_numeric(df['label'], errors='coerce').fillna(1).astype(int)
+            
+        return df
+
     def train_from_dataset(self, df):
         """
         Train the model from an uploaded dataset.
         Expected columns: day, hour, type, attendance, label (optional)
-        If no label, we'll generate them based on attendance thresholds.
         """
         required_cols = ['day', 'hour', 'type', 'attendance']
         
@@ -51,26 +92,20 @@ class MLEngine:
             if col not in df.columns:
                 return None, f"Missing required column: {col}"
         
-        # Convert day names to numbers if needed
-        if df['day'].dtype == object:
-            day_map = {'Monday':0, 'Tuesday':1, 'Wednesday':2, 'Thursday':3, 'Friday':4, 'Saturday':5, 'Sunday':6}
-            df['day'] = df['day'].map(day_map).fillna(0).astype(int)
-        
-        # Convert type to numeric if needed
-        if df['type'].dtype == object:
-            df['type'] = df['type'].apply(lambda x: 1 if str(x).lower() in ['lab', 'practical'] else 0)
+        # Preprocess
+        processed_df = self._preprocess_dataframe(df)
         
         # Generate labels if not present
-        if 'label' not in df.columns:
-            df['label'] = df['attendance'].apply(lambda x: 0 if x < 30 else (1 if x <= 60 else 2))
+        if 'label' not in processed_df.columns:
+            processed_df['label'] = processed_df['attendance'].apply(lambda x: 0 if x < 30 else (1 if x <= 60 else 2))
         
-        X = df[['day', 'hour', 'type', 'attendance']]
-        y = df['label']
+        X = processed_df[['day', 'hour', 'type', 'attendance']]
+        y = processed_df['label']
         
         # Split for evaluation
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         
-        # Train with Random Forest for better accuracy
+        # Train
         self.model = RandomForestClassifier(n_estimators=100, random_state=42)
         self.model.fit(X_train, y_train)
         
@@ -78,7 +113,7 @@ class MLEngine:
         y_pred = self.model.predict(X_test)
         accuracy = accuracy_score(y_test, y_pred)
         
-        # Save model
+        # Save model and original dataset (for reference)
         joblib.dump(self.model, MODEL_PATH)
         df.to_csv(DATASET_PATH, index=False)
         
@@ -87,10 +122,10 @@ class MLEngine:
             'total_records': len(df),
             'training_records': len(X_train),
             'test_records': len(X_test),
-            'accuracy': round(accuracy * 100, 2),
+            'accuracy': round(float(accuracy) * 100, 2),
             'feature_importance': dict(zip(['day', 'hour', 'type', 'attendance'], 
-                                           [round(x, 4) for x in self.model.feature_importances_])),
-            'class_distribution': df['label'].value_counts().to_dict()
+                                           [round(float(x), 4) for x in self.model.feature_importances_])),
+            'class_distribution': {str(k): int(v) for k, v in processed_df['label'].value_counts().to_dict().items()}
         }
         self.last_training_report = report
         return report, None
@@ -100,31 +135,26 @@ class MLEngine:
         if not self.model:
             self.train_initial_model()
         
+        processed_df = self._preprocess_dataframe(df)
+        X = processed_df[['day', 'hour', 'type', 'attendance']]
+        
+        predictions = self.model.predict(X)
+        
         results = []
-        for _, row in df.iterrows():
-            day_val = row.get('day', 0)
-            if isinstance(day_val, str):
-                day_map = {'Monday':0, 'Tuesday':1, 'Wednesday':2, 'Thursday':3, 'Friday':4, 'Saturday':5, 'Sunday':6}
-                day_val = day_map.get(day_val, 0)
-            
-            hour_val = int(str(row.get('hour', '08')).split(':')[0])
-            type_val = 1 if str(row.get('type', '')).lower() in ['lab', 'practical'] else 0
-            attendance = float(row.get('attendance', 50))
-            
-            features = np.array([[day_val, hour_val, type_val, attendance]])
-            prediction = self.model.predict(features)[0]
-            
-            levels = {0: 'Low', 1: 'Medium', 2: 'High'}
-            rec, _ = self.get_recommendation(prediction)
+        levels = {0: 'Low', 1: 'Medium', 2: 'High'}
+        
+        for i, row in df.iterrows():
+            pred = int(predictions[i])
+            rec, _ = self.get_recommendation(pred)
             
             results.append({
                 'day': row.get('day'),
                 'hour': row.get('hour'),
                 'type': row.get('type'),
-                'attendance': attendance,
-                'predicted_occupancy': levels[prediction],
+                'attendance': float(row.get('attendance', 0)),
+                'predicted_occupancy': levels[pred],
                 'recommendation': rec,
-                'energy_action': 'Optimized' if prediction < 2 else 'Full Power'
+                'energy_action': 'Optimized' if pred < 2 else 'Full Power'
             })
         
         return results
@@ -133,18 +163,22 @@ class MLEngine:
         if not self.model:
             self.train_initial_model()
             
-        days = {'Monday':0, 'Tuesday':1, 'Wednesday':2, 'Thursday':3, 'Friday':4, 'Saturday':5, 'Sunday':6}
-        day_val = days.get(day_name, 0)
-        hour_val = int(time_slot.split(':')[0])
-        type_val = 1 if subject_type.lower() in ['lab', 'practical'] else 0
+        # Create a tiny dataframe to use our preprocessing pipeline
+        temp_df = pd.DataFrame([{
+            'day': day_name,
+            'hour': time_slot,
+            'type': subject_type,
+            'attendance': attendance_pct
+        }])
         
-        features = np.array([[day_val, hour_val, type_val, attendance_pct]])
-        prediction = self.model.predict(features)[0]
+        processed = self._preprocess_dataframe(temp_df)
+        prediction = self.model.predict(processed)[0]
         
         levels = {0: 'Low', 1: 'Medium', 2: 'High'}
         return levels[prediction], prediction
 
     def get_recommendation(self, level_idx):
+        level_idx = int(level_idx)
         if level_idx == 0:
             return "Lights OFF, AC OFF", "Low"
         elif level_idx == 1:

@@ -49,21 +49,29 @@ function Signup() {
     };
 
     if (success) {
+        const isAdminPending = formData.role === 'admin';
         return (
             <div className="min-vh-100 d-flex align-items-center justify-content-center p-4" style={{ background: 'var(--bg-deep)' }}>
                 <div className="fade-in text-center" style={{ maxWidth: '480px' }}>
                     <div className="d-inline-flex align-items-center justify-content-center mb-4" style={{
-                        background: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
+                        background: isAdminPending
+                            ? 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)'
+                            : 'linear-gradient(135deg, #10b981 0%, #34d399 100%)',
                         borderRadius: '50%',
                         padding: '24px',
-                        boxShadow: '0 0 50px rgba(16, 185, 129, 0.4)'
+                        boxShadow: `0 0 50px ${isAdminPending ? 'rgba(245, 158, 11, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`
                     }}>
-                        <FiCheck style={{ fontSize: '2.5rem', color: 'white' }} />
+                        {isAdminPending ? <FiShield style={{ fontSize: '2.5rem', color: 'white' }} /> : <FiCheck style={{ fontSize: '2.5rem', color: 'white' }} />}
                     </div>
-                    <h2 className="fw-bold mb-3" style={{ letterSpacing: '-0.03em' }}>Check Your Email</h2>
+                    <h2 className="fw-bold mb-3" style={{ letterSpacing: '-0.03em' }}>
+                        {isAdminPending ? 'Access Pending Approval' : 'Check Your Email'}
+                    </h2>
                     <p className="text-muted mb-5" style={{ fontSize: '1.05rem' }}>
-                        We've sent an activation link to <span className="text-primary fw-bold">{formData.email}</span>.
-                        Click the link to activate your account.
+                        {isAdminPending ? (
+                            <>Administrative requests require verification. Existing administrators have been notified of your request for <span className="text-primary fw-bold">{formData.username}</span>.</>
+                        ) : (
+                            <>We've sent an activation link to <span className="text-primary fw-bold">{formData.email}</span>. Click the link to activate your account.</>
+                        )}
                     </p>
                     <Link to="/login" className="btn btn-gradient py-3 px-5">
                         Go to Login <FiArrowRight className="ms-2" />

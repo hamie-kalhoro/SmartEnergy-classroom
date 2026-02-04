@@ -49,15 +49,65 @@ class EmailService:
             msg['Subject'] = "🔑 Activate Your SmartEnergy Portal Access"
             msg.attach(MIMEText(html_body, 'html'))
 
-            with smtplib.SMTP(server, port) as smtp:
+            if port == 465:
+                smtp = smtplib.SMTP_SSL(server, port, timeout=10)
+            else:
+                smtp = smtplib.SMTP(server, port, timeout=10)
                 smtp.starttls()
-                smtp.login(username_smtp, password)
-                smtp.send_message(msg)
+
+            smtp.login(username_smtp, password)
+            smtp.send_message(msg)
+            smtp.quit()
             print(f"✅ EMAIL SUCCESS: Sent to {to_email}")
             return True
         except Exception as e:
             print(f"❌ EMAIL ERROR: {e}")
             return False
+
+    @staticmethod
+    def notify_admins_of_pending_registration(new_admin_username, new_admin_email):
+        """Notify existing admins about a new admin registration attempt."""
+        admins = User.query.filter_by(role='admin', is_pending_admin=False, is_active_account=True).all()
+        if not admins:
+            return
+            
+        server = os.getenv('MAIL_SERVER')
+        port = int(os.getenv('MAIL_PORT', 587))
+        username_smtp = os.getenv('MAIL_USERNAME')
+        password = os.getenv('MAIL_PASSWORD')
+        sender = os.getenv('MAIL_DEFAULT_SENDER')
+
+        admin_emails = [a.email for a in admins]
+        
+        html_body = f"""
+        <html>
+            <body style="font-family: sans-serif; padding: 20px;">
+                <h2 style="color: #7c3aed;">New Admin Access Request</h2>
+                <p>A new user has requested <strong>Administrative Access</strong> to the SmartEnergy Portal.</p>
+                <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>Username:</strong> {new_admin_username}</p>
+                    <p><strong>Email:</strong> {new_admin_email}</p>
+                </div>
+                <p>Security Policy: This account is currently <strong>locked</strong> and has <strong>not</strong> received an activation email. 
+                Please log in to the dashboard to approve or reject this request.</p>
+            </body>
+        </html>
+        """
+
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = f"Security Monitor <{sender}>"
+            msg['To'] = ", ".join(admin_emails)
+            msg['Subject'] = "⚠️ Action Required: New Admin Request"
+            msg.attach(MIMEText(html_body, 'html'))
+
+            with smtplib.SMTP(server, port) as smtp:
+                smtp.starttls()
+                smtp.login(username_smtp, password)
+                smtp.send_message(msg)
+            print(f"🔒 Security Alert: Admins notified of {new_admin_username} request")
+        except Exception as e:
+            print(f"❌ Failed to notify admins: {e}")
 
 class PasswordService:
     @staticmethod
@@ -79,19 +129,55 @@ class AuthService:
         token = str(uuid.uuid4())
         hashed_pw = PasswordService.hash_password(password)
         
+        # Security Policy: Admins must be approved
+        is_pending = (role == 'admin')
+        
         new_user = User(
             username=username, 
             email=email, 
             password_hash=hashed_pw, 
             role=role, 
             activation_token=token, 
-            is_active_account=False
+            is_active_account=False,
+            is_pending_admin=is_pending
         )
         
         db.session.add(new_user)
         db.session.commit()
         
-        EmailService.send_activation_email(email, username, token)
+        if is_pending:
+            EmailService.notify_admins_of_pending_registration(username, email)
+            return new_user, "Admin registration submitted. Access is pending approval from an existing administrator."
+        else:
+            email_sent = EmailService.send_activation_email(email, username, token)
+            if not email_sent:
+                return new_user, "Registration successful, but the activation email could not be sent. Please contact an administrator to activate your account manually."
+            return new_user, None
+
+    @staticmethod
+    def admin_create_user(username, email, password, role, auto_activate=False):
+        """Allow an admin to create a user directly."""
+        if User.query.filter_by(email=email).first():
+            return None, "Email already exists"
+            
+        hashed_pw = PasswordService.hash_password(password)
+        token = str(uuid.uuid4()) if not auto_activate else None
+        
+        new_user = User(
+            username=username,
+            email=email,
+            password_hash=hashed_pw,
+            role=role,
+            is_active_account=auto_activate,
+            activation_token=token
+        )
+        
+        db.session.add(new_user)
+        db.session.commit()
+        
+        if not auto_activate:
+            EmailService.send_activation_email(email, username, token)
+            
         return new_user, None
 
     @staticmethod
@@ -104,10 +190,29 @@ class AuthService:
         if not PasswordService.verify_password(password, user.password_hash):
             return None, "Incorrect password. Please try again."
         
+        if user.is_pending_admin:
+            return None, "Your administrative access is still pending approval. You will receive an email once an administrator verifies your account."
+
         if not user.is_active_account:
             return None, "Account not activated. Please check your email."
             
         return user, None
+
+    @staticmethod
+    def approve_admin(user_id):
+        """Approve a pending admin the send activation email."""
+        user = User.query.get(user_id)
+        if user and user.is_pending_admin:
+            user.is_pending_admin = False
+            # Generate new token just in case
+            token = str(uuid.uuid4())
+            user.activation_token = token
+            db.session.commit()
+            
+            # Now they get the email
+            EmailService.send_activation_email(user.email, user.username, token)
+            return True, None
+        return False, "User not found or not a pending admin."
 
     @staticmethod
     def activate_user(token):

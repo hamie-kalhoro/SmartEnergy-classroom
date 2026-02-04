@@ -11,6 +11,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False) # Hashed password
     role = db.Column(db.String(20), default='user') # 'admin', 'faculty', 'user'
     is_active_account = db.Column(db.Boolean, default=False)
+    is_pending_admin = db.Column(db.Boolean, default=False)
     activation_token = db.Column(db.String(100), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

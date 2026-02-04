@@ -1,20 +1,84 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { FiUpload, FiDownload, FiCheckCircle, FiAlertCircle, FiUsers, FiMail, FiUserCheck, FiShield } from 'react-icons/fi';
+import { FiUpload, FiDownload, FiCheckCircle, FiAlertCircle, FiUsers, FiMail, FiUserCheck, FiShield, FiTrash2, FiUserPlus, FiClock, FiCheck } from 'react-icons/fi';
 
 function Users({ user }) {
     const [file, setFile] = useState(null);
     const [result, setResult] = useState(null);
     const [importing, setImporting] = useState(false);
+    const [deletingId, setDeletingId] = useState(null);
+    const [approvingId, setApprovingId] = useState(null);
 
     const [users, setUsers] = useState([]);
+    const [pendingAdmins, setPendingAdmins] = useState([]);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [singleUser, setSingleUser] = useState({ username: '', email: '', password: '', role: 'faculty', auto_activate: false });
 
     const fetchUsers = async () => {
         try {
             const res = await axios.get('/api/users');
             setUsers(res.data);
+
+            const pending = await axios.get('/api/users/pending-admins');
+            setPendingAdmins(pending.data);
         } catch (err) {
             console.error("Failed to fetch users:", err);
+        }
+    };
+
+    const handleAddSingleUser = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await axios.post('/api/users/create-single', singleUser);
+            alert(res.data.message);
+            setShowAddModal(false);
+            setSingleUser({ username: '', email: '', password: '', role: 'faculty', auto_activate: false });
+            fetchUsers();
+        } catch (err) {
+            alert(err.response?.data?.message || "Failed to create user");
+        }
+    };
+
+    const handleApproveAdmin = async (id) => {
+        setApprovingId(id);
+        try {
+            await axios.post(`/api/users/approve-admin/${id}`);
+            fetchUsers();
+        } catch (err) {
+            alert(err.response?.data?.message || "Approval failed");
+        } finally {
+            setApprovingId(null);
+        }
+    };
+
+    const handleManualActivate = async (id) => {
+        if (!window.confirm("Manually activate this account? Use this only if the activation email failed.")) return;
+        try {
+            await axios.post(`/api/users/activate-manual/${id}`);
+            fetchUsers();
+        } catch (err) {
+            alert("Failed to activate user");
+        }
+    };
+
+    const handleDelete = async (u) => {
+        if (u.role === 'admin' && u.username === 'hamid') {
+            alert("Primary administrator account cannot be deleted.");
+            return;
+        }
+
+        if (!window.confirm(`Are you sure you want to delete ${u.username}? This action cannot be undone.`)) {
+            return;
+        }
+
+        setDeletingId(u.id);
+        try {
+            await axios.delete(`/api/users/${u.id}`);
+            fetchUsers();
+        } catch (err) {
+            alert(err.response?.data?.message || "Failed to delete user");
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -63,17 +127,67 @@ function Users({ user }) {
 
     return (
         <div className="fade-in">
-            <div className="mb-5">
-                <div className="d-flex align-items-center gap-2 mb-2">
-                    <span className="badge" style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#a78bfa', fontSize: '0.7rem' }}>
-                        <FiShield className="me-1" /> ADMIN ZONE
-                    </span>
+            <div className="d-flex align-items-end justify-content-between mb-5">
+                <div>
+                    <div className="d-flex align-items-center gap-2 mb-2">
+                        <span className="badge" style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#a78bfa', fontSize: '0.7rem' }}>
+                            <FiShield className="me-1" /> ADMIN ZONE
+                        </span>
+                    </div>
+                    <h2 className="fw-bold mb-1" style={{ letterSpacing: '-0.03em' }}>
+                        User <span className="text-gradient">Management</span>
+                    </h2>
+                    <p className="text-muted small m-0">Bulk import or manually add system users</p>
                 </div>
-                <h2 className="fw-bold mb-1" style={{ letterSpacing: '-0.03em' }}>
-                    User <span className="text-gradient">Management</span>
-                </h2>
-                <p className="text-muted small m-0">Bulk import faculty and staff members</p>
+                <button className="btn btn-gradient d-flex align-items-center gap-2" onClick={() => setShowAddModal(true)}>
+                    <FiUserPlus /> Add User
+                </button>
             </div>
+
+            {/* Pending Approvals Section */}
+            {pendingAdmins.length > 0 && (
+                <div className="mb-5 fade-in">
+                    <div className="d-flex align-items-center gap-2 mb-3">
+                        <FiClock className="text-warning" />
+                        <h4 className="fw-bold m-0">Pending Admin Approvals</h4>
+                        <span className="badge bg-warning bg-opacity-10 text-warning">{pendingAdmins.length} Action Required</span>
+                    </div>
+                    <div className="card p-0 overflow-hidden border-warning border-opacity-25 shadow-sm">
+                        <div className="table-container">
+                            <table className="table m-0">
+                                <thead className="bg-warning bg-opacity-5">
+                                    <tr>
+                                        <th className="ps-4">Candidate</th>
+                                        <th>Requested</th>
+                                        <th className="text-end pe-4" style={{ width: '200px' }}>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {pendingAdmins.map(p => (
+                                        <tr key={p.id}>
+                                            <td className="ps-4 py-3">
+                                                <div className="fw-bold text-white">{p.username}</div>
+                                                <div className="small text-muted">{p.email}</div>
+                                            </td>
+                                            <td className="text-muted small">{p.created_at}</td>
+                                            <td className="text-end pe-4">
+                                                <button
+                                                    className="btn btn-sm btn-success-dim d-flex align-items-center gap-2 ms-auto"
+                                                    style={{ padding: '0.5rem 1rem' }}
+                                                    onClick={() => handleApproveAdmin(p.id)}
+                                                    disabled={approvingId === p.id}
+                                                >
+                                                    {approvingId === p.id ? <span className="spinner-border spinner-border-sm"></span> : <><FiCheck /> Approve Access</>}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="row justify-content-center">
                 <div className="col-lg-8">
@@ -204,7 +318,10 @@ function Users({ user }) {
                                                         {u.username.charAt(0).toUpperCase()}
                                                     </div>
                                                     <div>
-                                                        <div className="fw-bold text-white" style={{ fontSize: '0.9rem' }}>{u.username}</div>
+                                                        <div className="fw-bold text-white" style={{ fontSize: '0.9rem' }}>
+                                                            {u.username}
+                                                            {u.is_pending_admin && <span className="ms-2 badge bg-warning text-dark" style={{ fontSize: '0.6rem' }}>PENDING</span>}
+                                                        </div>
                                                         <div className="text-muted small">{u.email}</div>
                                                     </div>
                                                 </div>
@@ -215,13 +332,34 @@ function Users({ user }) {
                                                 </span>
                                             </td>
                                             <td>
-                                                <span className={`badge ${u.is_active ? 'text-success' : 'text-secondary'}`} style={{ background: 'transparent' }}>
-                                                    <span className={`d-inline-block rounded-circle me-1 ${u.is_active ? 'bg-success' : 'bg-secondary'}`} style={{ width: '6px', height: '6px' }}></span>
-                                                    {u.is_active ? 'Active' : 'Inactive'}
+                                                <span className={`badge ${u.is_active ? 'text-success' : (u.is_pending_admin ? 'text-warning' : 'text-secondary')}`} style={{ background: 'transparent' }}>
+                                                    <span className={`d-inline-block rounded-circle me-1 ${u.is_active ? 'bg-success' : (u.is_pending_admin ? 'bg-warning' : 'bg-secondary')}`} style={{ width: '6px', height: '6px' }}></span>
+                                                    {u.is_active ? 'Active' : (u.is_pending_admin ? 'Locked' : 'Inactive')}
                                                 </span>
                                             </td>
                                             <td className="text-end pe-4">
-                                                <button className="btn btn-sm btn-primary-dim p-1 px-3" style={{ fontSize: '0.75rem' }}>Edit</button>
+                                                <div className="d-flex justify-content-end gap-2">
+                                                    {!u.is_active && !u.is_pending_admin && (
+                                                        <button
+                                                            className="btn btn-sm btn-success-dim p-1 px-3"
+                                                            style={{ fontSize: '0.75rem' }}
+                                                            onClick={() => handleManualActivate(u.id)}
+                                                            title="Activate manually"
+                                                        >
+                                                            Activate
+                                                        </button>
+                                                    )}
+                                                    <button className="btn btn-sm btn-primary-dim p-1 px-3" style={{ fontSize: '0.75rem' }}>Edit</button>
+                                                    <button
+                                                        className={`btn btn-sm p-1 px-3 ${(u.role === 'admin' && u.username === 'hamid') ? 'btn-secondary opacity-25' : 'btn-danger-dim'}`}
+                                                        style={{ fontSize: '0.75rem', minWidth: '32px' }}
+                                                        onClick={() => handleDelete(u)}
+                                                        disabled={(u.role === 'admin' && u.username === 'hamid') || deletingId === u.id}
+                                                        title={(u.role === 'admin' && u.username === 'hamid') ? "Root admin protected" : "Delete user"}
+                                                    >
+                                                        {deletingId === u.id ? <span className="spinner-border spinner-border-sm" role="status"></span> : <FiTrash2 />}
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -236,6 +374,48 @@ function Users({ user }) {
                     </div>
                 </div>
             </div>
+            {/* Add User Modal */}
+            {showAddModal && (
+                <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+                    <div className="modal-content card p-4 w-100" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+                        <div className="d-flex justify-content-between align-items-center mb-4">
+                            <h4 className="fw-bold m-0">Add New User</h4>
+                            <button className="btn btn-link text-muted h3 p-0" style={{ textDecoration: 'none' }} onClick={() => setShowAddModal(false)}>&times;</button>
+                        </div>
+                        <form onSubmit={handleAddSingleUser}>
+                            <div className="mb-3">
+                                <label className="form-label small">Full Name / Username</label>
+                                <input type="text" className="form-control" required value={singleUser.username}
+                                    onChange={e => setSingleUser({ ...singleUser, username: e.target.value })} />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label small">Email Address</label>
+                                <input type="email" className="form-control" required value={singleUser.email}
+                                    onChange={e => setSingleUser({ ...singleUser, email: e.target.value })} />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label small">Initial Password</label>
+                                <input type="password" className="form-control" required value={singleUser.password}
+                                    onChange={e => setSingleUser({ ...singleUser, password: e.target.value })} />
+                            </div>
+                            <div className="mb-3">
+                                <label className="form-label small">System Role</label>
+                                <select className="form-select" value={singleUser.role} onChange={e => setSingleUser({ ...singleUser, role: e.target.value })}>
+                                    <option value="faculty">Faculty</option>
+                                    <option value="user">Student / User</option>
+                                    <option value="admin">Administrator (Requires Approval)</option>
+                                </select>
+                            </div>
+                            <div className="mb-4 form-check">
+                                <input type="checkbox" className="form-check-input" id="autoAct" checked={singleUser.auto_activate}
+                                    onChange={e => setSingleUser({ ...singleUser, auto_activate: e.target.checked })} />
+                                <label className="form-check-label small" htmlFor="autoAct">Skip email activation (Auto-activate)</label>
+                            </div>
+                            <button type="submit" className="btn btn-gradient w-100 py-2 fw-bold">Create User Account</button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
