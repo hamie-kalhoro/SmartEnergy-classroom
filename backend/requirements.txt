@@ -8,6 +8,7 @@ scikit-learn
 joblib
 python-dotenv
 pymysql
+psycopg2-binary
 cryptography
 gunicorn
 bcrypt

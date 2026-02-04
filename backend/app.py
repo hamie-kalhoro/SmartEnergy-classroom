@@ -28,24 +28,14 @@ if not app.debug:
     app.logger.setLevel(logging.INFO)
     app.logger.info('SmartEnergy Backend Startup')
 
-# Database Configuration
-DB_USER = os.getenv('DB_USER', 'root')
-DB_PASSWORD = os.getenv('DB_PASSWORD', '')
-DB_HOST = os.getenv('DB_HOST', 'localhost')
-DB_PORT = os.getenv('DB_PORT', '3306')
-DB_NAME = os.getenv('DB_NAME', 'smart_class_energy_saver')
+# Database Configuration - Supabase PostgreSQL
+DATABASE_URL = os.getenv('DATABASE_URL')
 
-# Try MySQL first, fallback to SQLite if needed
-MYSQL_URI = f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
-SQLITE_URI = 'sqlite:///instance/database.db'
-
-# Simple check to see if we should use MySQL
-USE_MYSQL = os.getenv('USE_MYSQL', 'True').lower() == 'true'
-
-if USE_MYSQL:
-    app.config['SQLALCHEMY_DATABASE_URI'] = MYSQL_URI
+if DATABASE_URL:
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = SQLITE_URI
+    # Fallback to SQLite for local development
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/smart_classroom.db'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fyp-secret-key')
