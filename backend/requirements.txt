@@ -12,3 +12,6 @@ psycopg2-binary
 cryptography
 gunicorn
 bcrypt
+waitress
+flask-talisman
+python-multipart

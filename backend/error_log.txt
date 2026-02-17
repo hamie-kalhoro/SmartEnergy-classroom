@@ -1,0 +1,444 @@
+﻿.\venv\Scripts\python.exe 
+: [2026-02-14 
+20:47:21,115] INFO in app: 
+SmartEnergy Backend Startup
+At line:1 char:1
++ 
+.\venv\Scripts\python.exe 
+app.py 2>&1 | Out-File 
+-FilePath error_log. ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: ([20  
+  26-02-14 20:...Backend   
+  Startup:String) [], R    
+emoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+Traceback (most recent 
+call last):
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+engine\base.py", line 143, 
+in __init__
+    self._dbapi_connection 
+= engine.raw_connection()
+                           
+  ~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+engine\base.py", line 
+3309, in raw_connection
+    return 
+self.pool.connect()
+           
+~~~~~~~~~~~~~~~~~^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\base.py", line 447, 
+in connect
+    return _ConnectionFairy
+._checkout(self)
+           ~~~~~~~~~~~~~~~~
+~~~~~~~~~~^^^^^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\base.py", line 1264, 
+in _checkout
+    fairy = _ConnectionReco
+rd.checkout(pool)
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\base.py", line 711, 
+in checkout
+    rec = pool._do_get()
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\impl.py", line 177, 
+in _do_get
+    with 
+util.safe_reraise():
+         
+~~~~~~~~~~~~~~~~~^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+util\langhelpers.py", line 
+224, in __exit__
+    raise exc_value.with_tr
+aceback(exc_tb)
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\impl.py", line 175, 
+in _do_get
+    return 
+self._create_connection()
+           
+~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\base.py", line 388, 
+in _create_connection
+    return 
+_ConnectionRecord(self)
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\base.py", line 673, 
+in __init__
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\base.py", line 899, 
+in __connect
+    with 
+util.safe_reraise():
+         
+~~~~~~~~~~~~~~~~~^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+util\langhelpers.py", line 
+224, in __exit__
+    raise exc_value.with_tr
+aceback(exc_tb)
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\base.py", line 895, 
+in __connect
+    self.dbapi_connection 
+= connection = 
+pool._invoke_creator(self)
+                           
+              
+~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+engine\create.py", line 
+661, in connect
+    return 
+dialect.connect(*cargs, 
+**cparams)
+           ~~~~~~~~~~~~~~~^
+^^^^^^^^^^^^^^^^^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+engine\default.py", line 
+630, in connect
+    return self.loaded_dbap
+i.connect(*cargs, 
+**cparams)  # type: 
+ignore[no-any-return]  # 
+NOQA: E501
+           ~~~~~~~~~~~~~~~~
+~~~~~~~~~^^^^^^^^^^^^^^^^^^
+^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\psycopg2\__
+init__.py", line 135, in 
+connect
+    conn = _connect(dsn, co
+nnection_factory=connection
+_factory, **kwasync)
+psycopg2.OperationalError: 
+could not translate host 
+name "db.utfcblkezorerycwul
+lp.supabase.co" to 
+address: Name or service 
+not known
+
+
+The above exception was 
+the direct cause of the 
+following exception:
+
+Traceback (most recent 
+call last):
+  File "D:\CS\University\FY
+P\Prototype\backend\app.py"
+, line 560, in <module>
+    db.create_all()
+    ~~~~~~~~~~~~~^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\flask_sqlal
+chemy\extension.py", line 
+900, in create_all
+    self._call_for_binds(bi
+nd_key, "create_all")
+    ~~~~~~~~~~~~~~~~~~~~^^^
+^^^^^^^^^^^^^^^^^^^^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\flask_sqlal
+chemy\extension.py", line 
+881, in _call_for_binds
+    getattr(metadata, 
+op_name)(bind=engine)
+    ~~~~~~~~~~~~~~~~~~~~~~~
+~~~^^^^^^^^^^^^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+sql\schema.py", line 5928, 
+in create_all
+    bind._run_ddl_visitor(
+    ~~~~~~~~~~~~~~~~~~~~~^
+        
+ddl.SchemaGenerator, self, 
+checkfirst=checkfirst, 
+tables=tables
+        ^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+engine\base.py", line 
+3259, in _run_ddl_visitor
+    with self.begin() as 
+conn:
+         ~~~~~~~~~~^^
+  File "C:\Users\Hamid Ali 
+Khan\AppData\Local\Programs
+\Python\Python313\Lib\conte
+xtlib.py", line 141, in 
+__enter__
+    return next(self.gen)
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+engine\base.py", line 
+3249, in begin
+    with self.connect() as 
+conn:
+         ~~~~~~~~~~~~^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+engine\base.py", line 
+3285, in connect
+    return 
+self._connection_cls(self)
+           
+~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+engine\base.py", line 145, 
+in __init__
+    Connection._handle_dbap
+i_exception_noconnection(
+    ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~^
+        err, dialect, 
+engine
+        
+^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+engine\base.py", line 
+2448, in _handle_dbapi_exce
+ption_noconnection
+    raise sqlalchemy_except
+ion.with_traceback(exc_info
+[2]) from e
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+engine\base.py", line 143, 
+in __init__
+    self._dbapi_connection 
+= engine.raw_connection()
+                           
+  ~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+engine\base.py", line 
+3309, in raw_connection
+    return 
+self.pool.connect()
+           
+~~~~~~~~~~~~~~~~~^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\base.py", line 447, 
+in connect
+    return _ConnectionFairy
+._checkout(self)
+           ~~~~~~~~~~~~~~~~
+~~~~~~~~~~^^^^^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\base.py", line 1264, 
+in _checkout
+    fairy = _ConnectionReco
+rd.checkout(pool)
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\base.py", line 711, 
+in checkout
+    rec = pool._do_get()
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\impl.py", line 177, 
+in _do_get
+    with 
+util.safe_reraise():
+         
+~~~~~~~~~~~~~~~~~^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+util\langhelpers.py", line 
+224, in __exit__
+    raise exc_value.with_tr
+aceback(exc_tb)
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\impl.py", line 175, 
+in _do_get
+    return 
+self._create_connection()
+           
+~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\base.py", line 388, 
+in _create_connection
+    return 
+_ConnectionRecord(self)
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\base.py", line 673, 
+in __init__
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\base.py", line 899, 
+in __connect
+    with 
+util.safe_reraise():
+         
+~~~~~~~~~~~~~~~~~^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+util\langhelpers.py", line 
+224, in __exit__
+    raise exc_value.with_tr
+aceback(exc_tb)
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+pool\base.py", line 895, 
+in __connect
+    self.dbapi_connection 
+= connection = 
+pool._invoke_creator(self)
+                           
+              
+~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+engine\create.py", line 
+661, in connect
+    return 
+dialect.connect(*cargs, 
+**cparams)
+           ~~~~~~~~~~~~~~~^
+^^^^^^^^^^^^^^^^^^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\sqlalchemy\
+engine\default.py", line 
+630, in connect
+    return self.loaded_dbap
+i.connect(*cargs, 
+**cparams)  # type: 
+ignore[no-any-return]  # 
+NOQA: E501
+           ~~~~~~~~~~~~~~~~
+~~~~~~~~~^^^^^^^^^^^^^^^^^^
+^
+  File "D:\CS\University\FY
+P\Prototype\backend\venv\Li
+b\site-packages\psycopg2\__
+init__.py", line 135, in 
+connect
+    conn = _connect(dsn, co
+nnection_factory=connection
+_factory, **kwasync)
+sqlalchemy.exc.OperationalE
+rror: (psycopg2.Operational
+Error) could not translate 
+host name "db.utfcblkezorer
+ycwullp.supabase.co" to 
+address: Name or service 
+not known
+
+(Background on this error 
+at: https://sqlalche.me/e/2
+0/e3q8)
+
+During handling of the 
+above exception, another 
+exception occurred:
+
+Traceback (most recent 
+call last):
+  File "D:\CS\University\FY
+P\Prototype\backend\app.py"
+, line 563, in <module>
+    print(f"\u274c 
+Database error: {e}")
+    ~~~~~^^^^^^^^^^^^^^^^^^
+^^^^^^^^^
+  File "C:\Users\Hamid Ali 
+Khan\AppData\Local\Programs
+\Python\Python313\Lib\encod
+ings\cp1252.py", line 19, 
+in encode
+    return codecs.charmap_e
+ncode(input,self.errors,enc
+oding_table)[0]
+           ~~~~~~~~~~~~~~~~
+~~~~~^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^
+UnicodeEncodeError: 
+'charmap' codec can't 
+encode character '\u274c' 
+in position 0: character 
+maps to <undefined>

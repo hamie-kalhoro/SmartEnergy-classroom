@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
+from flask_talisman import Talisman
 from werkzeug.utils import secure_filename
 from models import db, User, Classroom, Timetable, AttendanceHistory, EnergyDecision
 from services import AuthService, EnergyService, PasswordService
@@ -44,7 +45,14 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fyp-secret-key')
 if not os.path.exists('instance'):
     os.makedirs('instance')
 
-CORS(app)
+# CORS Configuration - Restrict to frontend in production
+frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+CORS(app, resources={r"/api/*": {"origins": [frontend_url, "http://localhost:5173"]}})
+
+# Security Headers (Skip HTTPS force in local development)
+is_dev = os.getenv('FLASK_ENV') == 'development' or os.getenv('DEBUG', 'False').lower() == 'true'
+if not is_dev:
+    Talisman(app, content_security_policy=None) # CSP can be configured later
 db.init_app(app)
 ml = MLEngine()
 
@@ -568,15 +576,22 @@ if __name__ == '__main__':
                 print("✅ SQLite database initialized.")
         
         # Seed admin with hashed password
+        # Database Seeding Logic
         try:
-            if not User.query.filter_by(username='hamid').first():
+            admin_user = User.query.filter_by(username='hamid').first()
+            if not admin_user:
+                print("👤 Creating default admin user...")
                 hashed = PasswordService.hash_password('hamid123')
                 db.session.add(User(
                     username='hamid', email='admin@smart.com', 
                     password_hash=hashed, role='admin', is_active_account=True
                 ))
                 db.session.commit()
-                
+                print("✅ Default admin created.")
+            
+            # Check for initial classrooms
+            if Classroom.query.count() == 0:
+                print("🏫 Seeding initial classrooms...")
                 c1 = Classroom(name='Room 101', building='A', capacity=50)
                 c2 = Classroom(name='Lab 202', building='B', capacity=30)
                 db.session.add_all([c1, c2])
@@ -595,9 +610,27 @@ if __name__ == '__main__':
                     expected_attendance=40
                 ))
                 db.session.commit()
-                print("✅ Database seeded successfully!")
+                print("✅ Database classrooms seeded successfully!")
+            else:
+                print("📡 Database already contains data, skipping seeding.")
         except Exception as seed_err:
-            print(f"⚠️ Seeding skipped or failed: {seed_err}")
+            print(f"⚠️ Seeding skipped or encountered a non-critical error: {seed_err}")
             db.session.rollback()
         
-    app.run(debug=True, port=5000)
+if __name__ == '__main__':
+    with app.app_context():
+        # ... database init logic (already exists) ...
+        pass
+    
+    port = int(os.getenv('PORT', 5000))
+    if is_dev:
+        print(f"🚀 Starting Development Server on port {port}...")
+        app.run(debug=True, host='0.0.0.0', port=port)
+    else:
+        try:
+            from waitress import serve
+            print(f"⚡ Starting Production Server (Waitress) on port {port}...")
+            serve(app, host='0.0.0.0', port=port)
+        except ImportError:
+            print("⚠️ Waitress not found. Falling back to Flask development server...")
+            app.run(debug=False, host='0.0.0.0', port=port)
