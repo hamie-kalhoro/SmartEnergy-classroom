@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { FiPlus, FiTrash2, FiBox, FiUpload, FiDownload, FiCheckCircle, FiAlertCircle, FiEdit3, FiUsers, FiZap } from 'react-icons/fi';
+import ConfirmModal from '../components/ConfirmModal';
 
 function Classrooms({ user }) {
     const [classrooms, setClassrooms] = useState([]);
@@ -10,29 +11,35 @@ function Classrooms({ user }) {
     const [importResult, setImportResult] = useState(null);
     const [importing, setImporting] = useState(false);
     const [newRoom, setNewRoom] = useState({ name: '', building: '', capacity: 50, lights: 8, acs: 2 });
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
     useEffect(() => {
         fetchClassrooms();
     }, []);
 
     const fetchClassrooms = async () => {
-        const res = await axios.get('/api/classrooms');
+        const res = await api.get('/api/classrooms');
         setClassrooms(res.data);
     };
 
     const handleAdd = async (e) => {
         e.preventDefault();
-        await axios.post('/api/classrooms', newRoom);
+        await api.post('/api/classrooms', newRoom);
         fetchClassrooms();
         setShowModal(false);
         setNewRoom({ name: '', building: '', capacity: 50, lights: 8, acs: 2 });
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Deactivate this classroom?')) {
-            await axios.delete(`/api/classrooms/${id}`);
+        setDeleteTarget(id);
+    };
+
+    const confirmDelete = async () => {
+        if (deleteTarget) {
+            await api.delete(`/api/classrooms/${deleteTarget}`);
             fetchClassrooms();
         }
+        setDeleteTarget(null);
     };
 
     const handleBulkImport = async (e) => {
@@ -42,7 +49,7 @@ function Classrooms({ user }) {
         const formData = new FormData();
         formData.append('file', importFile);
         try {
-            const res = await axios.post('/api/classrooms/bulk-import', formData);
+            const res = await api.post('/api/classrooms/bulk-import', formData);
             setImportResult(res.data);
             if (res.data.success) fetchClassrooms();
         } catch (err) {
@@ -262,6 +269,17 @@ function Classrooms({ user }) {
                     </div>
                 </div>
             )}
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                show={!!deleteTarget}
+                type="warning"
+                title="Deactivate Classroom?"
+                message="This classroom node will be removed from the energy network."
+                confirmText="Deactivate"
+                onConfirm={confirmDelete}
+                onCancel={() => setDeleteTarget(null)}
+            />
         </div>
     );
 }

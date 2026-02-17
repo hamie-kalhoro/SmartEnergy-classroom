@@ -2,19 +2,26 @@ from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
 from flask_talisman import Talisman
 from werkzeug.utils import secure_filename
-from models import db, User, Classroom, Timetable, AttendanceHistory, EnergyDecision
+from models import db, User, Classroom, Timetable, AttendanceHistory, EnergyDecision, Notification
 from services import AuthService, EnergyService, PasswordService
 from ml_engine import MLEngine
 import pandas as pd
 import os
 from dotenv import load_dotenv
 
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import logging
 from logging.handlers import RotatingFileHandler
+from datetime import timedelta
 
 load_dotenv()
 
 app = Flask(__name__)
+
+# JWT Configuration
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', os.getenv('SECRET_KEY', 'fyp-jwt-secret-key'))
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
+jwt = JWTManager(app)
 
 # Production Logging
 if not app.debug:
@@ -49,12 +56,22 @@ if not os.path.exists('instance'):
 frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 CORS(app, resources={r"/api/*": {"origins": [frontend_url, "http://localhost:5173"]}})
 
-# Security Headers (Skip HTTPS force in local development)
-is_dev = os.getenv('FLASK_ENV') == 'development' or os.getenv('DEBUG', 'False').lower() == 'true'
-if not is_dev:
-    Talisman(app, content_security_policy=None) # CSP can be configured later
+# Security Headers
+is_dev = os.getenv('FLASK_ENV') != 'production'
+Talisman(app, content_security_policy=None, force_https=not is_dev)
 db.init_app(app)
 ml = MLEngine()
+
+# Global Error Handler
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Handle uncaught exceptions and return JSON."""
+    app.logger.error(f"Unhandled Exception: {str(e)}", exc_info=True)
+    return jsonify({
+        "success": False,
+        "message": "An internal server error occurred. Please contact the administrator.",
+        "error": str(e) if is_dev else None
+    }), 500
 
 # =====================
 # AUTH ROUTES
@@ -90,10 +107,19 @@ def login():
     
     if error:
         return jsonify({'success': False, 'message': error}), 401
+    
+    # Create JWT Access Token
+    access_token = create_access_token(identity=str(user.id))
         
     return jsonify({
         'success': True,
-        'user': {'id': user.id, 'username': user.username, 'role': user.role, 'email': user.email}
+        'token': access_token,
+        'user': {
+            'id': user.id, 
+            'username': user.username, 
+            'role': user.role, 
+            'email': user.email
+        }
     })
 
 @app.route('/api/verify-admin', methods=['POST'])
@@ -105,6 +131,7 @@ def verify_admin():
     return jsonify({'success': False, 'message': 'Admin verification failed'}), 401
 
 @app.route('/api/users', methods=['GET'])
+@jwt_required()
 def get_users():
     """Get list of all users."""
     users = User.query.all()
@@ -118,6 +145,7 @@ def get_users():
     } for u in users])
 
 @app.route('/api/users/pending-admins', methods=['GET'])
+@jwt_required()
 def get_pending_admins():
     """Get list of users waiting for admin approval."""
     users = User.query.filter_by(is_pending_admin=True).all()
@@ -130,14 +158,21 @@ def get_pending_admins():
     } for u in users])
 
 @app.route('/api/users/approve-admin/<int:id>', methods=['POST'])
+@jwt_required()
 def approve_admin(id):
     """Approve a pending admin registration."""
-    success, error = AuthService.approve_admin(id)
+    # Get the approving admin's username
+    current_user_id = get_jwt_identity()
+    approver = User.query.get(int(current_user_id))
+    approved_by = approver.username if approver else None
+    
+    success, error = AuthService.approve_admin(id, approved_by=approved_by)
     if not success:
         return jsonify({'success': False, 'message': error}), 400
     return jsonify({'success': True, 'message': 'Admin approved and activation email sent.'})
 
 @app.route('/api/users/activate-manual/<int:id>', methods=['POST'])
+@jwt_required()
 def activate_user_manual(id):
     """Manually activate a user (failover for email service)."""
     user = User.query.get(id)
@@ -226,6 +261,7 @@ def bulk_import_users():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/users/<int:id>', methods=['DELETE'])
+@jwt_required()
 def delete_user(id):
     user = User.query.get(id)
     if not user:
@@ -244,6 +280,47 @@ def delete_user(id):
         return jsonify({'success': False, 'message': str(e)}), 500
 
 # =====================
+# NOTIFICATION ROUTES
+# =====================
+@app.route('/api/notifications', methods=['GET'])
+@jwt_required()
+def get_notifications():
+    """Get notifications for the current user's role."""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(int(current_user_id))
+    if not user:
+        return jsonify([]), 200
+    
+    # Admins see both admin-targeted and faculty-targeted notifications
+    if user.role == 'admin':
+        notifications = Notification.query.order_by(Notification.created_at.desc()).limit(50).all()
+    elif user.role == 'faculty':
+        # Faculty only see approval results (target_role='faculty')
+        notifications = Notification.query.filter_by(target_role='faculty').order_by(Notification.created_at.desc()).limit(50).all()
+    else:
+        return jsonify([]), 200
+    
+    return jsonify([{
+        'id': n.id,
+        'type': n.type,
+        'message': n.message,
+        'created_by': n.created_by,
+        'is_read': n.is_read,
+        'created_at': n.created_at.strftime('%Y-%m-%d %H:%M')
+    } for n in notifications])
+
+@app.route('/api/notifications/<int:id>/read', methods=['POST'])
+@jwt_required()
+def mark_notification_read(id):
+    """Mark a notification as read."""
+    notif = Notification.query.get(id)
+    if notif:
+        notif.is_read = True
+        db.session.commit()
+        return jsonify({'success': True})
+    return jsonify({'success': False}), 404
+
+# =====================
 # CLASSROOM ROUTES
 # =====================
 @app.route('/api/classrooms', methods=['GET'])
@@ -255,6 +332,7 @@ def get_classrooms():
     } for c in classes])
 
 @app.route('/api/classrooms', methods=['POST'])
+@jwt_required()
 def add_classroom():
     data = request.json
     new_room = Classroom(
@@ -560,24 +638,16 @@ def get_ml_status():
     return jsonify(stats or {'is_trained': False})
 
 # =====================
-# STARTUP & SEEDING
+# STARTUP & SEEDING (Consolidated)
 # =====================
-if __name__ == '__main__':
+def seed_database():
+    """Initialize database and seed initial data if needed."""
     with app.app_context():
         try:
             db.create_all()
-            print(f"✅ Database connected using: {app.config['SQLALCHEMY_DATABASE_URI']}")
-        except Exception as e:
-            print(f"❌ Database error: {e}")
-            if USE_MYSQL:
-                print("⚠️ Falling back to SQLite for local development...")
-                app.config['SQLALCHEMY_DATABASE_URI'] = SQLITE_URI
-                db.create_all()
-                print("✅ SQLite database initialized.")
-        
-        # Seed admin with hashed password
-        # Database Seeding Logic
-        try:
+            print(f"✅ Database connected: {app.config['SQLALCHEMY_DATABASE_URI']}")
+            
+            # Seed admin
             admin_user = User.query.filter_by(username='hamid').first()
             if not admin_user:
                 print("👤 Creating default admin user...")
@@ -587,9 +657,8 @@ if __name__ == '__main__':
                     password_hash=hashed, role='admin', is_active_account=True
                 ))
                 db.session.commit()
-                print("✅ Default admin created.")
             
-            # Check for initial classrooms
+            # Seed classrooms
             if Classroom.query.count() == 0:
                 print("🏫 Seeding initial classrooms...")
                 c1 = Classroom(name='Room 101', building='A', capacity=50)
@@ -610,17 +679,13 @@ if __name__ == '__main__':
                     expected_attendance=40
                 ))
                 db.session.commit()
-                print("✅ Database classrooms seeded successfully!")
-            else:
-                print("📡 Database already contains data, skipping seeding.")
-        except Exception as seed_err:
-            print(f"⚠️ Seeding skipped or encountered a non-critical error: {seed_err}")
+                print("✅ Seeding complete.")
+        except Exception as e:
+            print(f"❌ Database setup error: {e}")
             db.session.rollback()
-        
+
 if __name__ == '__main__':
-    with app.app_context():
-        # ... database init logic (already exists) ...
-        pass
+    seed_database()
     
     port = int(os.getenv('PORT', 5000))
     if is_dev:
@@ -629,8 +694,8 @@ if __name__ == '__main__':
     else:
         try:
             from waitress import serve
-            print(f"⚡ Starting Production Server (Waitress) on port {port}...")
+            print(f"⚡ Starting Production Server (Waitress/Windows) on port {port}...")
             serve(app, host='0.0.0.0', port=port)
         except ImportError:
-            print("⚠️ Waitress not found. Falling back to Flask development server...")
+            print("⚠️ Waitress not found. Falling back to Flask.")
             app.run(debug=False, host='0.0.0.0', port=port)

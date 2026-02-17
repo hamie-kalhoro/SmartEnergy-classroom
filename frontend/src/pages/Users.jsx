@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import { FiUpload, FiDownload, FiCheckCircle, FiAlertCircle, FiUsers, FiMail, FiUserCheck, FiShield, FiTrash2, FiUserPlus, FiClock, FiCheck } from 'react-icons/fi';
+import api from '../api';
+import { FiUpload, FiDownload, FiCheckCircle, FiAlertCircle, FiUsers, FiMail, FiUserCheck, FiShield, FiTrash2, FiUserPlus, FiClock, FiCheck, FiUnlock } from 'react-icons/fi';
+import ConfirmModal from '../components/ConfirmModal';
 
 function Users({ user }) {
     const [file, setFile] = useState(null);
@@ -13,13 +14,16 @@ function Users({ user }) {
     const [pendingAdmins, setPendingAdmins] = useState([]);
     const [showAddModal, setShowAddModal] = useState(false);
     const [singleUser, setSingleUser] = useState({ username: '', email: '', password: '', role: 'faculty', auto_activate: false });
+    const [alertModal, setAlertModal] = useState({ show: false, type: 'alert', title: '', message: '' });
+    const [activateTarget, setActivateTarget] = useState(null);
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
     const fetchUsers = async () => {
         try {
-            const res = await axios.get('/api/users');
+            const res = await api.get('/api/users');
             setUsers(res.data);
 
-            const pending = await axios.get('/api/users/pending-admins');
+            const pending = await api.get('/api/users/pending-admins');
             setPendingAdmins(pending.data);
         } catch (err) {
             console.error("Failed to fetch users:", err);
@@ -29,57 +33,65 @@ function Users({ user }) {
     const handleAddSingleUser = async (e) => {
         e.preventDefault();
         try {
-            const res = await axios.post('/api/users/create-single', singleUser);
-            alert(res.data.message);
+            const res = await api.post('/api/users/create-single', singleUser);
+            setAlertModal({ show: true, type: 'success', title: 'User Created', message: res.data.message });
             setShowAddModal(false);
             setSingleUser({ username: '', email: '', password: '', role: 'faculty', auto_activate: false });
             fetchUsers();
         } catch (err) {
-            alert(err.response?.data?.message || "Failed to create user");
+            setAlertModal({ show: true, type: 'error', title: 'Creation Failed', message: err.response?.data?.message || 'Failed to create user' });
         }
     };
 
     const handleApproveAdmin = async (id) => {
         setApprovingId(id);
         try {
-            await axios.post(`/api/users/approve-admin/${id}`);
+            await api.post(`/api/users/approve-admin/${id}`);
             fetchUsers();
         } catch (err) {
-            alert(err.response?.data?.message || "Approval failed");
+            setAlertModal({ show: true, type: 'error', title: 'Approval Failed', message: err.response?.data?.message || 'Approval failed' });
         } finally {
             setApprovingId(null);
         }
     };
 
     const handleManualActivate = async (id) => {
-        if (!window.confirm("Manually activate this account? Use this only if the activation email failed.")) return;
-        try {
-            await axios.post(`/api/users/activate-manual/${id}`);
-            fetchUsers();
-        } catch (err) {
-            alert("Failed to activate user");
+        setActivateTarget(id);
+    };
+
+    const confirmActivate = async () => {
+        if (activateTarget) {
+            try {
+                await api.post(`/api/users/activate-manual/${activateTarget}`);
+                fetchUsers();
+            } catch (err) {
+                setAlertModal({ show: true, type: 'error', title: 'Activation Failed', message: 'Failed to activate user' });
+            }
         }
+        setActivateTarget(null);
     };
 
     const handleDelete = async (u) => {
         if (u.role === 'admin' && u.username === 'hamid') {
-            alert("Primary administrator account cannot be deleted.");
+            setAlertModal({ show: true, type: 'error', title: 'Protected Account', message: 'Primary administrator account cannot be deleted.' });
             return;
         }
+        setDeleteTarget(u);
+    };
 
-        if (!window.confirm(`Are you sure you want to delete ${u.username}? This action cannot be undone.`)) {
-            return;
+    const confirmDelete = async () => {
+        if (deleteTarget) {
+            setDeletingId(deleteTarget.id);
+            try {
+                await api.delete(`/api/users/${deleteTarget.id}`);
+                fetchUsers();
+            } catch (err) {
+                setAlertModal({ show: true, type: 'error', title: 'Delete Failed', message: err.response?.data?.message || 'Failed to delete user' });
+            } finally {
+                setDeletingId(null);
+            }
         }
-
-        setDeletingId(u.id);
-        try {
-            await axios.delete(`/api/users/${u.id}`);
-            fetchUsers();
-        } catch (err) {
-            alert(err.response?.data?.message || "Failed to delete user");
-        } finally {
-            setDeletingId(null);
-        }
+        setDeleteTarget(null);
     };
 
     React.useEffect(() => {
@@ -95,7 +107,7 @@ function Users({ user }) {
         formData.append('file', file);
 
         try {
-            const res = await axios.post('/api/users/bulk-import', formData);
+            const res = await api.post('/api/users/bulk-import', formData);
             setResult(res.data);
             if (res.data.success) fetchUsers(); // Refresh list
         } catch (err) {
@@ -339,6 +351,17 @@ function Users({ user }) {
                                             </td>
                                             <td className="text-end pe-4">
                                                 <div className="d-flex justify-content-end gap-2">
+                                                    {u.is_pending_admin && (
+                                                        <button
+                                                            className="btn btn-sm btn-warning-dim p-1 px-3 d-flex align-items-center gap-1"
+                                                            style={{ fontSize: '0.75rem' }}
+                                                            onClick={() => handleApproveAdmin(u.id)}
+                                                            disabled={approvingId === u.id}
+                                                            title="Unlock / Approve Admin Access"
+                                                        >
+                                                            {approvingId === u.id ? <span className="spinner-border spinner-border-sm" role="status"></span> : <><FiUnlock size={14} /> Unlock</>}
+                                                        </button>
+                                                    )}
                                                     {!u.is_active && !u.is_pending_admin && (
                                                         <button
                                                             className="btn btn-sm btn-success-dim p-1 px-3"
@@ -416,6 +439,37 @@ function Users({ user }) {
                     </div>
                 </div>
             )}
+
+            {/* Alert Modal (replaces native alert()) */}
+            <ConfirmModal
+                show={alertModal.show}
+                type={alertModal.type}
+                title={alertModal.title}
+                message={alertModal.message}
+                onConfirm={() => setAlertModal({ ...alertModal, show: false })}
+            />
+
+            {/* Manual Activate Confirmation */}
+            <ConfirmModal
+                show={!!activateTarget}
+                type="warning"
+                title="Manual Activation"
+                message="Manually activate this account? Use this only if the activation email failed."
+                confirmText="Activate"
+                onConfirm={confirmActivate}
+                onCancel={() => setActivateTarget(null)}
+            />
+
+            {/* Delete User Confirmation */}
+            <ConfirmModal
+                show={!!deleteTarget}
+                type="warning"
+                title={`Delete ${deleteTarget?.username || 'User'}?`}
+                message="This action cannot be undone. The user's account and data will be permanently removed."
+                confirmText="Delete"
+                onConfirm={confirmDelete}
+                onCancel={() => setDeleteTarget(null)}
+            />
         </div>
     );
 }

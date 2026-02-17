@@ -11,6 +11,7 @@ import Timetable from './pages/Timetable';
 import MLDataset from './pages/MLDataset';
 import Users from './pages/Users';
 import LandingPage from './pages/LandingPage';
+import NotificationPanel from './components/NotificationPanel';
 
 import * as FiIcons from 'react-icons/fi';
 
@@ -38,7 +39,10 @@ function App() {
     return (
         <Router>
             <div className="app-container">
-                {/* Ceiling Attached Theme Toggle */}
+                {/* Ceiling Attached Controls */}
+                {user && (user.role === 'admin' || user.role === 'faculty') && (
+                    <NotificationPanel user={user} />
+                )}
                 {user && (
                     <button
                         onClick={toggleTheme}

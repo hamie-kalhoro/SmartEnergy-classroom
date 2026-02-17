@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiGrid, FiBox, FiTrendingUp, FiCalendar, FiLogOut, FiZap, FiUsers, FiChevronDown, FiChevronUp, FiCpu } from 'react-icons/fi';
+import ConfirmModal from './ConfirmModal';
 
 function Sidebar({ user, theme, toggleTheme, logout }) {
     const [showMainMenu, setShowMainMenu] = useState(true);
     const [showIntelligence, setShowIntelligence] = useState(false);
     const [showManagement, setShowManagement] = useState(false);
+    const [showLogout, setShowLogout] = useState(false);
 
     const sectionVariants = {
         open: { height: 'auto', opacity: 1, transition: { duration: 0.3, ease: 'easeOut' } },
@@ -182,7 +184,7 @@ function Sidebar({ user, theme, toggleTheme, logout }) {
                     {/* Logout Action */}
                     <button
                         className="btn btn-icon btn-sm text-danger hover-danger p-2"
-                        onClick={() => window.confirm('Exit portal?') && logout()}
+                        onClick={() => setShowLogout(true)}
                         title="Sign Out"
                         style={{ background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
@@ -190,6 +192,17 @@ function Sidebar({ user, theme, toggleTheme, logout }) {
                     </button>
                 </div>
             </div>
+
+            {/* Logout Confirmation Modal */}
+            <ConfirmModal
+                show={showLogout}
+                type="warning"
+                title="Exit Portal?"
+                message="You will be signed out of your SmartEnergy session."
+                confirmText="Sign Out"
+                onConfirm={() => { setShowLogout(false); logout(); }}
+                onCancel={() => setShowLogout(false)}
+            />
         </aside>
     );
 }

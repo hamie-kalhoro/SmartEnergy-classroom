@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { FiUser, FiMail, FiLock, FiZap, FiArrowRight, FiCheck, FiUsers, FiShield, FiBookOpen } from 'react-icons/fi';
 import useTypewriter from '../hooks/useTypewriter';
 
@@ -37,7 +37,7 @@ function Signup() {
         setLoading(true);
         setError('');
         try {
-            const res = await axios.post('/api/signup', formData);
+            const res = await api.post('/api/signup', formData);
             if (res.data.success) {
                 setSuccess(true);
             }

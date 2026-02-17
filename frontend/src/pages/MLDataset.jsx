@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { FiUpload, FiDatabase, FiCpu, FiCheckCircle, FiAlertCircle, FiBarChart2, FiActivity } from 'react-icons/fi';
 
 function MLDataset() {
@@ -22,7 +22,7 @@ function MLDataset() {
 
         try {
             const endpoint = mode === 'train' ? '/api/ml/upload-train' : '/api/ml/predict-batch';
-            const res = await axios.post(endpoint, formData, {
+            const res = await api.post(endpoint, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setResult(res.data);

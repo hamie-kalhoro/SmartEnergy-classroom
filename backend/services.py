@@ -5,7 +5,7 @@ import bcrypt
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
-from models import db, User, EnergyDecision, DailyEnergyLog
+from models import db, User, EnergyDecision, DailyEnergyLog, Notification
 
 class EmailService:
     @staticmethod
@@ -146,6 +146,15 @@ class AuthService:
         db.session.commit()
         
         if is_pending:
+            # Create notification for admins
+            notif = Notification(
+                type='admin_request',
+                message=f'{username} has requested admin access',
+                target_role='admin',
+                related_user_id=new_user.id
+            )
+            db.session.add(notif)
+            db.session.commit()
             EmailService.notify_admins_of_pending_registration(username, email)
             return new_user, "Admin registration submitted. Access is pending approval from an existing administrator."
         else:
@@ -199,14 +208,25 @@ class AuthService:
         return user, None
 
     @staticmethod
-    def approve_admin(user_id):
-        """Approve a pending admin the send activation email."""
+    def approve_admin(user_id, approved_by=None):
+        """Approve a pending admin then send activation email."""
         user = User.query.get(user_id)
         if user and user.is_pending_admin:
             user.is_pending_admin = False
             # Generate new token just in case
             token = str(uuid.uuid4())
             user.activation_token = token
+            db.session.commit()
+            
+            # Create notification for faculty (and admins) about the approval
+            notif = Notification(
+                type='admin_approved',
+                message=f'Admin request from {user.username} was approved by {approved_by or "an administrator"}',
+                target_role='faculty',
+                related_user_id=user.id,
+                created_by=approved_by
+            )
+            db.session.add(notif)
             db.session.commit()
             
             # Now they get the email

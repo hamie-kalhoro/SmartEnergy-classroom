@@ -65,3 +65,14 @@ class DailyEnergyLog(db.Model):
     total_savings_kwh = db.Column(db.Float, default=0)
     avg_occupancy_percent = db.Column(db.Float, default=0)
     total_decisions = db.Column(db.Integer, default=0)
+
+# NEW: Notifications for admin approval workflow
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String(50), nullable=False)          # 'admin_request' | 'admin_approved'
+    message = db.Column(db.String(255), nullable=False)
+    target_role = db.Column(db.String(20), nullable=False)   # 'admin' | 'faculty'
+    related_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created_by = db.Column(db.String(80), nullable=True)     # admin username who approved
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

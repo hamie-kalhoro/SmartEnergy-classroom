@@ -658,7 +658,72 @@ tbody tr:hover {
     animation: pulse-scale 3s ease-in-out infinite;
 }
 
-/* Clean up removed duplicates */
+/* ========== NOTIFICATION BELL ========== */
+@keyframes bellRing {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    10% {
+        transform: rotate(14deg);
+    }
+
+    20% {
+        transform: rotate(-14deg);
+    }
+
+    30% {
+        transform: rotate(10deg);
+    }
+
+    40% {
+        transform: rotate(-10deg);
+    }
+
+    50% {
+        transform: rotate(6deg);
+    }
+
+    60% {
+        transform: rotate(-4deg);
+    }
+
+    70% {
+        transform: rotate(2deg);
+    }
+
+    80% {
+        transform: rotate(0deg);
+    }
+}
+
+.bell-ring {
+    animation: bellRing 1.5s ease-in-out infinite;
+    transform-origin: top center;
+}
+
+@keyframes badgePulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 4px rgba(239, 68, 68, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+    }
+}
+
+.notif-badge-pulse {
+    animation: badgePulse 2s ease-in-out infinite;
+}
+
+.notif-bell-ceiling:hover {
+    transform: translateY(2px);
+    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.2) !important;
+}
 
 .main-content {
     flex-grow: 1;

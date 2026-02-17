@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -25,8 +25,8 @@ function Dashboard() {
     const [recentDecisions, setRecentDecisions] = useState([]);
 
     useEffect(() => {
-        axios.get('/api/dashboard/stats').then(res => setStats(res.data));
-        axios.get('/api/decisions/recent').then(res => setRecentDecisions(res.data));
+        api.get('/api/dashboard/stats').then(res => setStats(res.data));
+        api.get('/api/decisions/recent').then(res => setRecentDecisions(res.data));
     }, []);
 
     const chartOptions = {

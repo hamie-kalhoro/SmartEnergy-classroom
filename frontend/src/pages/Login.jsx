@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { FiMail, FiLock, FiCheckCircle, FiZap, FiArrowRight } from 'react-icons/fi';
 import useTypewriter from '../hooks/useTypewriter';
 
@@ -36,9 +36,10 @@ function Login({ onLogin }) {
         setLoading(true);
         setError('');
         try {
-            const res = await axios.post('/api/login', formData);
+            const res = await api.post('/api/login', formData);
             if (res.data.success) {
-                onLogin(res.data.user);
+                // Combine user info and token for storage
+                onLogin({ ...res.data.user, token: res.data.token });
                 navigate('/');
             }
         } catch (err) {

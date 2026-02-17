@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { FiCpu, FiPlay, FiTrendingUp, FiActivity, FiZap, FiSun, FiWind, FiCheckCircle } from 'react-icons/fi';
 
 function Predictions() {
@@ -10,7 +10,7 @@ function Predictions() {
     const runPredictions = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('/api/predict');
+            const res = await api.get('/api/predict');
             setPredictions(res.data);
             setHasRun(true);
         } catch (err) {

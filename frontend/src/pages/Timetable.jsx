@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { FiUpload, FiDownload, FiPlus, FiTrash2, FiCalendar, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import ConfirmModal from '../components/ConfirmModal';
 
 function Timetable({ user }) {
     const [schedules, setSchedules] = useState([]);
@@ -14,6 +15,7 @@ function Timetable({ user }) {
         classroom_id: '', day: 'Monday', time: '08:00', subject: '',
         type: 'theory', teacher: '', email: '', attendance: 75
     });
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
     useEffect(() => {
         fetchSchedules();
@@ -21,28 +23,33 @@ function Timetable({ user }) {
     }, []);
 
     const fetchSchedules = async () => {
-        const res = await axios.get('/api/timetable');
+        const res = await api.get('/api/timetable');
         setSchedules(res.data);
     };
 
     const fetchClassrooms = async () => {
-        const res = await axios.get('/api/classrooms');
+        const res = await api.get('/api/classrooms');
         setClassrooms(res.data);
     };
 
     const handleAdd = async (e) => {
         e.preventDefault();
-        await axios.post('/api/timetable', newEntry);
+        await api.post('/api/timetable', newEntry);
         fetchSchedules();
         setShowModal(false);
         setNewEntry({ classroom_id: '', day: 'Monday', time: '08:00', subject: '', type: 'theory', teacher: '', email: '', attendance: 75 });
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Remove this schedule entry?')) {
-            await axios.delete(`/api/timetable/${id}`);
+        setDeleteTarget(id);
+    };
+
+    const confirmDelete = async () => {
+        if (deleteTarget) {
+            await api.delete(`/api/timetable/${deleteTarget}`);
             fetchSchedules();
         }
+        setDeleteTarget(null);
     };
 
     const handleBulkImport = async (e) => {
@@ -56,7 +63,7 @@ function Timetable({ user }) {
         formData.append('file', importFile);
 
         try {
-            const res = await axios.post('/api/timetable/bulk-import', formData, {
+            const res = await api.post('/api/timetable/bulk-import', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setImportResult(res.data);
@@ -263,6 +270,17 @@ function Timetable({ user }) {
                     </div>
                 </div>
             )}
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                show={!!deleteTarget}
+                type="confirm"
+                title="Remove Schedule Entry?"
+                message="This entry will be permanently deleted from the timetable."
+                confirmText="Remove"
+                onConfirm={confirmDelete}
+                onCancel={() => setDeleteTarget(null)}
+            />
         </div>
     );
 }

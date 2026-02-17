@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend/instance:/app/instance
+      - ./backend/logs:/app/logs
+      - ./backend/uploads:/app/uploads
+    env_file:
+      - ./backend/.env
+    ports:
+      - "5000:5000"
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    depends_on:
+      - backend
+    restart: always
+
+networks:
+  default:
+    name: smart-energy-network
