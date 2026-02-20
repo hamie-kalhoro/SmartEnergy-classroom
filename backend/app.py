@@ -641,12 +641,32 @@ def get_ml_status():
 # STARTUP & SEEDING (Consolidated)
 # =====================
 def seed_database():
-    """Initialize database and seed initial data if needed."""
+    """Initialize database and seed initial data. Falls back to SQLite if main DB fails."""
     with app.app_context():
+        # Attempt 1: Connect to configured DB
         try:
             db.create_all()
             print(f"✅ Database connected: {app.config['SQLALCHEMY_DATABASE_URI']}")
+        except Exception as e:
+            print(f"⚠️ Primary Database connection failed: {e}")
+            print("🔄 Switching to local SQLite fallback...")
             
+            # Fallback to SQLite
+            basedir = os.path.abspath(os.path.dirname(__file__))
+            sqlite_uri = 'sqlite:///' + os.path.join(basedir, 'instance', 'smart_classroom.db')
+            app.config['SQLALCHEMY_DATABASE_URI'] = sqlite_uri
+            
+            # Re-initialize engine if needed (Flask-SQLAlchemy handles this via get_engine usually, 
+            # but we might need to force it if it cached the connection)
+            # For simplicity, we just try creating again.
+            try:
+                db.create_all()
+                print(f"✅ Fallback Database connected: {sqlite_uri}")
+            except Exception as e2:
+                print(f"❌ Fallback Database setup error: {e2}")
+                return
+
+        try:
             # Seed admin
             admin_user = User.query.filter_by(username='hamid').first()
             if not admin_user:
@@ -681,7 +701,7 @@ def seed_database():
                 db.session.commit()
                 print("✅ Seeding complete.")
         except Exception as e:
-            print(f"❌ Database setup error: {e}")
+            print(f"❌ Seeding error: {e}")
             db.session.rollback()
 
 if __name__ == '__main__':

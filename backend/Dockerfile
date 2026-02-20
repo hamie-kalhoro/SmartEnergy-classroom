@@ -21,6 +21,10 @@ RUN mkdir -p instance logs uploads
 # Expose the port the app runs on
 EXPOSE 5000
 
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/api/health || exit 1
+
 # Metadata for labels
 LABEL maintainer="SmartEnergy Team"
 LABEL version="1.0"

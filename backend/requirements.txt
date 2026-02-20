@@ -16,3 +16,4 @@ bcrypt
 waitress
 flask-talisman
 python-multipart
+watchdog

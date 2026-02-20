@@ -17,7 +17,8 @@ $PipExe = Join-Path $VenvDir "Scripts\pip.exe"
 if (!(Test-Path $VenvDir)) {
     Write-Host "📦 Creating virtual environment..." -ForegroundColor Yellow
     python -m venv venv
-} else {
+}
+else {
     Write-Host "✅ Virtual environment already exists." -ForegroundColor Green
 }
 
@@ -29,7 +30,25 @@ Write-Host "📥 Installing/Updating dependencies..." -ForegroundColor Yellow
 # 5. Check .env
 if (!(Test-Path ".env")) {
     Write-Host "⚠️ .env not found. Creating default..." -ForegroundColor Yellow
-    "DB_USER=root`nDB_PASSWORD=root`nDB_HOST=localhost`nDB_PORT=3306`nDB_NAME=smart_class_energy_saver`nSECRET_KEY=fyp-secret-key-$(Get-Random)" | Out-File -FilePath ".env" -Encoding utf8
+    $EnvContent = @"
+# Backend Configuration
+FLASK_ENV=development
+SECRET_KEY=fyp-secret-key-$(Get-Random)
+JWT_SECRET_KEY=fyp-jwt-secret-key-$(Get-Random)
+
+# Database Connection
+# Use Supavisor Pooler for IPv4 support (Session Mode, Port 5432)
+# DATABASE_URL=postgresql://user:pass@aws-0-region.pooler.supabase.com:5432/dbname
+
+# Email Service (Brevo/SMTP)
+MAIL_SERVER=smtp-relay.brevo.com
+MAIL_PORT=587
+MAIL_USE_TLS=True
+MAIL_USERNAME=apikey
+MAIL_PASSWORD=your-api-key
+MAIL_DEFAULT_SENDER=noreply@smartenergy.com
+"@
+    $EnvContent | Out-File -FilePath ".env" -Encoding utf8
 }
 
 Write-Host "`n✨ Setup complete! Run with: .\venv\Scripts\python.exe app.py" -ForegroundColor Green
