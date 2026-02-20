@@ -12,17 +12,23 @@ import MLDataset from './pages/MLDataset';
 import Users from './pages/Users';
 import LandingPage from './pages/LandingPage';
 import NotificationPanel from './components/NotificationPanel';
+import CampusMap from './pages/CampusMap';
 
 import * as FiIcons from 'react-icons/fi';
 
 function App() {
     const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(localStorage.getItem('sidebarCollapsed') === 'true');
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
     }, [theme]);
+
+    useEffect(() => {
+        localStorage.setItem('sidebarCollapsed', isSidebarCollapsed);
+    }, [isSidebarCollapsed]);
 
     const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
@@ -83,7 +89,14 @@ function App() {
                     </button>
                 )}
 
-                {user && <Sidebar user={user} theme={theme} toggleTheme={toggleTheme} logout={handleLogout} />}
+                {user && <Sidebar
+                    user={user}
+                    theme={theme}
+                    toggleTheme={toggleTheme}
+                    logout={handleLogout}
+                    isCollapsed={isSidebarCollapsed}
+                    onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                />}
                 <main className="main-content" style={!user ? { padding: 0 } : {}}>
                     <Routes>
                         <Route path="/login" element={!user ? <Login onLogin={handleLogin} theme={theme} toggleTheme={toggleTheme} /> : <Navigate to="/" />} />
@@ -91,6 +104,7 @@ function App() {
                         <Route path="/" element={user ? <Dashboard /> : <LandingPage />} />
                         <Route path="/classrooms" element={user ? <Classrooms user={user} /> : <Navigate to="/login" />} />
                         <Route path="/predictions" element={user ? <Predictions /> : <Navigate to="/login" />} />
+                        <Route path="/map" element={user ? <CampusMap user={user} /> : <Navigate to="/login" />} />
                         <Route path="/timetable" element={user ? <Timetable user={user} /> : <Navigate to="/login" />} />
                         <Route path="/ml-lab" element={user ? <MLDataset /> : <Navigate to="/login" />} />
                         <Route path="/users" element={user ? <Users user={user} /> : <Navigate to="/login" />} />

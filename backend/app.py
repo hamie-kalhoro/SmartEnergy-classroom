@@ -279,6 +279,86 @@ def delete_user(id):
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@app.route('/api/users/<int:id>', methods=['PUT'])
+@jwt_required()
+def update_user(id):
+    """Admin edits a user's profile, role, status, or password."""
+    current_user_id = get_jwt_identity()
+    editor = User.query.get(int(current_user_id))
+    
+    if not editor or editor.role != 'admin':
+        return jsonify({'success': False, 'message': 'Admin access required'}), 403
+    
+    user = User.query.get(id)
+    if not user:
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+    
+    data = request.json
+    is_self_edit = (editor.id == user.id)
+    changes = []
+    
+    # --- Username ---
+    new_username = data.get('username', '').strip()
+    if new_username and new_username != user.username:
+        existing = User.query.filter(User.username == new_username, User.id != id).first()
+        if existing:
+            return jsonify({'success': False, 'message': f'Username "{new_username}" is already taken.'}), 400
+        changes.append(f'Username: {user.username} → {new_username}')
+        user.username = new_username
+    
+    # --- Email ---
+    new_email = data.get('email', '').strip()
+    if new_email and new_email != user.email:
+        existing = User.query.filter(User.email == new_email, User.id != id).first()
+        if existing:
+            return jsonify({'success': False, 'message': f'Email "{new_email}" is already in use.'}), 400
+        changes.append(f'Email updated')
+        user.email = new_email
+    
+    # --- Role (self-edit protection) ---
+    new_role = data.get('role', '').strip()
+    if new_role and new_role != user.role:
+        if is_self_edit:
+            return jsonify({'success': False, 'message': 'You cannot change your own role.'}), 400
+        if new_role not in ('admin', 'faculty', 'user'):
+            return jsonify({'success': False, 'message': 'Invalid role.'}), 400
+        changes.append(f'Role: {user.role} → {new_role}')
+        user.role = new_role
+        # If promoted to admin, clear pending flag
+        if new_role == 'admin':
+            user.is_pending_admin = False
+    
+    # --- Account Status (self-edit protection) ---
+    new_status = data.get('is_active')
+    if new_status is not None and new_status != user.is_active_account:
+        if is_self_edit:
+            return jsonify({'success': False, 'message': 'You cannot deactivate your own account.'}), 400
+        changes.append(f'Status: {"Active" if new_status else "Inactive"}')
+        user.is_active_account = new_status
+        if new_status:
+            user.activation_token = None
+    
+    # --- Password Reset (optional) ---
+    new_password = data.get('new_password', '').strip()
+    if new_password:
+        if len(new_password) < 4:
+            return jsonify({'success': False, 'message': 'Password must be at least 4 characters.'}), 400
+        user.password_hash = PasswordService.hash_password(new_password)
+        changes.append('Password reset')
+    
+    if not changes:
+        return jsonify({'success': True, 'message': 'No changes detected.'})
+    
+    try:
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'User updated successfully. Changes: {", ".join(changes)}'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 # =====================
 # NOTIFICATION ROUTES
 # =====================

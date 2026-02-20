@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiGrid, FiBox, FiTrendingUp, FiCalendar, FiLogOut, FiZap, FiUsers, FiChevronDown, FiChevronUp, FiCpu } from 'react-icons/fi';
+import { FiGrid, FiBox, FiTrendingUp, FiCalendar, FiLogOut, FiZap, FiUsers, FiChevronDown, FiChevronUp, FiCpu, FiChevronLeft, FiMap } from 'react-icons/fi';
 import ConfirmModal from './ConfirmModal';
 
-function Sidebar({ user, theme, toggleTheme, logout }) {
+function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
     const [showMainMenu, setShowMainMenu] = useState(true);
     const [showIntelligence, setShowIntelligence] = useState(false);
     const [showManagement, setShowManagement] = useState(false);
@@ -16,7 +16,15 @@ function Sidebar({ user, theme, toggleTheme, logout }) {
     };
 
     return (
-        <aside className="sidebar" style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+        <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+            {/* Collapse Toggle Button */}
+            <button
+                className="sidebar-toggle-btn"
+                onClick={onToggle}
+                title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+                <FiChevronLeft />
+            </button>
             {/* Logo Section - Fixed at top */}
             <div className="mb-4">
                 <div className="d-flex align-items-center gap-3">
@@ -36,29 +44,25 @@ function Sidebar({ user, theme, toggleTheme, logout }) {
             </div>
 
             {/* Scrollable Navigation Area */}
-            <div className="sidebar-nav-container" style={{
-                flex: 1,
-                overflowY: 'auto',
-                overflowX: 'hidden',
-                margin: '0 -1.5rem', // Offset the sidebar padding
-                padding: '0 1.5rem'
-            }}>
-                <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div className="sidebar-nav-container">
+                <nav className="sidebar-nav-inner">
                     {/* Main Menu Section */}
                     <div>
-                        <div
-                            className="d-flex align-items-center justify-content-between px-3 mb-2 cursor-pointer"
-                            onClick={() => setShowMainMenu(!showMainMenu)}
-                            style={{ cursor: 'pointer', userSelect: 'none' }}
-                        >
-                            <small className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 'bold' }}>Main Menu</small>
-                            {showMainMenu ? <FiChevronUp className="text-muted" size={12} /> : <FiChevronDown className="text-muted" size={12} />}
-                        </div>
+                        {!isCollapsed && (
+                            <div
+                                className="d-flex align-items-center justify-content-between px-3 mb-2 cursor-pointer"
+                                onClick={() => setShowMainMenu(!showMainMenu)}
+                                style={{ cursor: 'pointer', userSelect: 'none' }}
+                            >
+                                <small className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 'bold' }}>Main Menu</small>
+                                {showMainMenu ? <FiChevronUp className="text-muted" size={12} /> : <FiChevronDown className="text-muted" size={12} />}
+                            </div>
+                        )}
 
                         <AnimatePresence>
-                            {showMainMenu && (
+                            {(showMainMenu || isCollapsed) && (
                                 <motion.div
-                                    initial="closed"
+                                    initial={isCollapsed ? "open" : "closed"}
                                     animate="open"
                                     exit="closed"
                                     variants={sectionVariants}
@@ -67,6 +71,9 @@ function Sidebar({ user, theme, toggleTheme, logout }) {
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                         <NavLink to="/" className="nav-link">
                                             <FiGrid /> <span>Dashboard</span>
+                                        </NavLink>
+                                        <NavLink to="/map" className="nav-link">
+                                            <FiMap /> <span>Map</span>
                                         </NavLink>
                                         <NavLink to="/classrooms" className="nav-link">
                                             <FiBox /> <span>Classrooms</span>
@@ -84,20 +91,22 @@ function Sidebar({ user, theme, toggleTheme, logout }) {
                     </div>
 
                     {/* Intelligence Section */}
-                    <div style={{ marginTop: '1rem' }}>
-                        <div
-                            className="d-flex align-items-center justify-content-between px-3 mb-2 cursor-pointer"
-                            onClick={() => setShowIntelligence(!showIntelligence)}
-                            style={{ cursor: 'pointer', userSelect: 'none' }}
-                        >
-                            <small className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 'bold' }}>Intelligence</small>
-                            {showIntelligence ? <FiChevronUp className="text-muted" size={12} /> : <FiChevronDown className="text-muted" size={12} />}
-                        </div>
+                    <div style={{ marginTop: isCollapsed ? '0.5rem' : '1rem' }}>
+                        {!isCollapsed && (
+                            <div
+                                className="d-flex align-items-center justify-content-between px-3 mb-2 cursor-pointer"
+                                onClick={() => setShowIntelligence(!showIntelligence)}
+                                style={{ cursor: 'pointer', userSelect: 'none' }}
+                            >
+                                <small className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 'bold' }}>Intelligence</small>
+                                {showIntelligence ? <FiChevronUp className="text-muted" size={12} /> : <FiChevronDown className="text-muted" size={12} />}
+                            </div>
+                        )}
 
                         <AnimatePresence>
-                            {showIntelligence && (
+                            {(showIntelligence || isCollapsed) && (
                                 <motion.div
-                                    initial="closed"
+                                    initial={isCollapsed ? "open" : "closed"}
                                     animate="open"
                                     exit="closed"
                                     variants={sectionVariants}
@@ -115,20 +124,22 @@ function Sidebar({ user, theme, toggleTheme, logout }) {
 
                     {/* Management Section (Admin Only) */}
                     {user.role === 'admin' && (
-                        <div style={{ marginTop: '1rem' }}>
-                            <div
-                                className="d-flex align-items-center justify-content-between px-3 mb-2 cursor-pointer"
-                                onClick={() => setShowManagement(!showManagement)}
-                                style={{ cursor: 'pointer', userSelect: 'none' }}
-                            >
-                                <small className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 'bold' }}>Management</small>
-                                {showManagement ? <FiChevronUp className="text-muted" size={12} /> : <FiChevronDown className="text-muted" size={12} />}
-                            </div>
+                        <div style={{ marginTop: isCollapsed ? '0.5rem' : '1rem' }}>
+                            {!isCollapsed && (
+                                <div
+                                    className="d-flex align-items-center justify-content-between px-3 mb-2 cursor-pointer"
+                                    onClick={() => setShowManagement(!showManagement)}
+                                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                                >
+                                    <small className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 'bold' }}>Management</small>
+                                    {showManagement ? <FiChevronUp className="text-muted" size={12} /> : <FiChevronDown className="text-muted" size={12} />}
+                                </div>
+                            )}
 
                             <AnimatePresence>
-                                {showManagement && (
+                                {(showManagement || isCollapsed) && (
                                     <motion.div
-                                        initial="closed"
+                                        initial={isCollapsed ? "open" : "closed"}
                                         animate="open"
                                         exit="closed"
                                         variants={sectionVariants}
@@ -148,16 +159,8 @@ function Sidebar({ user, theme, toggleTheme, logout }) {
             </div>
 
             {/* User Section - Docked at bottom */}
-            <div className="mt-auto px-1 pb-2 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
-                <div
-                    className="d-flex align-items-center gap-3 p-2 rounded-3 user-card-hover"
-                    style={{
-                        background: 'var(--bg-elevated)',
-                        transition: 'all 0.3s ease',
-                        position: 'relative',
-                        overflow: 'hidden'
-                    }}
-                >
+            <div className="sidebar-user-section">
+                <div className="d-flex align-items-center gap-3 p-2 rounded-3 user-card-hover">
                     {/* Avatar */}
                     <div style={{
                         width: '40px',
