@@ -12,6 +12,7 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), default='user') # 'admin', 'faculty', 'user'
     is_active_account = db.Column(db.Boolean, default=False)
     is_pending_admin = db.Column(db.Boolean, default=False)
+    is_permanent = db.Column(db.Boolean, default=False) # Only superior admin can toggle this
     activation_token = db.Column(db.String(100), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

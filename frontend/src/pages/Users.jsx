@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import api from '../api';
-import { FiUpload, FiDownload, FiCheckCircle, FiAlertCircle, FiUsers, FiMail, FiUserCheck, FiShield, FiTrash2, FiUserPlus, FiClock, FiCheck, FiUnlock, FiEdit2, FiKey, FiToggleLeft, FiToggleRight, FiAlertTriangle } from 'react-icons/fi';
+import { FiUpload, FiDownload, FiCheckCircle, FiAlertCircle, FiUsers, FiMail, FiUserCheck, FiShield, FiTrash2, FiUserPlus, FiClock, FiCheck, FiUnlock, FiEdit2, FiKey, FiToggleLeft, FiToggleRight, FiAlertTriangle, FiStar } from 'react-icons/fi';
 import ConfirmModal from '../components/ConfirmModal';
 
 function Users({ user }) {
@@ -22,6 +22,10 @@ function Users({ user }) {
     const [editForm, setEditForm] = useState({ username: '', email: '', role: '', is_active: false, new_password: '' });
     const [editSaving, setEditSaving] = useState(false);
     const [showRoleWarning, setShowRoleWarning] = useState(false);
+
+    // Superior Admin identification
+    const SUPERIOR_EMAIL = 'admin@smart.com';
+    const isSuperior = user.email === SUPERIOR_EMAIL;
 
     const fetchUsers = async () => {
         try {
@@ -77,8 +81,8 @@ function Users({ user }) {
     };
 
     const handleDelete = async (u) => {
-        if (u.role === 'admin' && u.username === 'hamid') {
-            setAlertModal({ show: true, type: 'error', title: 'Protected Account', message: 'Primary administrator account cannot be deleted.' });
+        if (u.is_permanent) {
+            setAlertModal({ show: true, type: 'error', title: 'Protected Account', message: 'This account is permanent and cannot be deleted.' });
             return;
         }
         setDeleteTarget(u);
@@ -106,6 +110,7 @@ function Users({ user }) {
             email: u.email,
             role: u.role,
             is_active: u.is_active,
+            is_permanent: u.is_permanent,
             new_password: ''
         });
         setShowRoleWarning(false);
@@ -271,25 +276,50 @@ function Users({ user }) {
                                     <td className="ps-4">
                                         <div className="d-flex align-items-center gap-3">
                                             <div style={{
-                                                width: '32px', height: '32px', borderRadius: '8px',
-                                                background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                fontWeight: 'bold', color: 'var(--primary-light)'
+                                                width: '32px', height: '32px', borderRadius: '10px',
+                                                background: 'linear-gradient(135deg, var(--bg-elevated) 0%, rgba(255,255,255,0.05) 100%)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontWeight: 'bold', color: 'var(--primary-light)',
+                                                border: '1px solid rgba(255,255,255,0.05)',
+                                                boxShadow: u.is_permanent ? '0 0 15px rgba(245, 158, 11, 0.15)' : 'none'
                                             }}>
-                                                {u.username.charAt(0).toUpperCase()}
+                                                {u.is_permanent ? <FiStar size={14} className="text-warning" /> : u.username.charAt(0).toUpperCase()}
                                             </div>
                                             <div>
-                                                <div className="fw-bold text-white" style={{ fontSize: '0.9rem' }}>
+                                                <div className="fw-bold text-white d-flex align-items-center gap-2" style={{ fontSize: '0.9rem', letterSpacing: '-0.01em' }}>
                                                     {u.username}
-                                                    {u.is_pending_admin && <span className="ms-2 badge bg-warning text-dark" style={{ fontSize: '0.6rem' }}>PENDING</span>}
+                                                    {u.is_pending_admin && <span className="badge bg-warning text-dark" style={{ fontSize: '0.6rem', padding: '0.2em 0.5em', borderRadius: '4px' }}>PENDING</span>}
                                                 </div>
-                                                <div className="text-muted small">{u.email}</div>
+                                                <div className="text-muted small" style={{ opacity: 0.7, fontSize: '0.75rem' }}>{u.email}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <span className={`badge ${u.role === 'admin' ? 'bg-primary' : 'bg-surface border text-muted'}`}>
-                                            {u.role.toUpperCase()}
-                                        </span>
+                                        <div className="d-flex align-items-center gap-2">
+                                            {u.is_permanent ? (
+                                                <div className="d-flex align-items-center" style={{
+                                                    background: 'rgba(245, 158, 11, 0.1)',
+                                                    border: '1px solid rgba(245, 158, 11, 0.2)',
+                                                    padding: '4px 10px',
+                                                    borderRadius: '8px',
+                                                    color: '#f59e0b',
+                                                    fontSize: '0.65rem',
+                                                    fontWeight: '700',
+                                                    letterSpacing: '0.05em',
+                                                    boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+                                                }}>
+                                                    <FiStar size={10} className="me-1" /> CORE ADMIN
+                                                </div>
+                                            ) : (
+                                                <span className={`badge ${u.role === 'admin' ? 'bg-primary' : 'bg-surface border text-muted'}`} style={{
+                                                    padding: '6px 12px',
+                                                    fontSize: '0.65rem',
+                                                    fontWeight: '600'
+                                                }}>
+                                                    {u.role.toUpperCase()}
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td>
                                         <span className={`badge ${u.is_active ? 'text-success' : (u.is_pending_admin ? 'text-warning' : 'text-secondary')}`} style={{ background: 'transparent' }}>
@@ -322,11 +352,11 @@ function Users({ user }) {
                                             )}
                                             <button className="btn btn-sm btn-primary-dim p-1 px-3 d-flex align-items-center gap-1" style={{ fontSize: '0.75rem' }} onClick={() => openEditModal(u)}><FiEdit2 size={12} /> Edit</button>
                                             <button
-                                                className={`btn btn-sm p-1 px-3 ${(u.role === 'admin' && u.username === 'hamid') ? 'btn-secondary opacity-25' : 'btn-danger-dim'}`}
+                                                className={`btn btn-sm p-1 px-3 ${u.is_permanent ? 'btn-secondary opacity-25' : 'btn-danger-dim'}`}
                                                 style={{ fontSize: '0.75rem', minWidth: '32px' }}
                                                 onClick={() => handleDelete(u)}
-                                                disabled={(u.role === 'admin' && u.username === 'hamid') || deletingId === u.id}
-                                                title={(u.role === 'admin' && u.username === 'hamid') ? "Root admin protected" : "Delete user"}
+                                                disabled={u.is_permanent || deletingId === u.id}
+                                                title={u.is_permanent ? "Permanent admin protected" : "Delete user"}
                                             >
                                                 {deletingId === u.id ? <span className="spinner-border spinner-border-sm" role="status"></span> : <FiTrash2 />}
                                             </button>
@@ -534,15 +564,41 @@ function Users({ user }) {
                                     <button type="button"
                                         className={`btn w-100 d-flex align-items-center justify-content-center gap-2 ${editForm.is_active ? 'btn-success-dim' : 'btn-danger-dim'}`}
                                         onClick={() => {
-                                            if (editTarget.id !== user.id) setEditForm({ ...editForm, is_active: !editForm.is_active });
+                                            if (!editTarget.is_permanent) setEditForm({ ...editForm, is_active: !editForm.is_active });
                                         }}
-                                        disabled={editTarget.id === user.id}
+                                        disabled={editTarget.is_permanent || editTarget.id === user.id}
                                         style={{ padding: '0.7rem' }}
                                     >
                                         {editForm.is_active ? <><FiToggleRight size={18} /> Active</> : <><FiToggleLeft size={18} /> Inactive</>}
                                     </button>
                                 </div>
                             </div>
+
+                            {/* Permanence Toggle (Only Superior Admin) */}
+                            {isSuperior && editTarget.role === 'admin' && (
+                                <div className="mb-4 p-3 rounded-4" style={{
+                                    border: '1px solid rgba(245, 158, 11, 0.2)',
+                                    background: editForm.is_permanent ? 'rgba(245, 158, 11, 0.05)' : 'rgba(255,255,255,0.02)',
+                                    transition: 'all 0.3s ease'
+                                }}>
+                                    <div className="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <label className="form-label small m-0 d-flex align-items-center gap-2 fw-bold" style={{ color: editForm.is_permanent ? '#f59e0b' : 'inherit' }}>
+                                                <FiStar className={editForm.is_permanent ? 'text-warning' : 'text-muted'} /> Account Permanence
+                                            </label>
+                                            <div className="text-muted" style={{ fontSize: '0.68rem', opacity: 0.8 }}>Protect this administrator from deletion or deactivation</div>
+                                        </div>
+                                        <button type="button"
+                                            className={`btn btn-sm rounded-3 px-3 fw-bold ${editForm.is_permanent ? 'btn-warning' : 'btn-surface border'}`}
+                                            onClick={() => setEditForm({ ...editForm, is_permanent: !editForm.is_permanent })}
+                                            disabled={editTarget.id === user.id}
+                                            style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}
+                                        >
+                                            {editForm.is_permanent ? 'Permanent' : 'Regular'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Role Warning */}
                             {showRoleWarning && (

@@ -109,6 +109,46 @@ class EmailService:
         except Exception as e:
             print(f"❌ Failed to notify admins: {e}")
 
+    @staticmethod
+    def notify_superior_of_deletion(superior_email, admin_name, target_user_name, target_role):
+        """Send a specialized alert to the Superior Admin about user deletions."""
+        server = os.getenv('MAIL_SERVER')
+        port = int(os.getenv('MAIL_PORT', 587))
+        username_smtp = os.getenv('MAIL_USERNAME')
+        password = os.getenv('MAIL_PASSWORD')
+        sender = os.getenv('MAIL_DEFAULT_SENDER')
+
+        html_body = f"""
+        <html>
+            <body style="font-family: sans-serif; padding: 20px; line-height: 1.6;">
+                <h2 style="color: #ef4444;">🚨 Security Alert: User Deletion</h2>
+                <p>This is a notification for the <strong>Superior Administrator</strong>.</p>
+                <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444; margin: 20px 0;">
+                    <p><strong>Action:</strong> User Deleted</p>
+                    <p><strong>Performed By:</strong> Admin {admin_name}</p>
+                    <p><strong>Deleted User:</strong> {target_user_name} ({target_role})</p>
+                    <p><strong>Timestamp:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
+                </div>
+                <p style="font-size: 14px; color: #64748b;">This notification is logged automatically by the SmartEnergy Security System.</p>
+            </body>
+        </html>
+        """
+
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = f"Security Monitor <{sender}>"
+            msg['To'] = superior_email
+            msg['Subject'] = f"⚠️ Alert: Faculty User Deleted by {admin_name}"
+            msg.attach(MIMEText(html_body, 'html'))
+
+            with smtplib.SMTP(server, port) as smtp:
+                smtp.starttls()
+                smtp.login(username_smtp, password)
+                smtp.send_message(msg)
+            print(f"🚨 Superior Admin Alert: Sent to {superior_email}")
+        except Exception as e:
+            print(f"❌ Failed to notify superior admin: {e}")
+
 class PasswordService:
     @staticmethod
     def hash_password(plain_password):
