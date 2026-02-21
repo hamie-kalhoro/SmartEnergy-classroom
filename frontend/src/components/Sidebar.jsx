@@ -116,15 +116,15 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
                 <div className={`d-flex align-items-center ${isCollapsed ? 'justify-content-center' : 'gap-3'}`}>
                     <div style={{
                         background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)',
-                        borderRadius: '10px',
-                        padding: '10px',
+                        borderRadius: '8px',
+                        padding: '8px',
                         boxShadow: '0 0 20px rgba(124, 58, 237, 0.3)'
                     }}>
-                        <FiZap className="text-white" style={{ fontSize: '1.2rem' }} />
+                        <FiZap className="text-white" style={{ fontSize: '1rem' }} />
                     </div>
                     <div>
-                        <h6 className="fw-bold m-0" style={{ letterSpacing: '-0.03em', fontSize: '1.05rem' }}>SmartEnergy</h6>
-                        <small className="text-muted" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.8 }}>AI Control Hub</small>
+                        <h6 className="fw-bold m-0" style={{ letterSpacing: '-0.02em', fontSize: '0.95rem' }}>SmartEnergy</h6>
+                        <small className="text-muted" style={{ fontSize: '0.55rem', textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.7 }}>AI Control Hub</small>
                     </div>
                 </div>
             </div>
@@ -136,11 +136,11 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
                     <div>
                         {!isCollapsed && (
                             <div
-                                className="d-flex align-items-center justify-content-between px-1 mb-1 cursor-pointer"
+                                className="d-flex align-items-center justify-content-between px-1 mb-1"
                                 onClick={() => setShowMainMenu(!showMainMenu)}
                                 style={{ cursor: 'pointer', userSelect: 'none' }}
                             >
-                                <small className="text-muted" style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 'bold', opacity: 0.7 }}>Main Menu</small>
+                                <small className="text-muted" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', opacity: 0.6 }}>Main Menu</small>
                                 {showMainMenu ? <FiChevronUp className="text-muted" size={10} /> : <FiChevronDown className="text-muted" size={10} />}
                             </div>
                         )}
@@ -177,14 +177,14 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
                     </div>
 
                     {/* Intelligence Section */}
-                    <div style={{ marginTop: isCollapsed ? '0.25rem' : '0.75rem' }}>
+                    <div style={{ marginTop: isCollapsed ? '0.25rem' : '0.5rem' }}>
                         {!isCollapsed && (
                             <div
-                                className="d-flex align-items-center justify-content-between px-1 mb-1 cursor-pointer"
+                                className="d-flex align-items-center justify-content-between px-1 mb-1"
                                 onClick={() => setShowIntelligence(!showIntelligence)}
                                 style={{ cursor: 'pointer', userSelect: 'none' }}
                             >
-                                <small className="text-muted" style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 'bold', opacity: 0.7 }}>Intelligence</small>
+                                <small className="text-muted" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', opacity: 0.6 }}>Intelligence</small>
                                 {showIntelligence ? <FiChevronUp className="text-muted" size={10} /> : <FiChevronDown className="text-muted" size={10} />}
                             </div>
                         )}
@@ -210,14 +210,14 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
 
                     {/* Management Section (Admin Only) */}
                     {user.role === 'admin' && (
-                        <div style={{ marginTop: isCollapsed ? '0.25rem' : '0.75rem' }}>
+                        <div style={{ marginTop: isCollapsed ? '0.25rem' : '0.5rem' }}>
                             {!isCollapsed && (
                                 <div
-                                    className="d-flex align-items-center justify-content-between px-1 mb-1 cursor-pointer"
+                                    className="d-flex align-items-center justify-content-between px-1 mb-1"
                                     onClick={() => setShowManagement(!showManagement)}
                                     style={{ cursor: 'pointer', userSelect: 'none' }}
                                 >
-                                    <small className="text-muted" style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 'bold', opacity: 0.7 }}>Management</small>
+                                    <small className="text-muted" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', opacity: 0.6 }}>Management</small>
                                     {showManagement ? <FiChevronUp className="text-muted" size={10} /> : <FiChevronDown className="text-muted" size={10} />}
                                 </div>
                             )}
@@ -253,16 +253,16 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
                 >
                     {/* Avatar */}
                     <div style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '8px',
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '6px',
                         background: 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: 'white',
                         fontWeight: '700',
-                        fontSize: '0.8rem',
+                        fontSize: '0.75rem',
                         flexShrink: 0,
                         boxShadow: isCollapsed ? '0 0 10px rgba(124, 58, 237, 0.3)' : 'none'
                     }}>
@@ -270,19 +270,19 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
                     </div>
 
                     {/* Info */}
-                    <div className="overflow-hidden flex-grow-1" style={{ lineHeight: 1.1 }}>
-                        <p className="small fw-bold mb-0 text-truncate" style={{ fontSize: '0.8rem', color: 'var(--text)' }}>{user.username}</p>
-                        <span className="text-muted fw-bold" style={{ fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.7 }}>{user.role}</span>
+                    <div className="overflow-hidden flex-grow-1" style={{ lineHeight: 1 }}>
+                        <p className="small fw-bold mb-0 text-truncate" style={{ fontSize: '0.75rem', color: 'var(--text)' }}>{user.username}</p>
+                        <span className="text-muted fw-bold" style={{ fontSize: '0.6rem', textTransform: 'uppercase', opacity: 0.6 }}>{user.role}</span>
                     </div>
 
                     {/* Logout Action */}
                     <button
-                        className="btn btn-icon btn-sm text-danger hover-danger p-2"
+                        className="btn btn-icon btn-sm text-danger hover-danger p-1"
                         onClick={() => setShowLogout(true)}
                         title="Sign Out"
-                        style={{ background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        style={{ background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.7 }}
                     >
-                        <FiLogOut size={18} />
+                        <FiLogOut size={16} />
                     </button>
                 </div>
 
