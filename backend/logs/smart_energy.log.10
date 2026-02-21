@@ -1,4 +1,4 @@
-2026-02-21 02:32:35,665 ERROR: Unhandled Exception: (psycopg2.OperationalError) could not translate host name "aws-1-ap-south-1.pooler.supabase.com" to address: Name or service not known
+2026-02-21 02:27:52,681 ERROR: Unhandled Exception: (psycopg2.OperationalError) could not translate host name "aws-1-ap-south-1.pooler.supabase.com" to address: Name or service not known
 
 (Background on this error at: https://sqlalche.me/e/20/e3q8) [in D:\CS\University\FYP\Prototype\backend\app.py:69]
 Traceback (most recent call last):
@@ -20,7 +20,7 @@ Traceback (most recent call last):
     raise exc_value.with_traceback(exc_tb)
   File "C:\Users\Hamid Ali Khan\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\pool\base.py", line 714, in checkout
     dbapi_connection = rec.get_connection()
-  File "C:\Users\Hamid Ali Khan\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\pool\base.py", line 836, in get_connection
+  File "C:\Users\Hamid Ali Khan\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\pool\base.py", line 865, in get_connection
     self.__connect()
     ~~~~~~~~~~~~~~^^
   File "C:\Users\Hamid Ali Khan\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\pool\base.py", line 899, in __connect
@@ -137,7 +137,7 @@ Traceback (most recent call last):
     raise exc_value.with_traceback(exc_tb)
   File "C:\Users\Hamid Ali Khan\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\pool\base.py", line 714, in checkout
     dbapi_connection = rec.get_connection()
-  File "C:\Users\Hamid Ali Khan\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\pool\base.py", line 836, in get_connection
+  File "C:\Users\Hamid Ali Khan\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\pool\base.py", line 865, in get_connection
     self.__connect()
     ~~~~~~~~~~~~~~^^
   File "C:\Users\Hamid Ali Khan\AppData\Local\Programs\Python\Python313\Lib\site-packages\sqlalchemy\pool\base.py", line 899, in __connect
