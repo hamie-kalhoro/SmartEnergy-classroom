@@ -115,16 +115,16 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
             <div className={isCollapsed ? "mb-4" : "mb-3"}>
                 <div className={`d-flex align-items-center ${isCollapsed ? 'justify-content-center' : 'gap-3'}`}>
                     <div style={{
-                        background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)',
-                        borderRadius: '8px',
-                        padding: '8px',
-                        boxShadow: '0 0 20px rgba(124, 58, 237, 0.3)'
+                        background: 'var(--gradient-primary)',
+                        borderRadius: '12px',
+                        padding: '11px',
+                        boxShadow: '0 8px 24px rgba(0, 210, 106, 0.25)'
                     }}>
-                        <FiZap className="text-white" style={{ fontSize: '1rem' }} />
+                        <FiZap className="text-white" style={{ fontSize: '1.35rem' }} />
                     </div>
                     <div>
-                        <h6 className="fw-bold m-0" style={{ letterSpacing: '-0.02em', fontSize: '0.95rem' }}>SmartEnergy</h6>
-                        <small className="text-muted" style={{ fontSize: '0.55rem', textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.7 }}>AI Control Hub</small>
+                        <h6 className="fw-bold m-0" style={{ letterSpacing: '-0.025em', fontSize: '1.15rem', lineHeight: 1.15 }}>SmartEnergy</h6>
+                        <small className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.7 }}>AI Control Hub</small>
                     </div>
                 </div>
             </div>
@@ -256,7 +256,7 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
                         width: '28px',
                         height: '28px',
                         borderRadius: '6px',
-                        background: 'linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)',
+                        background: 'var(--gradient-primary)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -264,7 +264,7 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
                         fontWeight: '700',
                         fontSize: '0.75rem',
                         flexShrink: 0,
-                        boxShadow: isCollapsed ? '0 0 10px rgba(124, 58, 237, 0.3)' : 'none'
+                        boxShadow: isCollapsed ? '0 4px 12px rgba(0, 210, 106, 0.3)' : 'none'
                     }}>
                         {user.username.charAt(0).toUpperCase()}
                     </div>

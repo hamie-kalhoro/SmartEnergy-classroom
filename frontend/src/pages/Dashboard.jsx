@@ -51,9 +51,9 @@ function Dashboard() {
         labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
         datasets: [{
             data: [42, 38, 55, 30, 48, 20],
-            backgroundColor: 'rgba(124, 58, 237, 0.8)',
-            hoverBackgroundColor: '#a78bfa',
-            borderRadius: 8,
+            backgroundColor: 'rgba(0, 210, 106, 0.75)',
+            hoverBackgroundColor: '#52eea3',
+            borderRadius: 6,
             borderSkipped: false,
         }]
     };
@@ -62,11 +62,11 @@ function Dashboard() {
         labels: ['6AM', '9AM', '12PM', '3PM', '6PM', '9PM'],
         datasets: [{
             data: [10, 45, 78, 65, 42, 15],
-            borderColor: '#7c3aed',
-            backgroundColor: 'rgba(124, 58, 237, 0.1)',
+            borderColor: '#00d26a',
+            backgroundColor: 'rgba(0, 210, 106, 0.08)',
             fill: true,
             tension: 0.4,
-            pointBackgroundColor: '#7c3aed',
+            pointBackgroundColor: '#00d26a',
             pointBorderColor: '#09090b',
             pointBorderWidth: 2,
             pointRadius: 4,
@@ -78,14 +78,14 @@ function Dashboard() {
         labels: ['Optimized', 'Baseline'],
         datasets: [{
             data: [stats.energy_saved, Math.max(3000 - stats.energy_saved, 500)],
-            backgroundColor: ['#7c3aed', '#27272a'],
+            backgroundColor: ['#00d26a', '#27272a'],
             borderWidth: 0,
             cutout: '75%',
         }]
     };
 
     const statCards = [
-        { label: 'Energy Saved', val: stats.energy_saved, unit: 'kWh', icon: <FiZap />, gradient: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)' },
+        { label: 'Energy Saved', val: stats.energy_saved, unit: 'kWh', icon: <FiZap />, gradient: 'linear-gradient(135deg, #00d26a 0%, #06b6d4 100%)' },
         { label: 'Active Nodes', val: stats.active_classrooms, unit: '', icon: <FiHome />, gradient: 'linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%)' },
         { label: 'Avg Occupancy', val: stats.avg_occupancy, unit: '%', icon: <FiUsers />, gradient: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)' },
         { label: 'CO₂ Offset', val: stats.co2_reduced, unit: 'T', icon: <FiGlobe />, gradient: 'linear-gradient(135deg, #10b981 0%, #34d399 100%)' }
@@ -106,7 +106,7 @@ function Dashboard() {
                     <p className="text-muted small m-0">Real-time AI optimization intelligence</p>
                 </div>
                 <div className="d-flex gap-2">
-                    <span className="badge" style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#a78bfa', padding: '0.5rem 1rem' }}>
+                    <span className="badge" style={{ background: 'rgba(0, 210, 106, 0.08)', color: 'var(--primary-light)', padding: '0.45rem 0.9rem', borderRadius: '6px', border: '1px solid rgba(0,210,106,0.15)' }}>
                         <FiCpu className="me-2" /> {stats.total_decisions} Decisions
                     </span>
                 </div>
@@ -116,7 +116,7 @@ function Dashboard() {
             <div className="row g-4 mb-5">
                 {statCards.map((s, i) => (
                     <div className="col-md-6 col-lg-3" key={i}>
-                        <div className="card h-100 border-0" style={{ background: 'var(--bg-card)' }}>
+                        <div className="card h-100 border-0 glow-border" style={{ background: 'var(--bg-card)' }}>
                             <div className="d-flex justify-content-between align-items-start mb-4">
                                 <div className="icon-box" style={{ background: s.gradient }}>
                                     {s.icon}
@@ -193,7 +193,7 @@ function Dashboard() {
                         </div>
                         <div className="d-flex flex-column gap-2" style={{ maxHeight: '220px', overflowY: 'auto' }}>
                             {recentDecisions.length > 0 ? recentDecisions.slice(0, 5).map(d => (
-                                <div key={d.id} className="d-flex align-items-center justify-content-between p-2 rounded-3" style={{ background: 'rgba(124, 58, 237, 0.04)' }}>
+                                <div key={d.id} className="d-flex align-items-center justify-content-between p-2 rounded-2" style={{ background: 'rgba(255, 255, 255, 0.03)', borderBottom: '1px solid var(--border)' }}>
                                     <div className="d-flex align-items-center gap-2">
                                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: d.occupancy === 'High' ? '#10b981' : d.occupancy === 'Medium' ? '#f59e0b' : '#ef4444' }}></div>
                                         <span className="small fw-medium">{d.classroom}</span>

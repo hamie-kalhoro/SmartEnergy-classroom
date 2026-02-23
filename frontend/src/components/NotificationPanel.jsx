@@ -229,7 +229,7 @@ function NotificationPanel({ user }) {
                                             cursor: n.is_read ? 'default' : 'pointer',
                                             background: n.is_read
                                                 ? 'transparent'
-                                                : 'rgba(124, 58, 237, 0.04)',
+                                                : 'rgba(0, 210, 106, 0.04)',
                                             transition: 'background 0.2s ease',
                                             display: 'flex',
                                             gap: '10px',
@@ -238,7 +238,7 @@ function NotificationPanel({ user }) {
                                         onMouseEnter={(e) => {
                                             if (!n.is_read)
                                                 e.currentTarget.style.background =
-                                                    'rgba(124, 58, 237, 0.08)';
+                                                    'rgba(0, 210, 106, 0.08)';
                                         }}
                                         onMouseLeave={(e) => {
                                             e.currentTarget.style.background = n.is_read
@@ -298,10 +298,10 @@ function NotificationPanel({ user }) {
                                                     width: '8px',
                                                     height: '8px',
                                                     borderRadius: '50%',
-                                                    background: '#7c3aed',
+                                                    background: 'var(--primary)',
                                                     flexShrink: 0,
                                                     marginTop: '6px',
-                                                    boxShadow: '0 0 6px rgba(124, 58, 237, 0.5)',
+                                                    boxShadow: '0 0 6px rgba(0, 210, 106, 0.5)',
                                                 }}
                                             />
                                         )}

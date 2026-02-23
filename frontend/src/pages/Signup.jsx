@@ -144,7 +144,7 @@ function Signup() {
           width: "200%",
           height: "200%",
           background:
-            "radial-gradient(ellipse at 70% 30%, rgba(236, 72, 153, 0.08) 0%, transparent 50%), radial-gradient(ellipse at 30% 70%, rgba(124, 58, 237, 0.06) 0%, transparent 50%)",
+            "radial-gradient(ellipse at 70% 30%, rgba(0, 210, 106, 0.07) 0%, transparent 50%), radial-gradient(ellipse at 30% 70%, rgba(6, 182, 212, 0.05) 0%, transparent 50%)",
           pointerEvents: "none",
         }}
       />
@@ -183,10 +183,10 @@ function Signup() {
           <div
             className="d-inline-flex align-items-center justify-content-center mb-4"
             style={{
-              background: "linear-gradient(135deg, #ec4899 0%, #7c3aed 100%)",
-              borderRadius: "20px",
+              background: "linear-gradient(135deg, #00d26a 0%, #06b6d4 100%)",
+              borderRadius: "16px",
               padding: "18px",
-              boxShadow: "0 0 40px rgba(236, 72, 153, 0.4)",
+              boxShadow: "0 8px 32px rgba(0, 210, 106, 0.35)",
             }}>
             <FiZap style={{ fontSize: "2rem", color: "white" }} />
           </div>
@@ -241,10 +241,9 @@ function Signup() {
                     style={{
                       background:
                         formData.role === r.key
-                          ? "rgba(124, 58, 237, 0.1)"
+                          ? "rgba(0, 210, 106, 0.08)"
                           : "var(--bg-elevated)",
-                      border: `2px solid ${formData.role === r.key ? "rgba(124, 58, 237, 0.5)" : "transparent"}`,
-                      cursor: "pointer",
+                      border: `2px solid ${formData.role === r.key ? "rgba(0, 210, 106, 0.45)" : "transparent"}`,
                       transition: "all 0.2s ease",
                     }}>
                     <div
@@ -276,9 +275,9 @@ function Signup() {
                         width: "20px",
                         height: "20px",
                         borderRadius: "50%",
-                        border: `2px solid ${formData.role === r.key ? "#7c3aed" : "var(--border)"}`,
+                        border: `2px solid ${formData.role === r.key ? "var(--primary)" : "var(--border)"}`,
                         background:
-                          formData.role === r.key ? "#7c3aed" : "transparent",
+                          formData.role === r.key ? "var(--primary)" : "transparent",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",

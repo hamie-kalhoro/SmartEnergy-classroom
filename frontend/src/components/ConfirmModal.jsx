@@ -17,7 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const iconMap = {
     confirm: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#52eea3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10" />
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -53,7 +53,7 @@ const iconMap = {
 };
 
 const accentMap = {
-    confirm: '#7c3aed',
+    confirm: '#00d26a',
     alert: '#3b82f6',
     success: '#10b981',
     error: '#ef4444',
@@ -123,7 +123,7 @@ function ConfirmModal({
                             maxWidth: '380px',
                             background: 'var(--bg-surface)',
                             border: '1px solid var(--border)',
-                            borderRadius: '20px',
+                            borderRadius: '14px',
                             overflow: 'hidden',
                             boxShadow: `0 25px 60px rgba(0,0,0,0.4), 0 0 40px ${accent}15`,
                         }}
@@ -207,8 +207,8 @@ function ConfirmModal({
                                 autoFocus
                                 style={{
                                     flex: 1,
-                                    padding: '0.65rem 1rem',
-                                    borderRadius: '12px',
+                                    padding: '0.6rem 1rem',
+                                    borderRadius: '8px',
                                     border: 'none',
                                     background: accent,
                                     color: 'white',

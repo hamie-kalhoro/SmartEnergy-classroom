@@ -64,7 +64,7 @@ function Predictions() {
             {hasRun && (
                 <div className="row g-3 mb-5 fade-in">
                     {[
-                        { label: 'Classes Analyzed', val: stats.total, icon: <FiActivity />, color: '#7c3aed' },
+                        { label: 'Classes Analyzed', val: stats.total, icon: <FiActivity />, color: '#00d26a' },
                         { label: 'Optimizable Slots', val: stats.optimized, icon: <FiTrendingUp />, color: '#06b6d4' },
                         { label: 'Est. Savings', val: `${stats.savingsEstimate.toFixed(1)} kWh`, icon: <FiZap />, color: '#10b981' }
                     ].map((s, i) => (

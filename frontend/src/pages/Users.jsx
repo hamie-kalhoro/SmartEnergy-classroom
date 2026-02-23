@@ -185,7 +185,7 @@ function Users({ user }) {
             <div className="d-flex align-items-end justify-content-between mb-4">
                 <div>
                     <div className="d-flex align-items-center gap-2 mb-2">
-                        <span className="badge" style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#a78bfa', fontSize: '0.7rem' }}>
+                        <span className="badge" style={{ background: 'rgba(0, 210, 106, 0.08)', color: 'var(--primary-light)', fontSize: '0.7rem', border: '1px solid rgba(0,210,106,0.2)', borderRadius: '6px', padding: '0.3rem 0.65rem' }}>
                             <FiShield className="me-1" /> ADMIN ZONE
                         </span>
                     </div>
@@ -380,7 +380,7 @@ function Users({ user }) {
                     <div className="card d-flex flex-row overflow-hidden" style={{ minHeight: '280px' }}>
                         {/* Left Side - Visual */}
                         <div className="d-none d-md-flex flex-column justify-content-center align-items-center p-5 text-center"
-                            style={{ width: '35%', background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)', color: 'white' }}>
+                            style={{ width: '35%', background: 'linear-gradient(135deg, #00d26a 0%, #06b6d4 100%)', color: 'white' }}>
                             <div className="mb-4 p-3 rounded-circle" style={{ background: 'rgba(255,255,255,0.2)' }}>
                                 <FiUsers size={36} />
                             </div>

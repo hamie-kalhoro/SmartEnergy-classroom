@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
+import SmartLogo from '../components/SmartLogo';
+import EnergyBackground from '../components/EnergyBackground';
 
 const LandingPage = () => {
     const [activeFeature, setActiveFeature] = useState(0);
@@ -52,269 +54,268 @@ const LandingPage = () => {
     return (
         <div className="landing-page" style={{
             minHeight: '100vh',
-            background: 'var(--bg-deep)',
+            background: 'transparent',
             color: 'var(--text)',
             overflowX: 'hidden',
             fontFamily: "'Inter', sans-serif"
         }}>
+            <EnergyBackground />
             {/* Navbar */}
-            <nav style={{ padding: '2rem 5%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="logo"
-                    style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
-                    <FiIcons.FiZap /> SmartClass
-                </motion.div>
-                <div style={{ display: 'flex', gap: '1.5rem' }}>
-                    <Link to="/login" style={{ textDecoration: 'none', color: 'var(--text)', fontWeight: '500' }}>Sign In</Link>
-                    <Link to="/signup" style={{
-                        textDecoration: 'none',
-                        background: 'var(--primary)',
-                        color: 'var(--bg-deep)',
-                        padding: '0.5rem 1.5rem',
-                        borderRadius: '50px',
-                        fontWeight: '600'
-                    }}>Sign Up</Link>
+            <nav style={{
+                position: 'fixed',
+                top: 0,
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1.25rem 5%',
+                zIndex: 100,
+                background: 'rgba(5, 5, 5, 0.8)',
+                backdropFilter: 'blur(12px)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <SmartLogo size={28} />
+                </div>
+                <div style={{ display: 'flex', gap: '2.5rem', alignItems: 'center' }}>
+                    <Link to="/map" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500', fontSize: '0.95rem' }}>Campus Map</Link>
+                    <Link to="/login" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500', fontSize: '0.95rem' }}>Sign In</Link>
+                    <Link to="/signup" className="btn btn-primary" style={{ padding: '0.6rem 1.5rem', borderRadius: '50px', fontWeight: '600' }}>Get Started</Link>
                 </div>
             </nav>
 
-            {/* Hero Section */}
-            <header style={{
-                minHeight: '80vh',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
+            {/* Part 1: Hero Section (Picture 1) */}
+            <header className="viewport-section" style={{
                 textAlign: 'center',
-                padding: '0 1rem',
-                position: 'relative'
+                background: 'radial-gradient(circle at center, rgba(0, 210, 106, 0.08) 0%, transparent 70%)'
             }}>
                 <motion.h1
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8 }}
-                    style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: '800', maxWidth: '800px', lineHeight: '1.2' }}
+                    transition={{ duration: 0.8, delay: 0.1 }}
+                    style={{
+                        fontSize: 'clamp(3.5rem, 10vw, 5.5rem)',
+                        fontWeight: '900',
+                        maxWidth: '1000px',
+                        lineHeight: '1.0',
+                        letterSpacing: '-0.05em',
+                        color: 'var(--text)'
+                    }}
                 >
                     Stop Wasting Energy. <br />
-                    <span className="text-gradient">Start Saving Future.</span>
+                    <span style={{
+                        background: 'var(--gradient-primary)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        display: 'inline-block'
+                    }}>Start Saving Future.</span>
                 </motion.h1>
 
                 <motion.p
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.8 }}
-                    style={{ marginTop: '1.5rem', fontSize: '1.1rem', maxWidth: '600px', opacity: 0.8 }}
+                    style={{
+                        marginTop: '2rem',
+                        fontSize: '1.25rem',
+                        maxWidth: '700px',
+                        color: 'var(--text-secondary)',
+                        lineHeight: '1.6'
+                    }}
                 >
-                    Join the revolution of smart classrooms. Monitor, control, and optimize your energy footprint with our state-of-the-art dashboard.
+                    Monitor, control, and optimize your energy footprint with the project SmartClass. Join the revolution of intelligent educational environments.
                 </motion.p>
 
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.6 }}
-                    style={{ marginTop: '3rem', display: 'flex', gap: '1rem' }}
+                    style={{ marginTop: '3.5rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}
                 >
-                    <Link to="/signup" className="btn btn-primary" style={{
-                        borderRadius: '50px',
-                        padding: '1rem 2.5rem',
-                        fontSize: '1.1rem'
-                    }}>
-                        Get Started
+                    <Link to="/signup" className="btn btn-primary btn-lg px-5" style={{ borderRadius: '50px', height: '56px', display: 'flex', alignItems: 'center' }}>
+                        Start Saving Now
                     </Link>
-                    <Link to="/login" style={{
-                        padding: '1rem 2.5rem',
-                        border: '1px solid var(--border)',
-                        background: 'var(--bg-card)',
-                        color: 'var(--text)',
-                        borderRadius: '50px',
-                        textDecoration: 'none',
-                        fontSize: '1.1rem',
-                        fontWeight: '600'
-                    }}>
+                    <button
+                        onClick={() => document.getElementById('live-simulation').scrollIntoView({ behavior: 'smooth' })}
+                        className="btn btn-secondary btn-lg px-5"
+                        style={{ borderRadius: '50px', height: '56px', display: 'flex', alignItems: 'center' }}
+                    >
                         Live Demo
-                    </Link>
+                    </button>
                 </motion.div>
-
-                {/* Dashboard 3D Simulation Preview */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.8, rotateX: 20 }}
-                    animate={{ opacity: 1, scale: 1, rotateX: 10 }}
-                    transition={{ delay: 0.8, duration: 1, type: 'spring' }}
-                    style={{
-                        marginTop: '4rem',
-                        width: '90%',
-                        maxWidth: '1000px',
-                        perspective: '1000px',
-                        marginBottom: '2rem', // Fixed overlap
-                        zIndex: 1
-                    }}
-                >
-                    <div style={{
-                        transform: 'rotateX(10deg)',
-                        borderRadius: '20px',
-                        overflow: 'hidden',
-                        boxShadow: '0 50px 100px -20px rgba(0, 210, 106, 0.3), 0 0 0 1px rgba(255,255,255,0.1)',
-                        background: '#000'
-                    }}>
-                        <img
-                            src="/assets/dashboard_preview.png"
-                            alt="Smart Settings Dashboard"
-                            style={{ width: '100%', display: 'block', opacity: 0.9 }}
-                        />
-                        {/* Live Badge */}
-                        <div style={{
-                            position: 'absolute', top: '20px', right: '20px',
-                            background: 'rgba(0,0,0,0.7)',
-                            border: '1px solid var(--primary)',
-                            color: 'var(--primary)',
-                            padding: '0.4rem 1rem',
-                            borderRadius: '20px',
-                            fontSize: '0.8rem', fontWeight: 'bold',
-                            display: 'flex', alignItems: 'center', gap: '8px'
-                        }}>
-                            <span style={{ width: '8px', height: '8px', background: 'var(--primary)', borderRadius: '50%', boxShadow: '0 0 10px var(--primary)' }}></span>
-                            LIVE SIMULATION
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* Floating Popups Background */}
-                <div style={{ position: 'absolute', width: '100%', height: '100%', pointerEvents: 'none', zIndex: -1, overflow: 'hidden' }}>
-                    <AnimatePresence>
-                        {popups.slice(0, 2).map((popup, i) => (
-                            <motion.div
-                                key={popup.id}
-                                initial={{ opacity: 0.3, x: i % 2 === 0 ? -100 : 100, y: Math.random() * 200 }}
-                                animate={{ opacity: 0.1, x: i % 2 === 0 ? 100 : -100, y: Math.random() * -200 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 10, repeat: Infinity, repeatType: 'reverse' }}
-                                style={{
-                                    position: 'absolute',
-                                    top: `${30 + i * 20}%`,
-                                    left: `${20 + i * 50}%`,
-                                    background: 'var(--bg-card)',
-                                    padding: '1rem',
-                                    borderRadius: '12px',
-                                    border: `1px solid ${popup.type === 'alert' ? '#ef4444' : '#22c55e'}`,
-                                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '10px'
-                                }}
-                            >
-                                <div style={{
-                                    width: '10px', height: '10px', borderRadius: '50%',
-                                    background: popup.type === 'alert' ? '#ef4444' : '#22c55e'
-                                }} />
-                                <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>{popup.text}</span>
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
-                </div>
             </header>
 
-            {/* Features Playback Section */}
-            <section style={{ padding: '5rem 5%', background: 'var(--bg-elevated)' }}>
-                <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-                    <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Engineered for Efficiency</h2>
-                    <p style={{ opacity: 0.7 }}>Watch how our system transforms data into actionable savings.</p>
+            {/* Part 2: Live Simulation & Video (Picture 2) */}
+            <section id="live-simulation" className="viewport-section" style={{
+                background: 'var(--bg-surface)',
+                padding: '0 10%'
+            }}>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4rem',
+                    width: '100%',
+                    maxWidth: '1200px',
+                    flexWrap: 'wrap'
+                }}>
+                    <div style={{ flex: '1', minWidth: '300px', textAlign: 'left' }}>
+                        <h2 style={{ fontSize: '3.5rem', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '1.5rem', color: 'var(--text)' }}>
+                            Smarter <br />
+                            <span style={{ color: 'var(--primary)' }}>Control Hub.</span>
+                        </h2>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem', lineHeight: '1.6', marginBottom: '2rem' }}>
+                            Watch our AI handle complex energy distribution patterns in real-time. A fully automated educational environment designed for the future.
+                        </p>
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                            <div style={{ width: '12px', height: '12px', background: 'var(--primary)', borderRadius: '50%', boxShadow: '0 0 10px var(--primary)' }}></div>
+                            <span style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Real-time Optimization</span>
+                        </div>
+                    </div>
+
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                        style={{
+                            flex: '1.2',
+                            minWidth: '300px',
+                            position: 'relative'
+                        }}
+                    >
+                        <div style={{
+                            borderRadius: '24px',
+                            padding: '12px',
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            border: '1px solid var(--border)',
+                            boxShadow: '0 40px 100px -20px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                        }}>
+                            {/* Glass Header Badge */}
+                            <div style={{
+                                position: 'absolute',
+                                top: '32px',
+                                right: '32px',
+                                background: 'rgba(5, 5, 5, 0.6)',
+                                backdropFilter: 'blur(12px)',
+                                border: '1px solid rgba(0, 210, 106, 0.3)',
+                                color: 'var(--primary)',
+                                padding: '0.65rem 1.25rem',
+                                borderRadius: '50px',
+                                fontSize: '0.8rem',
+                                fontWeight: '700',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                zIndex: 10,
+                                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
+                            }}>
+                                <span className="pulse-green" style={{ width: '10px', height: '10px', background: 'var(--primary)', borderRadius: '50%', boxShadow: '0 0 12px var(--primary)' }}></span>
+                                LIVE PREVIEW
+                            </div>
+
+                            <div style={{
+                                borderRadius: '16px',
+                                overflow: 'hidden',
+                                position: 'relative',
+                                aspectRatio: '16 / 9',
+                                background: '#0a0a0a',
+                            }}>
+                                <video
+                                    src=""
+                                    poster="/assets/dashboard_preview.png"
+                                    autoPlay
+                                    muted
+                                    loop
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
+                                />
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            </section>
+
+            {/* Part 3: Engineered for Efficiency (Picture 3) */}
+            <section className="viewport-section" style={{
+                padding: '8rem 5%',
+                background: 'rgba(255, 255, 255, 0.01)',
+                borderTop: '1px solid var(--border)',
+                borderBottom: '1px solid var(--border)'
+            }}>
+                <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
+                    <h2 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '1.25rem', letterSpacing: '-0.03em' }}>Engineered for Efficiency</h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto' }}>
+                        Watch how our system transforms raw classroom data into actionable energy savings.
+                    </p>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '2.5rem', flexWrap: 'wrap' }}>
                     {features.map((feature, idx) => {
                         const isActive = idx === activeFeature;
                         return (
                             <motion.div
                                 key={idx}
                                 animate={{
-                                    scale: isActive ? 1.05 : 1,
-                                    opacity: isActive ? 1 : 0.7,
-                                    y: isActive ? -15 : 0
+                                    scale: isActive ? 1.02 : 1,
+                                    opacity: isActive ? 1 : 0.6,
                                 }}
-                                transition={{ duration: 0.5, ease: "backOut" }}
+                                transition={{ duration: 0.4 }}
                                 style={{
-                                    background: isActive
-                                        ? 'linear-gradient(145deg, rgba(20, 20, 20, 0.9) 0%, rgba(35, 35, 35, 0.9) 100%)'
-                                        : 'rgba(255, 255, 255, 0.02)',
-                                    padding: '2.5rem',
-                                    borderRadius: '24px',
-                                    border: isActive ? '1px solid rgba(0, 210, 106, 0.3)' : '1px solid rgba(255, 255, 255, 0.05)',
+                                    background: 'var(--bg-card)',
+                                    padding: '3rem 2.5rem',
+                                    borderRadius: 'var(--radius-xl)',
+                                    border: isActive ? '1px solid rgba(0, 210, 106, 0.4)' : '1px solid var(--border)',
                                     textAlign: 'left',
-                                    boxShadow: isActive
-                                        ? '0 20px 50px -10px rgba(0, 210, 106, 0.15), inset 0 0 20px rgba(0, 210, 106, 0.05)'
-                                        : 'none',
-                                    maxWidth: '350px',
+                                    boxShadow: isActive ? 'var(--shadow-xl)' : 'var(--shadow-md)',
+                                    maxWidth: '380px',
                                     cursor: 'pointer',
                                     position: 'relative',
-                                    backdropFilter: 'blur(10px)',
-                                    overflow: 'hidden'
+                                    overflow: 'hidden',
+                                    transition: 'border-color 0.3s ease, box-shadow 0.3s ease'
                                 }}
                                 onClick={() => setActiveFeature(idx)}
                             >
-                                {/* Active Gradient Border Shine */}
-                                {isActive && (
-                                    <div style={{
-                                        position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
-                                        background: 'linear-gradient(90deg, transparent, rgba(0, 210, 106, 0.8), transparent)'
-                                    }} />
-                                )}
-
-                                <div style={{
-                                    width: '70px', height: '70px',
-                                    background: isActive ? 'linear-gradient(135deg, rgba(0, 210, 106, 0.2), rgba(0, 210, 106, 0.05))' : 'rgba(255,255,255,0.03)',
-                                    color: isActive ? 'var(--primary)' : 'var(--text-muted)',
-                                    borderRadius: '20px',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    marginBottom: '1.5rem',
-                                    transition: 'all 0.3s',
-                                    boxShadow: isActive ? '0 10px 20px -5px rgba(0, 210, 106, 0.3)' : 'none',
-                                    border: isActive ? '1px solid rgba(0, 210, 106, 0.2)' : 'none'
+                                <div className="icon-box mb-4" style={{
+                                    background: isActive ? 'var(--gradient-primary)' : 'rgba(255,255,255,0.05)',
+                                    color: isActive ? 'white' : 'var(--text-muted)',
+                                    width: '60px',
+                                    height: '60px',
+                                    fontSize: '1.75rem'
                                 }}>
-                                    {React.cloneElement(feature.icon, { size: 32 })}
+                                    {feature.icon}
                                 </div>
 
                                 <h3 style={{
                                     fontSize: '1.5rem',
-                                    marginBottom: '0.75rem',
-                                    color: isActive ? 'var(--text)' : 'var(--text-secondary)',
+                                    marginBottom: '1rem',
                                     fontWeight: '700',
-                                    letterSpacing: '-0.02em'
+                                    color: isActive ? 'var(--text)' : 'var(--text-secondary)'
                                 }}>
                                     {feature.title}
                                 </h3>
 
                                 <p style={{
                                     lineHeight: '1.7',
-                                    opacity: isActive ? 0.9 : 0.5,
-                                    fontSize: '0.95rem',
-                                    color: 'var(--text-secondary)'
+                                    fontSize: '1rem',
+                                    color: 'var(--text-muted)',
+                                    marginBottom: isActive ? '2rem' : '0'
                                 }}>
                                     {feature.desc}
                                 </p>
 
-                                {/* Premium Gradient Progress Bar */}
                                 {isActive && (
-                                    <div style={{
-                                        marginTop: '2rem',
-                                        height: '4px',
-                                        background: 'rgba(255,255,255,0.05)',
-                                        borderRadius: '2px',
-                                        overflow: 'hidden'
-                                    }}>
-                                        <motion.div
-                                            initial={{ width: '0%' }}
-                                            animate={{ width: '100%' }}
-                                            transition={{ duration: 4, ease: "linear" }}
-                                            style={{
-                                                height: '100%',
-                                                background: 'linear-gradient(90deg, var(--primary), #06b6d4)',
-                                                borderRadius: '2px',
-                                                boxShadow: '0 0 10px var(--primary)'
-                                            }}
-                                        />
-                                    </div>
+                                    <motion.div
+                                        initial={{ width: '0%' }}
+                                        animate={{ width: '100%' }}
+                                        transition={{ duration: 4, ease: "linear" }}
+                                        style={{
+                                            position: 'absolute',
+                                            bottom: 0,
+                                            left: 0,
+                                            height: '4px',
+                                            background: 'var(--gradient-primary)',
+                                            boxShadow: '0 0 12px var(--primary)'
+                                        }}
+                                    />
                                 )}
                             </motion.div>
                         );
@@ -322,31 +323,24 @@ const LandingPage = () => {
                 </div>
             </section>
 
-            {/* "Stop Wasting Energy" Pop-up Demo Section */}
-            <section style={{
-                padding: '5rem 5%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                position: 'relative',
-                overflow: 'hidden'
+            {/* Part 4: Intelligent Alerts (Picture 4) */}
+            <section className="viewport-section" style={{
+                background: 'radial-gradient(circle at bottom right, rgba(0, 210, 106, 0.03) 0%, transparent 50%)'
             }}>
-                <div style={{ maxWidth: '800px', textAlign: 'center', zIndex: 2 }}>
-                    <h2 style={{ fontSize: '2.5rem', marginBottom: '2rem' }}>Experience Intelligent Alerts</h2>
-                    <p style={{ marginBottom: '3rem', fontSize: '1.2rem', opacity: 0.8 }}>
-                        Notifications appear only when you need them.
-                        They guide you to shut down unused devices and vanish when the job is done.
+                <div style={{ maxWidth: '800px', textAlign: 'center', marginBottom: '5rem' }}>
+                    <h2 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '1.5rem', letterSpacing: '-0.03em' }}>Experience Intelligent Alerts</h2>
+                    <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                        Notifications appear only when you need them. They guide you to shut down unused devices and vanish when the job is done.
                     </p>
                 </div>
 
-                {/* Live Demo of Popups */}
                 <div style={{
                     width: '100%',
-                    maxWidth: '800px',
-                    height: '400px',
+                    maxWidth: '1000px',
+                    height: '500px',
                     background: 'url(/assets/dashboard_preview.png)',
                     backgroundSize: 'cover',
-                    backgroundPosition: 'top center',
+                    backgroundPosition: 'center',
                     borderRadius: '24px',
                     border: '1px solid var(--border)',
                     position: 'relative',
@@ -354,62 +348,125 @@ const LandingPage = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 20px 50px rgba(0,0,0,0.3)'
+                    boxShadow: 'var(--shadow-xl)'
                 }}>
-                    {/* Dark Overlay for readability */}
-                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(5, 5, 5, 0.75)', backdropFilter: 'blur(3px)' }}></div>
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(5, 5, 5, 0.8)', backdropFilter: 'blur(8px)' }}></div>
 
-                    <p style={{ opacity: 0.6, fontWeight: 'bold', position: 'relative', zIndex: 1, letterSpacing: '0.1em' }}>INTERACTIVE SYSTEM RESPONSE</p>
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={popups[0].id}
-                            initial={{ y: 50, opacity: 0, scale: 0.9 }}
-                            animate={{ y: 0, opacity: 1, scale: 1 }}
-                            exit={{ y: -50, opacity: 0, scale: 0.9 }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                            style={{
-                                position: 'absolute',
-                                bottom: '40px',
-                                right: '40px',
-                                background: 'rgba(18, 18, 18, 0.95)',
-                                padding: '1rem 1.5rem',
-                                borderRadius: '12px',
-                                borderLeft: `4px solid ${popups[0].type === 'alert' ? '#ef4444' : '#22c55e'}`,
-                                borderTop: '1px solid rgba(255,255,255,0.1)',
-                                borderRight: '1px solid rgba(255,255,255,0.1)',
-                                borderBottom: '1px solid rgba(255,255,255,0.1)',
-                                boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '1rem',
-                                maxWidth: '380px',
-                                zIndex: 10
-                            }}
-                        >
-                            <div style={{
-                                background: popups[0].type === 'alert' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)',
-                                padding: '8px',
-                                borderRadius: '50%',
-                                color: popups[0].type === 'alert' ? '#ef4444' : '#22c55e'
-                            }}>
-                                {popups[0].type === 'alert' ? <FiIcons.FiAlertCircle /> : <FiIcons.FiCheckCircle />}
-                            </div>
-                            <div>
-                                <h4 style={{ fontSize: '0.9rem', marginBottom: '0.2rem' }}>
-                                    {popups[0].type === 'alert' ? 'Energy Alert' : 'System Optimized'}
-                                </h4>
-                                <p style={{ fontSize: '0.8rem', opacity: 0.7, margin: 0 }}>
-                                    {popups[0].text}
-                                </p>
-                            </div>
-                        </motion.div>
-                    </AnimatePresence>
+                    <div style={{ position: 'relative', textAlign: 'center', zIndex: 1 }}>
+                        <small style={{
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.3em',
+                            color: 'var(--text-muted)',
+                            fontWeight: '600',
+                            fontSize: '0.75rem',
+                            display: 'block',
+                            marginBottom: '2rem'
+                        }}>Interactive System Response</small>
+
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={popups[0].id}
+                                initial={{ y: 20, opacity: 0, scale: 0.95 }}
+                                animate={{ y: 0, opacity: 1, scale: 1 }}
+                                exit={{ y: -20, opacity: 0, scale: 0.95 }}
+                                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                                style={{
+                                    background: 'var(--bg-card)',
+                                    padding: '1.5rem 2rem',
+                                    borderRadius: '16px',
+                                    border: '1px solid var(--border)',
+                                    borderLeft: `4px solid ${popups[0].type === 'alert' ? 'var(--accent-pink)' : 'var(--primary)'}`,
+                                    boxShadow: '0 24px 48px rgba(0,0,0,0.5)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '1.5rem',
+                                    maxWidth: '450px',
+                                    textAlign: 'left'
+                                }}
+                            >
+                                <div style={{
+                                    background: popups[0].type === 'alert' ? 'rgba(244, 63, 94, 0.1)' : 'rgba(0, 210, 106, 0.1)',
+                                    padding: '12px',
+                                    borderRadius: '12px',
+                                    color: popups[0].type === 'alert' ? 'var(--accent-pink)' : 'var(--primary)',
+                                    fontSize: '1.5rem',
+                                    display: 'flex'
+                                }}>
+                                    {popups[0].type === 'alert' ? <FiIcons.FiAlertCircle /> : <FiIcons.FiCheckCircle />}
+                                </div>
+                                <div>
+                                    <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.25rem' }}>
+                                        {popups[0].type === 'alert' ? 'Critical Alert' : 'Optimization Result'}
+                                    </h4>
+                                    <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', margin: 0 }}>
+                                        {popups[0].text}
+                                    </p>
+                                </div>
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
                 </div>
             </section>
 
-            {/* Footer */}
-            <footer style={{ padding: '3rem 5%', textAlign: 'center', borderTop: '1px solid var(--border)' }}>
-                <p style={{ opacity: 0.5 }}>© {new Date().getFullYear()} SmartEnergy. All rights reserved.</p>
+            {/* Part 5: Premium Footer (Picture 5) */}
+            <footer className="viewport-section" style={{
+                padding: '6rem 5% 4rem 5%',
+                background: 'var(--bg-deep)',
+                borderTop: '1px solid var(--border)',
+                justifyContent: 'flex-start' // Reset for footer
+            }}>
+                <div style={{
+                    maxWidth: '1200px',
+                    width: '100%',
+                    margin: '0 auto',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '4rem',
+                    marginBottom: '4rem'
+                }}>
+                    <div style={{ gridColumn: 'span 2' }}>
+                        <SmartLogo size={36} className="mb-4" />
+                        <p style={{ color: 'var(--text-muted)', lineHeight: '1.7', maxWidth: '350px' }}>
+                            Building the next generation of energy-efficient educational environments through advanced AI and real-time automation.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h5 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '1.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Platform</h5>
+                        <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <li><Link to="/map" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Campus Map</Link></li>
+                            <li><Link to="/predictions" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>AI Insights</Link></li>
+                            <li><Link to="/ml-lab" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Research Lab</Link></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h5 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '1.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Company</h5>
+                        <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <li><a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>About Us</a></li>
+                            <li><a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Ethical AI</a></li>
+                            <li><a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Sustainability</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div style={{
+                    paddingTop: '3rem',
+                    borderTop: '1px solid var(--border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '1.5rem'
+                }}>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
+                        © {new Date().getFullYear()} SmartEnergy. Crafted for a greener future.
+                    </p>
+                    <div style={{ display: 'flex', gap: '2rem' }}>
+                        <a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.85rem' }}>Privacy Policy</a>
+                        <a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.85rem' }}>Terms of Service</a>
+                    </div>
+                </div>
             </footer>
         </div>
     );

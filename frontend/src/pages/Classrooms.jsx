@@ -94,7 +94,7 @@ function Classrooms({ user }) {
             {/* Stats Bar */}
             <div className="row g-3 mb-5">
                 {[
-                    { label: 'Total Nodes', val: classrooms.length, icon: <FiBox />, color: '#7c3aed' },
+                    { label: 'Total Nodes', val: classrooms.length, icon: <FiBox />, color: '#00d26a' },
                     { label: 'Total Capacity', val: classrooms.reduce((a, c) => a + c.capacity, 0), icon: <FiUsers />, color: '#06b6d4' },
                     { label: 'Light Units', val: classrooms.reduce((a, c) => a + c.lights, 0), icon: <FiZap />, color: '#f59e0b' }
                 ].map((s, i) => (
