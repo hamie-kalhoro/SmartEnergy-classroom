@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiGrid, FiBox, FiTrendingUp, FiCalendar, FiLogOut, FiZap, FiUsers, FiChevronDown, FiChevronUp, FiCpu, FiChevronLeft, FiMap, FiGlobe, FiDatabase, FiWifi } from 'react-icons/fi';
 import api from '../api';
 import ConfirmModal from './ConfirmModal';
+import SmartLogo from './SmartLogo';
 
 const SyncStatus = ({ isCollapsed }) => {
     const [status, setStatus] = useState({ active_db: 'local_sqlite', is_cloud_available: false, latency_ms: 0 });
@@ -40,9 +41,9 @@ const SyncStatus = ({ isCollapsed }) => {
     };
 
     if (isCollapsed) return (
-        <div className="d-flex flex-column align-items-center gap-3 py-3" style={{ opacity: 0.9 }} title={status.is_cloud_available ? 'Supabase Cloud Synced' : 'Local Mode'}>
-            <div className={`rounded-circle ${status.is_cloud_available ? 'pulse-green' : 'pulse-red'}`} style={{ width: '8px', height: '8px', background: getSignalColor() }} />
-            <FiWifi size={16} style={{ color: getSignalColor() }} />
+        <div className="d-flex flex-column align-items-center gap-2 mt-2" style={{ opacity: 0.8 }} title={status.is_cloud_available ? 'Supabase Cloud Synced' : 'Local Mode'}>
+            <div className={`rounded-circle ${status.is_cloud_available ? 'pulse-green' : 'pulse-red'}`} style={{ width: '6px', height: '6px', background: getSignalColor() }} />
+            <FiWifi size={14} style={{ color: getSignalColor() }} />
         </div>
     );
 
@@ -112,20 +113,9 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
                 <FiChevronLeft />
             </button>
             {/* Logo Section - Fixed at top */}
-            <div className={isCollapsed ? "mb-4" : "mb-3"}>
-                <div className={`d-flex align-items-center ${isCollapsed ? 'justify-content-center' : 'gap-3'}`}>
-                    <div style={{
-                        background: 'var(--gradient-primary)',
-                        borderRadius: '12px',
-                        padding: '11px',
-                        boxShadow: '0 8px 24px rgba(0, 210, 106, 0.25)'
-                    }}>
-                        <FiZap className="text-white" style={{ fontSize: '1.35rem' }} />
-                    </div>
-                    <div>
-                        <h6 className="fw-bold m-0" style={{ letterSpacing: '-0.025em', fontSize: '1.15rem', lineHeight: 1.15 }}>SmartEnergy</h6>
-                        <small className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.7 }}>AI Control Hub</small>
-                    </div>
+            <div className={isCollapsed ? "mb-4 mt-2" : "mb-4 mt-1"}>
+                <div className={`d-flex align-items-center ${isCollapsed ? 'justify-content-center' : 'px-3'}`}>
+                    <SmartLogo size={isCollapsed ? 24 : 32} useVideo={true} hideText={isCollapsed} className={isCollapsed ? "" : "w-100"} />
                 </div>
             </div>
 
@@ -247,9 +237,10 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
             {/* User Section - Docked at bottom */}
             <div className="sidebar-user-section">
                 <div
-                    className={`d-flex align-items-center ${isCollapsed ? 'justify-content-center cursor-pointer' : 'gap-2'} p-2 rounded-3 user-card-hover`}
-                    style={{ background: 'rgba(255,255,255,0.02)', cursor: isCollapsed ? 'pointer' : 'default' }}
-                    onClick={isCollapsed ? () => setShowLogout(true) : undefined}
+                    className={`d-flex align-items-center ${isCollapsed ? 'justify-content-center' : 'gap-2'} p-2 rounded-3 user-card-hover cursor-pointer`}
+                    style={{ background: 'rgba(255,255,255,0.02)' }}
+                    onClick={() => setShowLogout(true)}
+                    title="Sign Out"
                 >
                     {/* Avatar */}
                     <div style={{
@@ -269,21 +260,16 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
                         {user.username.charAt(0).toUpperCase()}
                     </div>
 
-                    {/* Info */}
-                    <div className="overflow-hidden flex-grow-1" style={{ lineHeight: 1 }}>
-                        <p className="small fw-bold mb-0 text-truncate" style={{ fontSize: '0.75rem', color: 'var(--text)' }}>{user.username}</p>
-                        <span className="text-muted fw-bold" style={{ fontSize: '0.6rem', textTransform: 'uppercase', opacity: 0.6 }}>{user.role}</span>
-                    </div>
-
-                    {/* Logout Action */}
-                    <button
-                        className="btn btn-icon btn-sm text-danger hover-danger p-1"
-                        onClick={() => setShowLogout(true)}
-                        title="Sign Out"
-                        style={{ background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.7 }}
-                    >
-                        <FiLogOut size={16} />
-                    </button>
+                    {/* Info - Hidden in collapsed */}
+                    {!isCollapsed && (
+                        <>
+                            <div className="overflow-hidden flex-grow-1" style={{ lineHeight: 1 }}>
+                                <p className="small fw-bold mb-0 text-truncate" style={{ fontSize: '0.75rem', color: 'var(--text)' }}>{user.username}</p>
+                                <span className="text-muted fw-bold" style={{ fontSize: '0.6rem', textTransform: 'uppercase', opacity: 0.6 }}>{user.role}</span>
+                            </div>
+                            <FiLogOut className="text-muted ms-auto" size={14} style={{ opacity: 0.5 }} />
+                        </>
+                    )}
                 </div>
 
                 {/* ─── Premium Database & Sync Status ─── */}

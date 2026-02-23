@@ -272,9 +272,8 @@ body,
     gap: 0 !important;
 }
 
-.sidebar.collapsed .mb-4 .d-flex div:last-child {
+.sidebar.collapsed .mb-4 .d-flex .logo-text-container {
     display: none !important;
-    /* Hide logo text div immediately */
 }
 
 .sidebar.collapsed .sidebar-toggle-btn {

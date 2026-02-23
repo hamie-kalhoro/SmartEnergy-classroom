@@ -1,7 +1,69 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import dynamicLogo from '../assets/dynamic logo for emailing.mp4';
 
-const SmartLogo = ({ size = 32, className = "", glow = true }) => {
+const SmartLogo = ({ size = 32, className = "", glow = true, useVideo = false, hideText = false }) => {
+    if (useVideo) {
+        return (
+            <div className={`d-flex align-items-center ${hideText ? '' : 'gap-3'} ${className}`} style={{ cursor: 'pointer' }}>
+                <div style={{
+                    width: size * 1.5,
+                    height: size * 1.5,
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    background: 'var(--bg-deep)',
+                    border: '1px solid var(--border)',
+                    boxShadow: glow ? '0 0 20px rgba(99, 102, 241, 0.3)' : 'none',
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                }}>
+                    <video
+                        src={dynamicLogo}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            filter: 'contrast(1.1) brightness(1.1)'
+                        }}
+                    />
+                </div>
+                {!hideText && (
+                    <div className="d-flex flex-column logo-text-container">
+                        <span style={{
+                            fontSize: size * 0.7,
+                            fontWeight: '800',
+                            letterSpacing: '-0.04em',
+                            background: 'var(--gradient-primary)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            fontFamily: 'var(--font-heading)',
+                            lineHeight: 1
+                        }}>
+                            SmartEnergy
+                        </span>
+                        <small style={{
+                            fontSize: '0.6rem',
+                            color: 'var(--text-muted)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.1em',
+                            fontWeight: '600',
+                            marginTop: '2px'
+                        }}>
+                            System Identity
+                        </small>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
     return (
         <div className={`d-flex align-items-center gap-2 ${className}`} style={{ cursor: 'pointer' }}>
             <motion.svg
@@ -63,17 +125,19 @@ const SmartLogo = ({ size = 32, className = "", glow = true }) => {
                     }}
                 />
             </motion.svg>
-            <span style={{
-                fontSize: size * 0.7,
-                fontWeight: '800',
-                letterSpacing: '-0.04em',
-                background: 'var(--gradient-primary)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                fontFamily: 'var(--font-heading)'
-            }}>
-                SmartClass
-            </span>
+            {!hideText && (
+                <span style={{
+                    fontSize: size * 0.7,
+                    fontWeight: '800',
+                    letterSpacing: '-0.04em',
+                    background: 'var(--gradient-primary)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    fontFamily: 'var(--font-heading)'
+                }}>
+                    SmartClass
+                </span>
+            )}
         </div>
     );
 };

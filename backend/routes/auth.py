@@ -115,6 +115,49 @@ def activate_user_manual(id):
     db.session.commit()
     return jsonify({'success': True, 'message': f'User {user.username} activated manually.'})
 
+@auth_bp.route('/api/notifications', methods=['GET'])
+@jwt_required()
+def get_notifications():
+    """Retrieve notifications relevant to the user's role."""
+    user_id = get_jwt_identity()
+    user = User.query.get(int(user_id))
+    
+    if not user:
+        return jsonify([]), 401
+    
+    # Logic: admins see admin, faculty, and 'all' notifications. Faculty see faculty and 'all'.
+    if user.role == 'admin':
+        notifs = Notification.query.filter(
+            (Notification.target_role == 'admin') | 
+            (Notification.target_role == 'faculty') |
+            (Notification.target_role == 'all')
+        ).order_by(Notification.created_at.desc()).all()
+    else:
+        notifs = Notification.query.filter(
+            (Notification.target_role == user.role) | 
+            (Notification.target_role == 'all')
+        ).order_by(Notification.created_at.desc()).all()
+
+    return jsonify([{
+        'id': n.id,
+        'type': n.type,
+        'message': n.message,
+        'target_role': n.target_role,
+        'is_read': n.is_read,
+        'created_at': n.created_at.isoformat() + 'Z'
+    } for n in notifs])
+
+@auth_bp.route('/api/notifications/<int:id>/read', methods=['POST'])
+@jwt_required()
+def next_notification_read(id):
+    """Mark a notification as read."""
+    notif = Notification.query.get(id)
+    if notif:
+        notif.is_read = True
+        db.session.commit()
+        return jsonify({'success': True})
+    return jsonify({'success': False, 'message': 'Notification not found'}), 404
+
 @auth_bp.route('/api/users/create-single', methods=['POST'])
 @jwt_required()
 def create_single_user():

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required
-from models import db, Classroom
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from models import db, Classroom, Notification, User
 import pandas as pd
 
 classroom_bp = Blueprint('classroom', __name__)
@@ -23,6 +23,17 @@ def add_classroom():
         num_acs=data.get('acs', 2)
     )
     db.session.add(new_room)
+    
+    # System Tracking Notification
+    user_id = get_jwt_identity()
+    user = User.query.get(int(user_id))
+    notif = Notification(
+        type='system_update',
+        message=f"New classroom '{new_room.name}' added to {new_room.building} building by {user.username if user else 'Admin'}",
+        target_role='admin'
+    )
+    db.session.add(notif)
+    
     db.session.commit()
     return jsonify({'success': True, 'id': new_room.id})
 
@@ -32,6 +43,17 @@ def delete_classroom(id):
     room = Classroom.query.get(id)
     if room:
         room.is_active = False
+        
+        # System Tracking Notification
+        user_id = get_jwt_identity()
+        user = User.query.get(int(user_id))
+        notif = Notification(
+            type='system_update',
+            message=f"Classroom '{room.name}' (ID: {room.id}) was deactivated by {user.username if user else 'Admin'}",
+            target_role='admin'
+        )
+        db.session.add(notif)
+        
         db.session.commit()
         return jsonify({'success': True})
     return jsonify({'success': False}), 404
@@ -73,6 +95,17 @@ def bulk_import_classrooms():
             )
             db.session.add(room)
             added += 1
+        
+        
+        # System Tracking Notification
+        user_id = get_jwt_identity()
+        user = User.query.get(int(user_id))
+        notif = Notification(
+            type='system_update',
+            message=f"Bulk onboarded {added} classrooms to the system database.",
+            target_role='admin'
+        )
+        db.session.add(notif)
         
         db.session.commit()
         

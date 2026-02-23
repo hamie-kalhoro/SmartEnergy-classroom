@@ -21,21 +21,24 @@ class EmailService:
 
         html_body = f"""
         <html>
-            <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 40px;">
-                <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <div style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); padding: 30px; text-align: center;">
-                        <h1 style="color: #ffffff; margin: 0; font-size: 24px;">🔋 SmartEnergy Portal</h1>
+            <body style="font-family: 'Inter', -apple-system, sans-serif; background-color: #050505; padding: 40px; color: #ffffff;">
+                <div style="max-width: 600px; margin: auto; background-color: #0f172a; border-radius: 24px; overflow: hidden; box-shadow: 0 40px 100px -20px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="background: linear-gradient(135deg, #6366f1 0%, #10b981 100%); padding: 40px; text-align: center; border-bottom: 4px solid #10b981;">
+                        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.05em;">SmartEnergy</h1>
+                        <p style="color: rgba(255,255,255,0.8); margin: 10px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.2em; font-weight: 700;">Intelligent Control Hub</p>
                     </div>
-                    <div style="padding: 40px; color: #333333; line-height: 1.6;">
-                        <h2 style="color: #4f46e5; margin-top: 0;">Welcome, {username}!</h2>
-                        <p>You've been granted access to the Smart Classroom Energy Optimization System. Activate your account to start contributing to sustainable energy management.</p>
-                        <div style="text-align: center; margin: 40px 0;">
-                            <a href="{activation_link}" style="background: #4f46e5; color: #ffffff; padding: 15px 30px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">Activate Your Account</a>
+                    <div style="padding: 50px; color: #e2e8f0; line-height: 1.8;">
+                        <h2 style="color: #ffffff; margin-top: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em;">Welcome to the Platform, {username}</h2>
+                        <p style="font-size: 16px;">You have been granted access to the next generation of energy management. Your account is ready for activation.</p>
+                        
+                        <div style="text-align: center; margin: 45px 0;">
+                            <a href="{activation_link}" style="background: #10b981; color: #ffffff; padding: 18px 35px; border-radius: 50px; text-decoration: none; font-weight: 800; font-size: 16px; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);">Activate My Access</a>
                         </div>
-                        <p style="font-size: 14px; color: #64748b;">If button doesn't work: <a href="{activation_link}" style="color: #4f46e5;">{activation_link}</a></p>
+                        
+                        <p style="font-size: 13px; color: #64748b; text-align: center;">By clicking above, you'll be redirected to the secure portal for final verification.</p>
                     </div>
-                    <div style="background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8;">
-                        &copy; 2026 FYP SmartEnergy Project. Powered by AI.
+                    <div style="background-color: rgba(0,0,0,0.2); padding: 25px; text-align: center; font-size: 11px; color: #475569; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600;">
+                        Identity Verified &bull; SmartEnergy System &bull; 2026
                     </div>
                 </div>
             </body>
@@ -44,9 +47,10 @@ class EmailService:
 
         try:
             msg = MIMEMultipart()
-            msg['From'] = f"SmartEnergy <{sender}>"
+            # Professional sender name with brand
+            msg['From'] = f"SmartEnergy Identity <{sender}>"
             msg['To'] = to_email
-            msg['Subject'] = "🔑 Activate Your SmartEnergy Portal Access"
+            msg['Subject'] = "🔑 Finalize Your SmartEnergy Identity Activation"
             msg.attach(MIMEText(html_body, 'html'))
 
             if port == 465:
@@ -81,24 +85,28 @@ class EmailService:
         
         html_body = f"""
         <html>
-            <body style="font-family: sans-serif; padding: 20px;">
-                <h2 style="color: #7c3aed;">New Admin Access Request</h2>
-                <p>A new user has requested <strong>Administrative Access</strong> to the SmartEnergy Portal.</p>
-                <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                    <p><strong>Username:</strong> {new_admin_username}</p>
-                    <p><strong>Email:</strong> {new_admin_email}</p>
+            <body style="font-family: 'Inter', sans-serif; padding: 40px; background-color: #0f172a; color: #ffffff;">
+                <div style="max-width: 550px; margin: auto; border: 1px solid #334155; border-radius: 20px; padding: 40px; background: #020617;">
+                    <h2 style="color: #f59e0b; margin-top: 0; font-size: 20px; font-weight: 800;">⚠️ Admin Privilege Request</h2>
+                    <p style="color: #94a3b8;">A new user is requesting <strong style="color: #ffffff;">Elevated Administrative Access</strong>.</p>
+                    
+                    <div style="background: rgba(245, 158, 11, 0.05); padding: 25px; border-radius: 12px; margin: 30px 0; border: 1px solid rgba(245, 158, 11, 0.1);">
+                        <p style="margin: 0; color: #f59e0b; font-size: 14px; font-weight: 700;">USER IDENTITY:</p>
+                        <p style="margin: 5px 0 0 0; color: #ffffff; font-size: 18px;">{new_admin_username}</p>
+                        <p style="margin: 5px 0 0 0; color: #64748b; font-size: 14px;">{new_admin_email}</p>
+                    </div>
+                    
+                    <p style="font-size: 14px; color: #475569;">Security Protocol: The account remains locked until manual verification via the Dashboard.</p>
                 </div>
-                <p>Security Policy: This account is currently <strong>locked</strong> and has <strong>not</strong> received an activation email. 
-                Please log in to the dashboard to approve or reject this request.</p>
             </body>
         </html>
         """
 
         try:
             msg = MIMEMultipart()
-            msg['From'] = f"Security Monitor <{sender}>"
+            msg['From'] = f"SmartEnergy Security <{sender}>"
             msg['To'] = ", ".join(admin_emails)
-            msg['Subject'] = "⚠️ Action Required: New Admin Request"
+            msg['Subject'] = "⚠️ ACTION REQUIRED: New Elevated Access Request"
             msg.attach(MIMEText(html_body, 'html'))
 
             with smtplib.SMTP(server, port) as smtp:
@@ -120,25 +128,29 @@ class EmailService:
 
         html_body = f"""
         <html>
-            <body style="font-family: sans-serif; padding: 20px; line-height: 1.6;">
-                <h2 style="color: #ef4444;">🚨 Security Alert: User Deletion</h2>
-                <p>This is a notification for the <strong>Superior Administrator</strong>.</p>
-                <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444; margin: 20px 0;">
-                    <p><strong>Action:</strong> User Deleted</p>
-                    <p><strong>Performed By:</strong> Admin {admin_name}</p>
-                    <p><strong>Deleted User:</strong> {target_user_name} ({target_role})</p>
-                    <p><strong>Timestamp:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
+            <body style="font-family: 'Inter', sans-serif; padding: 40px; background-color: #000000; color: #ffffff;">
+                <div style="max-width: 550px; margin: auto; border: 1px solid #ef4444; border-radius: 20px; padding: 40px; background: #0a0a0a;">
+                    <h2 style="color: #ef4444; margin-top: 0; font-size: 20px; font-weight: 900; letter-spacing: -0.02em;">🚨 SECURITY LOG: User Deletion</h2>
+                    
+                    <div style="background: rgba(239, 68, 68, 0.1); padding: 25px; border-radius: 12px; border-left: 5px solid #ef4444; margin: 30px 0;">
+                        <p style="margin: 0; font-size: 14px; color: #ef4444; font-weight: 700;">ACTION PERFORMED BY:</p>
+                        <p style="margin: 5px 0 15px 0; font-size: 18px;">Admin {admin_name}</p>
+                        
+                        <p style="margin: 0; font-size: 14px; color: #ef4444; font-weight: 700;">TARGET USER:</p>
+                        <p style="margin: 5px 0 0 0; font-size: 18px;">{target_user_name} ({target_role})</p>
+                    </div>
+                    
+                    <p style="font-size: 12px; color: #475569; text-transform: uppercase;">Timestamp: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
                 </div>
-                <p style="font-size: 14px; color: #64748b;">This notification is logged automatically by the SmartEnergy Security System.</p>
             </body>
         </html>
         """
 
         try:
             msg = MIMEMultipart()
-            msg['From'] = f"Security Monitor <{sender}>"
+            msg['From'] = f"SmartEnergy Identity <{sender}>"
             msg['To'] = superior_email
-            msg['Subject'] = f"⚠️ Alert: Faculty User Deleted by {admin_name}"
+            msg['Subject'] = f"⚠️ SECURE LOG: Faculty User Removed by {admin_name}"
             msg.attach(MIMEText(html_body, 'html'))
 
             with smtplib.SMTP(server, port) as smtp:

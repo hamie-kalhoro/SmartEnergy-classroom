@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required
-from models import db, Timetable, Classroom
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from models import db, Timetable, Classroom, Notification, User
 import pandas as pd
 
 timetable_bp = Blueprint('timetable', __name__)
@@ -30,6 +30,17 @@ def add_timetable():
         expected_attendance=data['attendance']
     )
     db.session.add(new_entry)
+    
+    # System Tracking Notification
+    user_id = get_jwt_identity()
+    user = User.query.get(int(user_id))
+    notif = Notification(
+        type='schedule_update',
+        message=f"Schedule updated: {new_entry.subject} in {new_entry.classroom.name} on {new_entry.day_of_week} by {user.username if user else 'Admin'}",
+        target_role='admin'
+    )
+    db.session.add(notif)
+    
     db.session.commit()
     return jsonify({'success': True, 'id': new_entry.id})
 
@@ -38,7 +49,20 @@ def add_timetable():
 def delete_timetable(id):
     entry = Timetable.query.get(id)
     if entry:
+        subj = entry.subject
+        room = entry.classroom.name
         db.session.delete(entry)
+        
+        # System Tracking Notification
+        user_id = get_jwt_identity()
+        user = User.query.get(int(user_id))
+        notif = Notification(
+            type='schedule_update',
+            message=f"Cancelled/Removed {subj} from {room} timetable by {user.username if user else 'Admin'}",
+            target_role='admin'
+        )
+        db.session.add(notif)
+        
         db.session.commit()
         return jsonify({'success': True})
     return jsonify({'success': False}), 404
@@ -86,6 +110,16 @@ def bulk_import_timetable():
                 added += 1
             except Exception as e:
                 errors.append(f"Row {idx+1}: {str(e)}")
+        
+        # System Tracking Notification
+        user_id = get_jwt_identity()
+        user = User.query.get(int(user_id))
+        notif = Notification(
+            type='schedule_update',
+            message=f"Bulk imported {added} timetable entries to the system schedule.",
+            target_role='admin'
+        )
+        db.session.add(notif)
         
         db.session.commit()
         
