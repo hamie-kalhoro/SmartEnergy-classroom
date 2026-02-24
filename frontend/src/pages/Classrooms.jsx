@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { FiPlus, FiTrash2, FiBox, FiUpload, FiDownload, FiCheckCircle, FiAlertCircle, FiEdit3, FiUsers, FiZap } from 'react-icons/fi';
+import DynamicLoader from '../components/DynamicLoader';
 import ConfirmModal from '../components/ConfirmModal';
 
 function Classrooms({ user }) {
@@ -260,7 +261,7 @@ function Classrooms({ user }) {
                                             <FiDownload className="me-2" /> Download Template
                                         </button>
                                         <button type="submit" className="btn btn-gradient w-100 py-3" disabled={!importFile || importing}>
-                                            {importing ? 'Importing...' : 'Upload & Import'}
+                                            {importing ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Upload & Import'}
                                         </button>
                                     </form>
                                 )}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { FiShield, FiLock } from 'react-icons/fi';
+import DynamicLoader from './DynamicLoader';
 
 function AdminVerifyModal({ show, onVerify, onCancel }) {
     const [credentials, setCredentials] = useState({ username: '', password: '' });
@@ -58,7 +59,7 @@ function AdminVerifyModal({ show, onVerify, onCancel }) {
                         <div className="modal-footer border-0">
                             <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={loading}>Cancel</button>
                             <button type="submit" className="btn btn-primary px-4" disabled={loading}>
-                                {loading ? 'Verifying...' : 'Verify & Proceed'}
+                                {loading ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Verify & Proceed'}
                             </button>
                         </div>
                     </form>

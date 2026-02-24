@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import api from '../api';
-import { FiUpload, FiDownload, FiCheckCircle, FiAlertCircle, FiUsers, FiMail, FiUserCheck, FiShield, FiTrash2, FiUserPlus, FiClock, FiCheck, FiUnlock, FiEdit2, FiKey, FiToggleLeft, FiToggleRight, FiAlertTriangle, FiStar } from 'react-icons/fi';
+import { FiUpload, FiDownload, FiCheckCircle, FiAlertCircle, FiUsers, FiMail, FiUserCheck, FiUserCheck as FiUserCheckIcon, FiShield, FiTrash2, FiUserPlus, FiClock, FiCheck, FiUnlock, FiEdit2, FiKey, FiToggleLeft, FiToggleRight, FiAlertTriangle, FiStar } from 'react-icons/fi';
+import DynamicLoader from '../components/DynamicLoader';
 import ConfirmModal from '../components/ConfirmModal';
 
 function Users({ user }) {
@@ -241,7 +242,7 @@ function Users({ user }) {
                                                     onClick={() => handleApproveAdmin(p.id)}
                                                     disabled={approvingId === p.id}
                                                 >
-                                                    {approvingId === p.id ? <span className="spinner-border spinner-border-sm"></span> : <><FiCheck /> Approve Access</>}
+                                                    {approvingId === p.id ? <DynamicLoader size={18} color="currentColor" /> : <><FiCheck /> Approve Access</>}
                                                 </button>
                                             </td>
                                         </tr>
@@ -337,7 +338,7 @@ function Users({ user }) {
                                                     disabled={approvingId === u.id}
                                                     title="Unlock / Approve Admin Access"
                                                 >
-                                                    {approvingId === u.id ? <span className="spinner-border spinner-border-sm" role="status"></span> : <><FiUnlock size={14} /> Unlock</>}
+                                                    {approvingId === u.id ? <DynamicLoader size={16} color="currentColor" /> : <><FiUnlock size={14} /> Unlock</>}
                                                 </button>
                                             )}
                                             {!u.is_active && !u.is_pending_admin && (
@@ -358,7 +359,7 @@ function Users({ user }) {
                                                 disabled={u.is_permanent || deletingId === u.id}
                                                 title={u.is_permanent ? "Permanent admin protected" : "Delete user"}
                                             >
-                                                {deletingId === u.id ? <span className="spinner-border spinner-border-sm" role="status"></span> : <FiTrash2 />}
+                                                {deletingId === u.id ? <DynamicLoader size={16} color="currentColor" /> : <FiTrash2 />}
                                             </button>
                                         </div>
                                     </td>
@@ -456,7 +457,7 @@ function Users({ user }) {
                                             <FiDownload /> Template
                                         </button>
                                         <button type="submit" className="btn btn-gradient flex-grow-1" disabled={!file || importing}>
-                                            {importing ? 'Processing...' : 'Start Import'}
+                                            {importing ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Start Import'}
                                         </button>
                                     </div>
 
@@ -637,7 +638,7 @@ function Users({ user }) {
                             <div className="d-flex gap-2">
                                 <button type="button" className="btn btn-primary-dim flex-grow-1" onClick={() => setEditTarget(null)}>Cancel</button>
                                 <button type="submit" className="btn btn-gradient flex-grow-1 fw-bold" disabled={editSaving}>
-                                    {editSaving ? 'Saving...' : 'Save Changes'}
+                                    {editSaving ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Save Changes'}
                                 </button>
                             </div>
                         </form>

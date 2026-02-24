@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { FiUpload, FiDownload, FiPlus, FiTrash2, FiCalendar, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import DynamicLoader from '../components/DynamicLoader';
 import ConfirmModal from '../components/ConfirmModal';
 
 function Timetable({ user }) {
@@ -261,7 +262,7 @@ function Timetable({ user }) {
                                             <FiDownload className="me-2" /> Download Template
                                         </button>
                                         <button type="submit" className="btn btn-primary w-100" disabled={!importFile || importing}>
-                                            {importing ? 'Importing...' : 'Upload & Import'}
+                                            {importing ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Upload & Import'}
                                         </button>
                                     </form>
                                 )}
