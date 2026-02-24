@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { FiCpu, FiPlay, FiTrendingUp, FiActivity, FiZap, FiSun, FiWind, FiCheckCircle } from 'react-icons/fi';
+import DynamicLoader from '../components/DynamicLoader';
 
 function Predictions() {
     const [predictions, setPredictions] = useState([]);
@@ -53,7 +54,7 @@ function Predictions() {
                     disabled={loading}
                 >
                     {loading ? (
-                        <span className="spinner-border spinner-border-sm"></span>
+                        <DynamicLoader size={20} color="var(--bg-deep)" />
                     ) : (
                         <><FiPlay className="me-2" /> Run Analysis</>
                     )}
@@ -175,7 +176,7 @@ function Predictions() {
                     <h5 className="fw-bold mb-2">No Predictions Yet</h5>
                     <p className="text-muted mb-4">Click "Run Analysis" to generate AI predictions for all scheduled classes</p>
                     <button className="btn btn-gradient mx-auto py-3 px-5" onClick={runPredictions} disabled={loading}>
-                        {loading ? <span className="spinner-border spinner-border-sm"></span> : <><FiPlay className="me-2" /> Run Analysis</>}
+                        {loading ? <DynamicLoader size={20} color="var(--bg-deep)" /> : <><FiPlay className="me-2" /> Run Analysis</>}
                     </button>
                 </div>
             )}

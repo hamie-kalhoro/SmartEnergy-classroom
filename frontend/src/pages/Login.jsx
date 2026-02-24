@@ -10,6 +10,7 @@ import {
   FiArrowLeft,
 } from "react-icons/fi";
 import useTypewriter from "../hooks/useTypewriter";
+import DynamicLoader from "../components/DynamicLoader";
 
 function Login({ onLogin }) {
   const [formData, setFormData] = useState({ username: "", password: "" });
@@ -214,7 +215,7 @@ function Login({ onLogin }) {
               disabled={loading}
               style={{ fontSize: "1rem", fontWeight: "600" }}>
               {loading ? (
-                <span className="spinner-border spinner-border-sm"></span>
+                <DynamicLoader size={24} color="var(--bg-deep)" />
               ) : (
                 <>
                   Sign In <FiArrowRight className="ms-2" />

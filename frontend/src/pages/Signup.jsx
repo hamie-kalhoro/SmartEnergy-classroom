@@ -14,6 +14,7 @@ import {
   FiBookOpen,
 } from "react-icons/fi";
 import useTypewriter from "../hooks/useTypewriter";
+import DynamicLoader from "../components/DynamicLoader";
 
 function Signup() {
   const [step, setStep] = useState(1);
@@ -389,7 +390,7 @@ function Signup() {
                   className="btn btn-gradient flex-grow-1 py-3"
                   disabled={loading}>
                   {loading ? (
-                    <span className="spinner-border spinner-border-sm"></span>
+                    <DynamicLoader size={24} color="var(--bg-deep)" />
                   ) : (
                     "Create Account"
                   )}

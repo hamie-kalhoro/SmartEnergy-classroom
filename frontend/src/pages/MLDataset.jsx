@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import api from '../api';
 import { FiUpload, FiDatabase, FiCpu, FiCheckCircle, FiAlertCircle, FiBarChart2, FiActivity } from 'react-icons/fi';
+import DynamicLoader from '../components/DynamicLoader';
 
 function MLDataset() {
     const [mode, setMode] = useState('train'); // 'train' or 'predict'
@@ -83,7 +84,7 @@ function MLDataset() {
                             </small>
                             <button type="submit" className="btn btn-primary w-100 py-3" disabled={!file || loading}>
                                 {loading ? (
-                                    <span className="spinner-border spinner-border-sm me-2"></span>
+                                    <DynamicLoader size={20} color="var(--bg-deep)" className="me-2" />
                                 ) : (
                                     <FiUpload className="me-2" />
                                 )}
