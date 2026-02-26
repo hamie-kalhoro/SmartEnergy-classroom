@@ -291,6 +291,11 @@ def delete_user(id):
             current_app.logger.error(f"Failed to create notification: {str(e)}")
 
     try:
+        # Detach any notifications that reference this user before deletion
+        # (guards against ForeignKeyViolation on notification.related_user_id)
+        Notification.query.filter_by(related_user_id=target_user.id).update(
+            {'related_user_id': None}, synchronize_session='fetch'
+        )
         db.session.delete(target_user)
         db.session.commit()
         return jsonify({'success': True, 'message': f'User {target_user.username} deleted successfully.'})
@@ -314,6 +319,8 @@ def update_user(id):
     
     data = request.json
     is_self_edit = (str(editor.id) == str(user.id))
+    SUPERIOR_EMAIL = 'admin@smart.com'
+    is_current_superior = (editor.email == SUPERIOR_EMAIL)
     changes = []
     
     # Logic same as original app.py

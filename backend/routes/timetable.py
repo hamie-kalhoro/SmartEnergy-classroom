@@ -131,3 +131,43 @@ def bulk_import_timetable():
         })
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+@timetable_bp.route('/api/timetable/attendance', methods=['POST'])
+@jwt_required()
+def record_attendance():
+    """Record actual attendance and feed it to the self-learning ML model."""
+    data = request.json
+    timetable_id = data.get('timetable_id')
+    actual_attendance = data.get('actual_attendance')
+    
+    entry = Timetable.query.get(timetable_id)
+    if not entry:
+        return jsonify({'success': False, 'message': 'Schedule entry not found'}), 404
+        
+    from models import AttendanceHistory
+    from ml_engine import MLEngine
+    
+    # Create Ground Truth record (Feedback Loop)
+    history = AttendanceHistory(
+        timetable_id=timetable_id,
+        actual_attendance=actual_attendance,
+        day_of_week=entry.day_of_week,
+        hour=int(entry.time_slot.split(':')[0]) if ':' in entry.time_slot else 8,
+        subject_type=entry.subject_type,
+        expected_attendance=entry.expected_attendance
+    )
+    db.session.add(history)
+    db.session.commit()
+    
+    # 🧠 Trigger Self-Learning: Immediate digestion of this real-world feedback
+    ml = MLEngine()
+    ml.digest_and_train(pd.DataFrame([{
+        'day': history.day_of_week,
+        'hour': history.hour,
+        'type': history.subject_type,
+        'attendance': history.actual_attendance
+    }]))
+    
+    return jsonify({
+        'success': True, 
+        'message': 'Attendance recorded and integrated into system intelligence.'
+    })

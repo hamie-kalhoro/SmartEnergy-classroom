@@ -10,7 +10,8 @@ def get_classrooms():
     classes = Classroom.query.filter_by(is_active=True).all()
     return jsonify([{
         'id': c.id, 'name': c.name, 'building': c.building, 
-        'capacity': c.capacity, 'lights': c.num_lights, 'acs': c.num_acs
+        'capacity': c.capacity, 'lights': c.num_lights, 
+        'acs': c.num_acs, 'fans': c.num_fans
     } for c in classes])
 
 @classroom_bp.route('/api/classrooms', methods=['POST'])
@@ -20,7 +21,7 @@ def add_classroom():
     new_room = Classroom(
         name=data['name'], building=data['building'], 
         capacity=data['capacity'], num_lights=data.get('lights', 8),
-        num_acs=data.get('acs', 2)
+        num_acs=data.get('acs', 2), num_fans=data.get('fans', 4)
     )
     db.session.add(new_room)
     
@@ -58,6 +59,34 @@ def delete_classroom(id):
         return jsonify({'success': True})
     return jsonify({'success': False}), 404
 
+@classroom_bp.route('/api/classrooms/<int:id>', methods=['PUT'])
+@jwt_required()
+def update_classroom(id):
+    room = Classroom.query.get(id)
+    if not room:
+        return jsonify({'success': False, 'message': 'Room not found'}), 404
+        
+    data = request.json
+    room.name = data.get('name', room.name)
+    room.building = data.get('building', room.building)
+    room.capacity = data.get('capacity', room.capacity)
+    room.num_lights = data.get('lights', room.num_lights)
+    room.num_acs = data.get('acs', room.num_acs)
+    room.num_fans = data.get('fans', room.num_fans)
+    
+    # System Tracking Notification
+    user_id = get_jwt_identity()
+    user = User.query.get(int(user_id))
+    notif = Notification(
+        type='system_update',
+        message=f"Configuration for '{room.name}' was updated by {user.username if user else 'Admin'}",
+        target_role='admin'
+    )
+    db.session.add(notif)
+    
+    db.session.commit()
+    return jsonify({'success': True})
+
 @classroom_bp.route('/api/classrooms/bulk-import', methods=['POST'])
 @jwt_required()
 def bulk_import_classrooms():
@@ -91,7 +120,8 @@ def bulk_import_classrooms():
                 building=str(row['building']),
                 capacity=int(row['capacity']),
                 num_lights=int(row.get('lights', 8)),
-                num_acs=int(row.get('acs', 2))
+                num_acs=int(row.get('acs', 2)),
+                num_fans=int(row.get('fans', 4))
             )
             db.session.add(room)
             added += 1

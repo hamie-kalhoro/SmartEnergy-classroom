@@ -23,6 +23,7 @@ class Classroom(db.Model):
     capacity = db.Column(db.Integer, nullable=False)
     num_lights = db.Column(db.Integer, default=8)
     num_acs = db.Column(db.Integer, default=2)
+    num_fans = db.Column(db.Integer, default=4)
     is_active = db.Column(db.Boolean, default=True)
 
 class Timetable(db.Model):
@@ -43,6 +44,12 @@ class AttendanceHistory(db.Model):
     timetable_id = db.Column(db.Integer, db.ForeignKey('timetable.id'), nullable=False)
     date = db.Column(db.Date, default=datetime.utcnow)
     actual_attendance = db.Column(db.Float)
+    
+    # Snapshots for robust historical training
+    day_of_week = db.Column(db.String(20))
+    hour = db.Column(db.Integer)
+    subject_type = db.Column(db.String(20))
+    expected_attendance = db.Column(db.Float)
     
     timetable = db.relationship('Timetable', backref=db.backref('history', lazy=True))
 
@@ -73,7 +80,7 @@ class Notification(db.Model):
     type = db.Column(db.String(50), nullable=False)          # 'admin_request' | 'admin_approved'
     message = db.Column(db.String(255), nullable=False)
     target_role = db.Column(db.String(20), nullable=False)   # 'admin' | 'faculty'
-    related_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    related_user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     created_by = db.Column(db.String(80), nullable=True)     # admin username who approved
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

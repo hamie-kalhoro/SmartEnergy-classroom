@@ -50,3 +50,22 @@ def get_db_status():
         'latency_ms': latency,
         'timestamp': time.time()
     })
+
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from models import User
+from services import ReportingService
+
+@system_bp.route('/api/system/trigger-report', methods=['POST'])
+@jwt_required()
+def trigger_briefing():
+    """Manually trigger the weekend briefing for all admins."""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+        
+    count = ReportingService.trigger_weekend_briefing()
+    return jsonify({
+        'success': True,
+        'message': f'Weekend report dispatched to {count} administrators.'
+    })

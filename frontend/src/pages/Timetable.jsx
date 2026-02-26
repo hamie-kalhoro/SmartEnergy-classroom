@@ -11,6 +11,7 @@ function Timetable({ user }) {
     const [showImportModal, setShowImportModal] = useState(false);
     const [importFile, setImportFile] = useState(null);
     const [importResult, setImportResult] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [importing, setImporting] = useState(false);
     const [newEntry, setNewEntry] = useState({
         classroom_id: '', day: 'Monday', time: '08:00', subject: '',
@@ -19,18 +20,35 @@ function Timetable({ user }) {
     const [deleteTarget, setDeleteTarget] = useState(null);
 
     useEffect(() => {
-        fetchSchedules();
-        fetchClassrooms();
+        const loadInitialData = async () => {
+            setLoading(true);
+            try {
+                await Promise.all([fetchSchedules(), fetchClassrooms()]);
+            } catch (err) {
+                console.error("Failed to load initial data:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadInitialData();
     }, []);
 
     const fetchSchedules = async () => {
-        const res = await api.get('/api/timetable');
-        setSchedules(res.data);
+        try {
+            const res = await api.get('/api/timetable');
+            setSchedules(res.data);
+        } catch (err) {
+            console.error("Failed to fetch schedules:", err);
+        }
     };
 
     const fetchClassrooms = async () => {
-        const res = await api.get('/api/classrooms');
-        setClassrooms(res.data);
+        try {
+            const res = await api.get('/api/classrooms');
+            setClassrooms(res.data);
+        } catch (err) {
+            console.error("Failed to fetch classrooms:", err);
+        }
     };
 
     const handleAdd = async (e) => {
@@ -107,7 +125,7 @@ function Timetable({ user }) {
 
             <div className="card border-0 shadow-sm">
                 <div className="table-container">
-                    <table>
+                    <table className="table">
                         <thead>
                             <tr>
                                 <th>Classroom</th>
@@ -121,32 +139,46 @@ function Timetable({ user }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {schedules.map(s => (
-                                <tr key={s.id}>
-                                    <td className="fw-bold">{s.classroom}</td>
-                                    <td>{s.day}</td>
-                                    <td>{s.time}</td>
-                                    <td>{s.subject}</td>
-                                    <td>
-                                        <span className={`badge bg-${s.type === 'lab' ? 'info' : s.type === 'seminar' ? 'warning' : 'primary'} bg-opacity-10 text-${s.type === 'lab' ? 'info' : s.type === 'seminar' ? 'warning' : 'primary'}`}>
-                                            {s.type}
-                                        </span>
-                                    </td>
-                                    <td className="small">{s.teacher}</td>
-                                    <td>{s.attendance}%</td>
-                                    <td>
-                                        <button className="btn btn-sm text-danger" onClick={() => handleDelete(s.id)}>
-                                            <FiTrash2 />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                            {schedules.length === 0 && (
+                            {loading ? (
+                                [1, 2, 3, 4, 5].map(i => (
+                                    <tr key={i}>
+                                        <td className="py-3"><div className="skeleton skeleton-text w-75"></div></td>
+                                        <td><div className="skeleton skeleton-text w-50"></div></td>
+                                        <td><div className="skeleton skeleton-text w-50"></div></td>
+                                        <td><div className="skeleton skeleton-text w-75"></div></td>
+                                        <td><div className="skeleton skeleton-bar w-25"></div></td>
+                                        <td><div className="skeleton skeleton-text w-50"></div></td>
+                                        <td><div className="skeleton skeleton-text w-25"></div></td>
+                                        <td></td>
+                                    </tr>
+                                ))
+                            ) : schedules.length === 0 ? (
                                 <tr>
                                     <td colSpan="8" className="text-center text-muted py-5">
                                         No schedules yet. Add manually or bulk import a CSV.
                                     </td>
                                 </tr>
+                            ) : (
+                                schedules.map(s => (
+                                    <tr key={s.id}>
+                                        <td className="fw-bold text-primary">{s.classroom}</td>
+                                        <td className="fw-bold">{s.day}</td>
+                                        <td>{s.time}</td>
+                                        <td className="fw-bold">{s.subject}</td>
+                                        <td>
+                                            <span className={`badge ${s.type === 'lab' ? 'bg-info' : s.type === 'seminar' ? 'bg-warning' : 'bg-primary'} bg-opacity-10 text-${s.type === 'lab' ? 'info' : s.type === 'seminar' ? 'warning' : 'primary'}`}>
+                                                {s.type}
+                                            </span>
+                                        </td>
+                                        <td className="fw-bold">{s.teacher}</td>
+                                        <td className="fw-bold text-primary">{s.attendance}%</td>
+                                        <td>
+                                            <button className="btn btn-sm text-danger" onClick={() => handleDelete(s.id)}>
+                                                <FiTrash2 />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
                             )}
                         </tbody>
                     </table>
@@ -155,12 +187,12 @@ function Timetable({ user }) {
 
             {/* Add Single Entry Modal */}
             {showModal && (
-                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+                <div className="modal show">
                     <div className="modal-dialog modal-dialog-centered modal-lg">
-                        <div className="modal-content card border-0">
-                            <div className="modal-header border-0">
-                                <h5 className="fw-bold">Add Schedule Entry</h5>
-                                <button className="btn-close" onClick={() => setShowModal(false)}></button>
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="fw-bold mb-0">Add Schedule Entry</h5>
+                                <button className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
                             </div>
                             <form onSubmit={handleAdd}>
                                 <div className="modal-body">
@@ -208,7 +240,7 @@ function Timetable({ user }) {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="modal-footer border-0">
+                                <div className="modal-footer">
                                     <button type="submit" className="btn btn-primary w-100">Add to Timetable</button>
                                 </div>
                             </form>
@@ -219,12 +251,12 @@ function Timetable({ user }) {
 
             {/* Bulk Import Modal */}
             {showImportModal && (
-                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+                <div className="modal show">
                     <div className="modal-dialog modal-dialog-centered">
-                        <div className="modal-content card border-0">
-                            <div className="modal-header border-0">
-                                <h5 className="fw-bold">Bulk Import Timetable</h5>
-                                <button className="btn-close" onClick={() => { setShowImportModal(false); setImportResult(null); }}></button>
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="fw-bold mb-0">Bulk Import Timetable</h5>
+                                <button className="btn-close btn-close-white" onClick={() => { setShowImportModal(false); setImportResult(null); }}></button>
                             </div>
                             <div className="modal-body">
                                 {importResult ? (

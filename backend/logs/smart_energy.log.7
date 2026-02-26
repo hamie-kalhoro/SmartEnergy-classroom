@@ -1,4 +1,7 @@
-2026-02-21 02:29:32,662 ERROR: Unhandled Exception: (psycopg2.OperationalError) could not translate host name "aws-1-ap-south-1.pooler.supabase.com" to address: Name or service not known
+2026-02-21 02:32:52,877 ERROR: Unhandled Exception: (psycopg2.OperationalError) connection to server at "aws-1-ap-south-1.pooler.supabase.com" (3.111.225.200), port 5432 failed: Permission denied (0x0000271D/10013)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "aws-1-ap-south-1.pooler.supabase.com" (13.200.110.68), port 5432 failed: Permission denied (0x0000271D/10013)
+	Is the server running on that host and accepting TCP/IP connections?
 
 (Background on this error at: https://sqlalche.me/e/20/e3q8) [in D:\CS\University\FYP\Prototype\backend\app.py:69]
 Traceback (most recent call last):
@@ -39,7 +42,10 @@ Traceback (most recent call last):
            ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
   File "C:\Users\Hamid Ali Khan\AppData\Local\Programs\Python\Python313\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
     conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
-psycopg2.OperationalError: could not translate host name "aws-1-ap-south-1.pooler.supabase.com" to address: Name or service not known
+psycopg2.OperationalError: connection to server at "aws-1-ap-south-1.pooler.supabase.com" (3.111.225.200), port 5432 failed: Permission denied (0x0000271D/10013)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "aws-1-ap-south-1.pooler.supabase.com" (13.200.110.68), port 5432 failed: Permission denied (0x0000271D/10013)
+	Is the server running on that host and accepting TCP/IP connections?
 
 
 The above exception was the direct cause of the following exception:
@@ -156,6 +162,9 @@ Traceback (most recent call last):
            ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
   File "C:\Users\Hamid Ali Khan\AppData\Local\Programs\Python\Python313\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
     conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
-sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) could not translate host name "aws-1-ap-south-1.pooler.supabase.com" to address: Name or service not known
+sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "aws-1-ap-south-1.pooler.supabase.com" (3.111.225.200), port 5432 failed: Permission denied (0x0000271D/10013)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "aws-1-ap-south-1.pooler.supabase.com" (13.200.110.68), port 5432 failed: Permission denied (0x0000271D/10013)
+	Is the server running on that host and accepting TCP/IP connections?
 
 (Background on this error at: https://sqlalche.me/e/20/e3q8)

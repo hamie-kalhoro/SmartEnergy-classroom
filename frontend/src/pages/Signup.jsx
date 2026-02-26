@@ -238,14 +238,16 @@ function Signup() {
                   <div
                     key={r.key}
                     onClick={() => setFormData({ ...formData, role: r.key })}
-                    className="d-flex align-items-center gap-3 p-4 rounded-3 cursor-pointer"
+                    className="d-flex align-items-center gap-3 p-4 rounded-3 cursor-pointer role-card"
                     style={{
                       background:
                         formData.role === r.key
-                          ? "rgba(0, 210, 106, 0.08)"
+                          ? "rgba(0, 210, 106, 0.12)"
                           : "var(--bg-elevated)",
-                      border: `2px solid ${formData.role === r.key ? "rgba(0, 210, 106, 0.45)" : "transparent"}`,
-                      transition: "all 0.2s ease",
+                      border: `2px solid ${formData.role === r.key ? "var(--primary)" : "transparent"}`,
+                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                      position: 'relative',
+                      overflow: 'hidden'
                     }}>
                     <div
                       style={{
@@ -255,7 +257,7 @@ function Signup() {
                         background:
                           formData.role === r.key
                             ? "var(--gradient-primary)"
-                            : "var(--bg-card)",
+                            : "rgba(255,255,255,0.03)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -264,28 +266,41 @@ function Signup() {
                             ? "white"
                             : "var(--text-muted)",
                         fontSize: "1.25rem",
+                        boxShadow: formData.role === r.key ? '0 4px 15px rgba(0, 210, 106, 0.3)' : 'none'
                       }}>
                       {r.icon}
                     </div>
                     <div className="flex-grow-1">
-                      <div className="fw-bold">{r.label}</div>
-                      <div className="small text-muted">{r.desc}</div>
+                      <div className="fw-bold mb-0" style={{
+                        color: formData.role === r.key ? 'var(--primary-light)' : 'var(--text)',
+                        fontSize: '1.1rem',
+                        letterSpacing: '-0.01em'
+                      }}>
+                        {r.label}
+                      </div>
+                      <div className="small" style={{
+                        color: formData.role === r.key ? 'white' : 'var(--text-muted)',
+                        opacity: formData.role === r.key ? 0.9 : 0.7
+                      }}>
+                        {r.desc}
+                      </div>
                     </div>
                     <div
                       style={{
-                        width: "20px",
-                        height: "20px",
+                        width: "22px",
+                        height: "22px",
                         borderRadius: "50%",
-                        border: `2px solid ${formData.role === r.key ? "var(--primary)" : "var(--border)"}`,
+                        border: `2px solid ${formData.role === r.key ? "var(--primary)" : "rgba(255,255,255,0.15)"}`,
                         background:
                           formData.role === r.key ? "var(--primary)" : "transparent",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        transition: 'all 0.3s ease'
                       }}>
                       {formData.role === r.key && (
                         <FiCheck
-                          style={{ color: "white", fontSize: "0.7rem" }}
+                          style={{ color: "white", fontSize: "0.75rem" }}
                         />
                       )}
                     </div>

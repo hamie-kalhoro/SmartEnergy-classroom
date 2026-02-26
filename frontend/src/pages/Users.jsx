@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import api from '../api';
-import { FiUpload, FiDownload, FiCheckCircle, FiAlertCircle, FiUsers, FiMail, FiUserCheck, FiUserCheck as FiUserCheckIcon, FiShield, FiTrash2, FiUserPlus, FiClock, FiCheck, FiUnlock, FiEdit2, FiKey, FiToggleLeft, FiToggleRight, FiAlertTriangle, FiStar } from 'react-icons/fi';
+import { FiUpload, FiDownload, FiCheckCircle, FiAlertCircle, FiUsers, FiMail, FiUserCheck, FiUserCheck as FiUserCheckIcon, FiShield, FiTrash2, FiUserPlus, FiClock, FiCheck, FiUnlock, FiEdit2, FiKey, FiToggleLeft, FiToggleRight, FiAlertTriangle, FiStar, FiBookOpen, FiLock } from 'react-icons/fi';
 import DynamicLoader from '../components/DynamicLoader';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -28,7 +28,10 @@ function Users({ user }) {
     const SUPERIOR_EMAIL = 'admin@smart.com';
     const isSuperior = user.email === SUPERIOR_EMAIL;
 
+    const [loading, setLoading] = useState(true);
+
     const fetchUsers = async () => {
+        setLoading(true);
         try {
             const res = await api.get('/api/users');
             setUsers(res.data);
@@ -37,6 +40,8 @@ function Users({ user }) {
             setPendingAdmins(pending.data);
         } catch (err) {
             console.error("Failed to fetch users:", err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -228,25 +233,35 @@ function Users({ user }) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {pendingAdmins.map(p => (
-                                        <tr key={p.id}>
-                                            <td className="ps-4 py-3">
-                                                <div className="fw-bold text-white">{p.username}</div>
-                                                <div className="small text-muted">{p.email}</div>
-                                            </td>
-                                            <td className="text-muted small">{p.created_at}</td>
-                                            <td className="text-end pe-4">
-                                                <button
-                                                    className="btn btn-sm btn-success-dim d-flex align-items-center gap-2 ms-auto"
-                                                    style={{ padding: '0.5rem 1rem' }}
-                                                    onClick={() => handleApproveAdmin(p.id)}
-                                                    disabled={approvingId === p.id}
-                                                >
-                                                    {approvingId === p.id ? <DynamicLoader size={18} color="currentColor" /> : <><FiCheck /> Approve Access</>}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {loading ? (
+                                        [1, 2].map(i => (
+                                            <tr key={i}>
+                                                <td className="ps-4 py-3"><div className="skeleton skeleton-text w-50"></div></td>
+                                                <td><div className="skeleton skeleton-text w-25"></div></td>
+                                                <td className="text-end pe-4"><div className="skeleton skeleton-text w-50 ms-auto"></div></td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        pendingAdmins.map(p => (
+                                            <tr key={p.id}>
+                                                <td className="ps-4 py-3">
+                                                    <div className="fw-bold text-white">{p.username}</div>
+                                                    <div className="small text-muted">{p.email}</div>
+                                                </td>
+                                                <td className="text-muted small">{p.created_at}</td>
+                                                <td className="text-end pe-4">
+                                                    <button
+                                                        className="btn btn-sm btn-success-dim d-flex align-items-center gap-2 ms-auto"
+                                                        style={{ padding: '0.5rem 1rem' }}
+                                                        onClick={() => handleApproveAdmin(p.id)}
+                                                        disabled={approvingId === p.id}
+                                                    >
+                                                        {approvingId === p.id ? <DynamicLoader size={18} color="currentColor" /> : <><FiCheck /> Approve Access</>}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -272,103 +287,140 @@ function Users({ user }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {users.map(u => (
-                                <tr key={u.id}>
-                                    <td className="ps-4">
-                                        <div className="d-flex align-items-center gap-3">
-                                            <div style={{
-                                                width: '32px', height: '32px', borderRadius: '10px',
-                                                background: 'linear-gradient(135deg, var(--bg-elevated) 0%, rgba(255,255,255,0.05) 100%)',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                fontWeight: 'bold', color: 'var(--primary-light)',
-                                                border: '1px solid rgba(255,255,255,0.05)',
-                                                boxShadow: u.is_permanent ? '0 0 15px rgba(245, 158, 11, 0.15)' : 'none'
-                                            }}>
-                                                {u.is_permanent ? <FiStar size={14} className="text-warning" /> : u.username.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <div className="fw-bold text-white d-flex align-items-center gap-2" style={{ fontSize: '0.9rem', letterSpacing: '-0.01em' }}>
-                                                    {u.username}
-                                                    {u.is_pending_admin && <span className="badge bg-warning text-dark" style={{ fontSize: '0.6rem', padding: '0.2em 0.5em', borderRadius: '4px' }}>PENDING</span>}
+                            {loading ? (
+                                [1, 2, 3, 4, 5].map(i => (
+                                    <tr key={i}>
+                                        <td className="ps-4 py-3">
+                                            <div className="d-flex align-items-center gap-3">
+                                                <div className="skeleton skeleton-circle" style={{ width: '32px', height: '32px' }}></div>
+                                                <div className="w-75">
+                                                    <div className="skeleton skeleton-text w-75"></div>
+                                                    <div className="skeleton skeleton-text w-50"></div>
                                                 </div>
-                                                <div className="text-muted small" style={{ opacity: 0.7, fontSize: '0.75rem' }}>{u.email}</div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="d-flex align-items-center gap-2">
-                                            {u.is_permanent ? (
-                                                <div className="d-flex align-items-center" style={{
-                                                    background: 'rgba(245, 158, 11, 0.1)',
-                                                    border: '1px solid rgba(245, 158, 11, 0.2)',
-                                                    padding: '4px 10px',
-                                                    borderRadius: '8px',
-                                                    color: '#f59e0b',
-                                                    fontSize: '0.65rem',
-                                                    fontWeight: '700',
-                                                    letterSpacing: '0.05em',
-                                                    boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-                                                }}>
-                                                    <FiStar size={10} className="me-1" /> CORE ADMIN
-                                                </div>
-                                            ) : (
-                                                <span className={`badge ${u.role === 'admin' ? 'bg-primary' : 'bg-surface border text-muted'}`} style={{
-                                                    padding: '6px 12px',
-                                                    fontSize: '0.65rem',
-                                                    fontWeight: '600'
-                                                }}>
-                                                    {u.role.toUpperCase()}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className={`badge ${u.is_active ? 'text-success' : (u.is_pending_admin ? 'text-warning' : 'text-secondary')}`} style={{ background: 'transparent' }}>
-                                            <span className={`d-inline-block rounded-circle me-1 ${u.is_active ? 'bg-success' : (u.is_pending_admin ? 'bg-warning' : 'bg-secondary')}`} style={{ width: '6px', height: '6px' }}></span>
-                                            {u.is_active ? 'Active' : (u.is_pending_admin ? 'Locked' : 'Inactive')}
-                                        </span>
-                                    </td>
-                                    <td className="text-end pe-4">
-                                        <div className="d-flex justify-content-end gap-2">
-                                            {u.is_pending_admin && (
-                                                <button
-                                                    className="btn btn-sm btn-warning-dim p-1 px-3 d-flex align-items-center gap-1"
-                                                    style={{ fontSize: '0.75rem' }}
-                                                    onClick={() => handleApproveAdmin(u.id)}
-                                                    disabled={approvingId === u.id}
-                                                    title="Unlock / Approve Admin Access"
-                                                >
-                                                    {approvingId === u.id ? <DynamicLoader size={16} color="currentColor" /> : <><FiUnlock size={14} /> Unlock</>}
-                                                </button>
-                                            )}
-                                            {!u.is_active && !u.is_pending_admin && (
-                                                <button
-                                                    className="btn btn-sm btn-success-dim p-1 px-3"
-                                                    style={{ fontSize: '0.75rem' }}
-                                                    onClick={() => handleManualActivate(u.id)}
-                                                    title="Activate manually"
-                                                >
-                                                    Activate
-                                                </button>
-                                            )}
-                                            <button className="btn btn-sm btn-primary-dim p-1 px-3 d-flex align-items-center gap-1" style={{ fontSize: '0.75rem' }} onClick={() => openEditModal(u)}><FiEdit2 size={12} /> Edit</button>
-                                            <button
-                                                className={`btn btn-sm p-1 px-3 ${u.is_permanent ? 'btn-secondary opacity-25' : 'btn-danger-dim'}`}
-                                                style={{ fontSize: '0.75rem', minWidth: '32px' }}
-                                                onClick={() => handleDelete(u)}
-                                                disabled={u.is_permanent || deletingId === u.id}
-                                                title={u.is_permanent ? "Permanent admin protected" : "Delete user"}
-                                            >
-                                                {deletingId === u.id ? <DynamicLoader size={16} color="currentColor" /> : <FiTrash2 />}
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {users.length === 0 && (
+                                        </td>
+                                        <td><div className="skeleton skeleton-text w-50"></div></td>
+                                        <td><div className="skeleton skeleton-text w-50"></div></td>
+                                        <td className="text-end pe-4"><div className="skeleton skeleton-text w-75 ms-auto"></div></td>
+                                    </tr>
+                                ))
+                            ) : users.length === 0 ? (
                                 <tr>
                                     <td colSpan="4" className="text-center py-5 text-muted">No users found. Import some!</td>
                                 </tr>
+                            ) : (
+                                users.map(u => (
+                                    <tr key={u.id}>
+                                        <td className="ps-4">
+                                            <div className="d-flex align-items-center gap-3">
+                                                <div style={{
+                                                    width: '32px', height: '32px', borderRadius: '10px',
+                                                    background: 'linear-gradient(135deg, var(--bg-elevated) 0%, rgba(255,255,255,0.05) 100%)',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    fontWeight: 'bold', color: 'var(--primary-light)',
+                                                    border: '1px solid rgba(255,255,255,0.05)',
+                                                    boxShadow: u.is_permanent ? '0 0 15px rgba(245, 158, 11, 0.15)' : 'none'
+                                                }}>
+                                                    {u.is_permanent ? <FiStar size={14} className="text-warning" /> : u.username.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold text-white d-flex align-items-center gap-2" style={{ fontSize: '0.9rem', letterSpacing: '-0.01em' }}>
+                                                        {u.username}
+                                                        {u.is_pending_admin && <span className="badge bg-warning text-dark" style={{ fontSize: '0.6rem', padding: '0.2em 0.5em', borderRadius: '4px' }}>PENDING</span>}
+                                                    </div>
+                                                    <div className="text-muted small" style={{ opacity: 0.7, fontSize: '0.75rem' }}>{u.email}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="d-flex align-items-center gap-2">
+                                                {u.is_permanent ? (
+                                                    <div className="d-flex align-items-center" style={{
+                                                        background: 'rgba(245, 158, 11, 0.1)',
+                                                        border: '1px solid rgba(245, 158, 11, 0.2)',
+                                                        padding: '4px 10px',
+                                                        borderRadius: '8px',
+                                                        color: '#f59e0b',
+                                                        fontSize: '0.65rem',
+                                                        fontWeight: '700',
+                                                        letterSpacing: '0.05em',
+                                                        boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
+                                                    }}>
+                                                        <FiStar size={10} className="me-1" /> CORE ADMIN
+                                                    </div>
+                                                ) : (
+                                                    <span className={`badge ${u.role === 'admin' ? 'bg-primary' : u.role === 'faculty' ? 'btn-success-dim border-0' : 'bg-premium-chip border'}`} style={{
+                                                        padding: '6px 12px',
+                                                        fontSize: '0.65rem',
+                                                        fontWeight: '600',
+                                                        textTransform: 'uppercase'
+                                                    }}>
+                                                        {u.role === 'faculty' ? <FiBookOpen size={10} className="me-1" /> : null}
+                                                        {u.role.toUpperCase()}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className={`badge ${u.is_active ? 'text-success' : (u.is_pending_admin ? 'text-warning' : 'text-secondary')}`} style={{ background: 'transparent' }}>
+                                                <span className={`d-inline-block rounded-circle me-1 ${u.is_active ? 'bg-success' : (u.is_pending_admin ? 'bg-warning' : 'bg-secondary')}`} style={{ width: '6px', height: '6px' }}></span>
+                                                {u.is_active ? 'Active' : (u.is_pending_admin ? 'Locked' : 'Inactive')}
+                                            </span>
+                                        </td>
+                                        <td className="text-end pe-4">
+                                            <div className="d-flex justify-content-end gap-2">
+                                                {u.is_pending_admin && (
+                                                    <button
+                                                        className="btn btn-sm btn-warning-dim p-1 px-3 d-flex align-items-center gap-1"
+                                                        style={{ fontSize: '0.75rem' }}
+                                                        onClick={() => handleApproveAdmin(u.id)}
+                                                        disabled={approvingId === u.id}
+                                                        title="Unlock / Approve Admin Access"
+                                                    >
+                                                        {approvingId === u.id ? <DynamicLoader size={16} color="currentColor" /> : <><FiUnlock size={14} /> Unlock</>}
+                                                    </button>
+                                                )}
+                                                {!u.is_active && !u.is_pending_admin && (
+                                                    <button
+                                                        className="btn btn-sm btn-success-dim p-1 px-3"
+                                                        style={{ fontSize: '0.75rem' }}
+                                                        onClick={() => handleManualActivate(u.id)}
+                                                        title="Activate manually"
+                                                    >
+                                                        Activate
+                                                    </button>
+                                                )}
+                                                {/* Professional Edit Button */}
+                                                <button
+                                                    className="btn btn-sm p-1 px-3 d-flex align-items-center gap-1"
+                                                    style={{
+                                                        fontSize: '0.75rem',
+                                                        background: 'rgba(99, 102, 241, 0.08)',
+                                                        color: '#818cf8',
+                                                        border: '1px solid rgba(99, 102, 241, 0.15)',
+                                                        transition: 'all 0.2s ease',
+                                                        borderRadius: '8px'
+                                                    }}
+                                                    onMouseOver={e => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.15)'}
+                                                    onMouseOut={e => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.08)'}
+                                                    onClick={() => openEditModal(u)}
+                                                >
+                                                    <FiEdit2 size={12} /> Edit
+                                                </button>
+                                                {/* Compact Delete Button */}
+                                                <button
+                                                    className={`btn btn-sm p-1 ${u.is_permanent ? 'btn-secondary opacity-25' : 'btn-danger-dim'}`}
+                                                    style={{ fontSize: '0.75rem', minWidth: '34px', borderRadius: '8px' }}
+                                                    onClick={() => handleDelete(u)}
+                                                    disabled={u.is_permanent || deletingId === u.id}
+                                                    title={u.is_permanent ? "Protected" : "Delete user"}
+                                                >
+                                                    {deletingId === u.id ? <DynamicLoader size={16} color="currentColor" /> : <FiTrash2 size={14} style={{ color: u.is_permanent ? 'inherit' : '#ef4444' }} />}
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
                             )}
                         </tbody>
                     </table>
@@ -475,173 +527,183 @@ function Users({ user }) {
                     </div>
                 </div>
             )}
-            {/* Add User Modal */}
             {showAddModal && (
-                <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-                    <div className="modal-content card p-4 w-100" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
-                        <div className="d-flex justify-content-between align-items-center mb-4">
-                            <h4 className="fw-bold m-0">Add New User</h4>
-                            <button className="btn btn-link text-muted h3 p-0" style={{ textDecoration: 'none' }} onClick={() => setShowAddModal(false)}>&times;</button>
+                <div className="modal show" onClick={() => setShowAddModal(false)}>
+                    <div className="modal-dialog modal-dialog-centered" onClick={e => e.stopPropagation()}>
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="fw-bold mb-0">Add New User</h5>
+                                <button className="btn-close btn-close-white" onClick={() => setShowAddModal(false)}></button>
+                            </div>
+                            <form onSubmit={handleAddSingleUser}>
+                                <div className="modal-body text-start">
+                                    <div className="mb-3">
+                                        <label className="form-label small">Full Name / Username</label>
+                                        <input type="text" className="form-control" required value={singleUser.username}
+                                            onChange={e => setSingleUser({ ...singleUser, username: e.target.value })} />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label small">Email Address</label>
+                                        <input type="email" className="form-control" required value={singleUser.email}
+                                            onChange={e => setSingleUser({ ...singleUser, email: e.target.value })} />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label small">Initial Password</label>
+                                        <input type="password" className="form-control" required value={singleUser.password}
+                                            onChange={e => setSingleUser({ ...singleUser, password: e.target.value })} />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label small">System Role</label>
+                                        <select className="form-select" value={singleUser.role} onChange={e => setSingleUser({ ...singleUser, role: e.target.value })}>
+                                            <option value="faculty">Faculty</option>
+                                            <option value="user">Student / User</option>
+                                            <option value="admin">Administrator (Requires Approval)</option>
+                                        </select>
+                                    </div>
+                                    <div className="mb-0 form-check">
+                                        <input type="checkbox" className="form-check-input" id="autoAct" checked={singleUser.auto_activate}
+                                            onChange={e => setSingleUser({ ...singleUser, auto_activate: e.target.checked })} />
+                                        <label className="form-check-label small" htmlFor="autoAct" style={{ color: 'var(--text-secondary)' }}>Skip email activation (Auto-activate)</label>
+                                    </div>
+                                </div>
+                                <div className="modal-footer">
+                                    <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
+                                    <button type="submit" className="btn btn-gradient flex-grow-1 py-3 fw-bold">Create User Account</button>
+                                </div>
+                            </form>
                         </div>
-                        <form onSubmit={handleAddSingleUser}>
-                            <div className="mb-3">
-                                <label className="form-label small">Full Name / Username</label>
-                                <input type="text" className="form-control" required value={singleUser.username}
-                                    onChange={e => setSingleUser({ ...singleUser, username: e.target.value })} />
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label small">Email Address</label>
-                                <input type="email" className="form-control" required value={singleUser.email}
-                                    onChange={e => setSingleUser({ ...singleUser, email: e.target.value })} />
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label small">Initial Password</label>
-                                <input type="password" className="form-control" required value={singleUser.password}
-                                    onChange={e => setSingleUser({ ...singleUser, password: e.target.value })} />
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label small">System Role</label>
-                                <select className="form-select" value={singleUser.role} onChange={e => setSingleUser({ ...singleUser, role: e.target.value })}>
-                                    <option value="faculty">Faculty</option>
-                                    <option value="user">Student / User</option>
-                                    <option value="admin">Administrator (Requires Approval)</option>
-                                </select>
-                            </div>
-                            <div className="mb-4 form-check">
-                                <input type="checkbox" className="form-check-input" id="autoAct" checked={singleUser.auto_activate}
-                                    onChange={e => setSingleUser({ ...singleUser, auto_activate: e.target.checked })} />
-                                <label className="form-check-label small" htmlFor="autoAct">Skip email activation (Auto-activate)</label>
-                            </div>
-                            <button type="submit" className="btn btn-gradient w-100 py-2 fw-bold">Create User Account</button>
-                        </form>
                     </div>
                 </div>
             )}
 
             {/* Edit User Modal */}
             {editTarget && (
-                <div className="modal-overlay" onClick={() => setEditTarget(null)}>
-                    <div className="modal-content card p-4 w-100" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
-                        <div className="d-flex justify-content-between align-items-center mb-4">
-                            <div>
-                                <h4 className="fw-bold m-0">Edit User</h4>
-                                <p className="text-muted small m-0 mt-1">Editing {editTarget.username}</p>
-                            </div>
-                            <button className="btn btn-link text-muted h3 p-0" style={{ textDecoration: 'none' }} onClick={() => setEditTarget(null)}>&times;</button>
-                        </div>
-                        <form onSubmit={handleEditUser}>
-                            {/* Username */}
-                            <div className="mb-3">
-                                <label className="form-label small">Full Name / Username</label>
-                                <input type="text" className="form-control" required value={editForm.username}
-                                    onChange={e => setEditForm({ ...editForm, username: e.target.value })} />
-                            </div>
-
-                            {/* Email */}
-                            <div className="mb-3">
-                                <label className="form-label small">Email Address</label>
-                                <input type="email" className="form-control" required value={editForm.email}
-                                    onChange={e => setEditForm({ ...editForm, email: e.target.value })} />
-                            </div>
-
-                            {/* Role + Status Row */}
-                            <div className="row g-3 mb-3">
-                                <div className="col-7">
-                                    <label className="form-label small">System Role</label>
-                                    <select className="form-select" value={editForm.role}
-                                        onChange={e => handleRoleChange(e.target.value)}
-                                        disabled={editTarget.id === user.id}
-                                    >
-                                        <option value="faculty">Faculty</option>
-                                        <option value="user">Student / User</option>
-                                        <option value="admin">Administrator</option>
-                                    </select>
-                                    {editTarget.id === user.id && (
-                                        <div className="small text-muted mt-1" style={{ fontSize: '0.7rem' }}>You cannot change your own role</div>
-                                    )}
+                <div className="modal show" onClick={() => setEditTarget(null)}>
+                    <div className="modal-dialog modal-dialog-centered" onClick={e => e.stopPropagation()}>
+                        <div className="modal-content">
+                            <div className="modal-header d-block">
+                                <div className="d-flex justify-content-between align-items-center">
+                                    <h5 className="fw-bold mb-0">Edit User Profile</h5>
+                                    <button className="btn-close btn-close-white" onClick={() => setEditTarget(null)}></button>
                                 </div>
-                                <div className="col-5">
-                                    <label className="form-label small">Account Status</label>
-                                    <button type="button"
-                                        className={`btn w-100 d-flex align-items-center justify-content-center gap-2 ${editForm.is_active ? 'btn-success-dim' : 'btn-danger-dim'}`}
-                                        onClick={() => {
-                                            if (!editTarget.is_permanent) setEditForm({ ...editForm, is_active: !editForm.is_active });
-                                        }}
-                                        disabled={editTarget.is_permanent || editTarget.id === user.id}
-                                        style={{ padding: '0.7rem' }}
-                                    >
-                                        {editForm.is_active ? <><FiToggleRight size={18} /> Active</> : <><FiToggleLeft size={18} /> Inactive</>}
-                                    </button>
-                                </div>
+                                <p className="text-muted small mb-0 mt-1">Editing configuration for {editTarget.username}</p>
                             </div>
+                            <form onSubmit={handleEditUser}>
+                                <div className="modal-body text-start">
+                                    {/* Username */}
+                                    <div className="mb-3">
+                                        <label className="form-label small">Full Name / Username</label>
+                                        <input type="text" className="form-control" required value={editForm.username}
+                                            onChange={e => setEditForm({ ...editForm, username: e.target.value })} />
+                                    </div>
 
-                            {/* Permanence Toggle (Only Superior Admin) */}
-                            {isSuperior && editTarget.role === 'admin' && (
-                                <div className="mb-4 p-3 rounded-4" style={{
-                                    border: '1px solid rgba(245, 158, 11, 0.2)',
-                                    background: editForm.is_permanent ? 'rgba(245, 158, 11, 0.05)' : 'rgba(255,255,255,0.02)',
-                                    transition: 'all 0.3s ease'
-                                }}>
-                                    <div className="d-flex align-items-center justify-content-between">
-                                        <div>
-                                            <label className="form-label small m-0 d-flex align-items-center gap-2 fw-bold" style={{ color: editForm.is_permanent ? '#f59e0b' : 'inherit' }}>
-                                                <FiStar className={editForm.is_permanent ? 'text-warning' : 'text-muted'} /> Account Permanence
-                                            </label>
-                                            <div className="text-muted" style={{ fontSize: '0.68rem', opacity: 0.8 }}>Protect this administrator from deletion or deactivation</div>
+                                    {/* Email */}
+                                    <div className="mb-3">
+                                        <label className="form-label small">Email Address</label>
+                                        <input type="email" className="form-control" required value={editForm.email}
+                                            onChange={e => setEditForm({ ...editForm, email: e.target.value })} />
+                                    </div>
+
+                                    {/* Role + Status Row */}
+                                    <div className="row g-3 mb-3">
+                                        <div className="col-7">
+                                            <label className="form-label small">System Role</label>
+                                            <select className="form-select" value={editForm.role}
+                                                onChange={e => handleRoleChange(e.target.value)}
+                                                disabled={editTarget.id === user.id}
+                                            >
+                                                <option value="faculty">Faculty</option>
+                                                <option value="user">Student / User</option>
+                                                <option value="admin">Administrator</option>
+                                            </select>
+                                            {editTarget.id === user.id && (
+                                                <div className="small text-muted mt-1" style={{ fontSize: '0.7rem' }}>You cannot change your own role</div>
+                                            )}
                                         </div>
-                                        <button type="button"
-                                            className={`btn btn-sm rounded-3 px-3 fw-bold ${editForm.is_permanent ? 'btn-warning' : 'btn-surface border'}`}
-                                            onClick={() => setEditForm({ ...editForm, is_permanent: !editForm.is_permanent })}
-                                            disabled={editTarget.id === user.id}
-                                            style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}
-                                        >
-                                            {editForm.is_permanent ? 'Permanent' : 'Regular'}
+                                        <div className="col-5">
+                                            <label className="form-label small">Account Status</label>
+                                            <button type="button"
+                                                className={`btn w-100 d-flex align-items-center justify-content-center gap-2 ${editForm.is_active ? 'btn-success-dim' : 'btn-danger-dim'}`}
+                                                onClick={() => {
+                                                    if (!editTarget.is_permanent) setEditForm({ ...editForm, is_active: !editForm.is_active });
+                                                }}
+                                                disabled={editTarget.is_permanent || editTarget.id === user.id}
+                                                style={{ padding: '0.7rem' }}
+                                            >
+                                                {editForm.is_active ? <><FiToggleRight size={18} /> Active</> : <><FiToggleLeft size={18} /> Inactive</>}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Permanence Toggle (Only Superior Admin) */}
+                                    {isSuperior && editTarget.role === 'admin' && (
+                                        <div className="mb-4 p-3 rounded-4" style={{
+                                            border: '1px solid rgba(245, 158, 11, 0.2)',
+                                            background: editForm.is_permanent ? 'rgba(245, 158, 11, 0.05)' : 'rgba(255,255,255,0.02)',
+                                            transition: 'all 0.3s ease'
+                                        }}>
+                                            <div className="d-flex align-items-center justify-content-between">
+                                                <div>
+                                                    <label className="form-label small m-0 d-flex align-items-center gap-2 fw-bold" style={{ color: editForm.is_permanent ? '#f59e0b' : 'inherit' }}>
+                                                        <FiStar className={editForm.is_permanent ? 'text-warning' : 'text-muted'} /> Account Permanence
+                                                    </label>
+                                                    <div className="text-muted" style={{ fontSize: '0.68rem', opacity: 0.8 }}>Protect this administrator from deletion or deactivation</div>
+                                                </div>
+                                                <button type="button"
+                                                    className={`btn btn-sm rounded-3 px-3 fw-bold ${editForm.is_permanent ? 'btn-warning' : 'btn-surface border'}`}
+                                                    onClick={() => setEditForm({ ...editForm, is_permanent: !editForm.is_permanent })}
+                                                    disabled={editTarget.id === user.id}
+                                                    style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.03em' }}
+                                                >
+                                                    {editForm.is_permanent ? 'Permanent' : 'Regular'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Role Warning */}
+                                    {showRoleWarning && (
+                                        <div className="d-flex align-items-start gap-2 p-3 rounded-3 mb-3" style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
+                                            <FiAlertTriangle className="text-warning flex-shrink-0 mt-1" />
+                                            <div className="small text-warning">Promoting to <strong>Administrator</strong> will grant full system access including user management, classroom control, and ML configuration.</div>
+                                        </div>
+                                    )}
+
+                                    {/* Password Reset */}
+                                    <div className="mb-3">
+                                        <label className="form-label small d-flex align-items-center gap-2">
+                                            <FiKey size={12} /> Reset Password <span className="text-muted" style={{ fontWeight: 400 }}>(optional)</span>
+                                        </label>
+                                        <input type="password" className="form-control" placeholder="Leave blank to keep current" value={editForm.new_password}
+                                            onChange={e => setEditForm({ ...editForm, new_password: e.target.value })} />
+                                    </div>
+
+                                    {/* Read-only Meta */}
+                                    <div className="d-flex gap-3 p-3 rounded-3" style={{ background: 'var(--bg-elevated)' }}>
+                                        <div className="small">
+                                            <div className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Activation</div>
+                                            <div className={editTarget.is_active ? 'text-success fw-bold' : 'text-secondary fw-bold'} style={{ fontSize: '0.8rem' }}>
+                                                {editTarget.is_active ? '✓ Verified' : '✗ Unverified'}
+                                            </div>
+                                        </div>
+                                        {editTarget.is_pending_admin && (
+                                            <div className="small">
+                                                <div className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Admin Status</div>
+                                                <div className="text-warning fw-bold" style={{ fontSize: '0.8rem' }}>⏳ Pending Approval</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="modal-footer">
+                                    <div className="d-flex gap-2 w-100">
+                                        <button type="button" className="btn btn-primary-dim flex-grow-1" onClick={() => setEditTarget(null)}>Cancel</button>
+                                        <button type="submit" className="btn btn-gradient flex-grow-1 fw-bold" disabled={editSaving}>
+                                            {editSaving ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Save Changes'}
                                         </button>
                                     </div>
                                 </div>
-                            )}
-
-                            {/* Role Warning */}
-                            {showRoleWarning && (
-                                <div className="d-flex align-items-start gap-2 p-3 rounded-3 mb-3" style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
-                                    <FiAlertTriangle className="text-warning flex-shrink-0 mt-1" />
-                                    <div className="small text-warning">Promoting to <strong>Administrator</strong> will grant full system access including user management, classroom control, and ML configuration.</div>
-                                </div>
-                            )}
-
-                            {/* Password Reset */}
-                            <div className="mb-3">
-                                <label className="form-label small d-flex align-items-center gap-2">
-                                    <FiKey size={12} /> Reset Password <span className="text-muted" style={{ fontWeight: 400 }}>(optional)</span>
-                                </label>
-                                <input type="password" className="form-control" placeholder="Leave blank to keep current" value={editForm.new_password}
-                                    onChange={e => setEditForm({ ...editForm, new_password: e.target.value })} />
-                            </div>
-
-                            {/* Read-only Meta */}
-                            <div className="d-flex gap-3 mb-4 p-3 rounded-3" style={{ background: 'var(--bg-elevated)' }}>
-                                <div className="small">
-                                    <div className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Activation</div>
-                                    <div className={editTarget.is_active ? 'text-success fw-bold' : 'text-secondary fw-bold'} style={{ fontSize: '0.8rem' }}>
-                                        {editTarget.is_active ? '✓ Verified' : '✗ Unverified'}
-                                    </div>
-                                </div>
-                                {editTarget.is_pending_admin && (
-                                    <div className="small">
-                                        <div className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Admin Status</div>
-                                        <div className="text-warning fw-bold" style={{ fontSize: '0.8rem' }}>⏳ Pending Approval</div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Actions */}
-                            <div className="d-flex gap-2">
-                                <button type="button" className="btn btn-primary-dim flex-grow-1" onClick={() => setEditTarget(null)}>Cancel</button>
-                                <button type="submit" className="btn btn-gradient flex-grow-1 fw-bold" disabled={editSaving}>
-                                    {editSaving ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Save Changes'}
-                                </button>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}
@@ -676,7 +738,7 @@ function Users({ user }) {
                 onConfirm={confirmDelete}
                 onCancel={() => setDeleteTarget(null)}
             />
-        </div>
+        </div >
     );
 }
 

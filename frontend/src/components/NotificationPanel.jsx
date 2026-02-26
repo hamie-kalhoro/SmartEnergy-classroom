@@ -32,15 +32,18 @@ function NotificationPanel({ user }) {
         };
     }, []);
 
+    const [loading, setLoading] = useState(false);
+
     // ─── Fetch & Poll ───
     useEffect(() => {
-        fetchNotifications();
-        const interval = setInterval(fetchNotifications, 15000); // 15s for better responsiveness
+        fetchNotifications(true);
+        const interval = setInterval(() => fetchNotifications(false), 15000); // 15s for better responsiveness
         return () => clearInterval(interval);
     }, []);
 
-    const fetchNotifications = async () => {
+    const fetchNotifications = async (isInitial = false) => {
         if (!navigator.onLine) return;
+        if (isInitial) setLoading(true);
         try {
             const res = await api.get('/api/notifications');
             // Server is source of truth for new items
@@ -48,6 +51,8 @@ function NotificationPanel({ user }) {
         } catch (err) {
             console.error("Notification Sync Failed:", err);
             // On failure, we just keep using our local state (loaded from init)
+        } finally {
+            if (isInitial) setLoading(false);
         }
     };
 
@@ -76,6 +81,7 @@ function NotificationPanel({ user }) {
             case 'admin_request': return <FiAlertCircle style={{ color: '#f59e0b' }} />;
             case 'user_deletion_alert': return <FiTrash2 style={{ color: '#ef4444' }} />;
             case 'admin_approved': return <FiCheckCircle style={{ color: '#10b981' }} />;
+            case 'energy_report': return <FiZap style={{ color: '#00d26a' }} />;
             default: return <FiActivity style={{ color: '#6366f1' }} />;
         }
     };
@@ -201,7 +207,11 @@ function NotificationPanel({ user }) {
 
                         {/* List */}
                         <div style={{ overflowY: 'auto', flex: 1, padding: '0.5rem' }}>
-                            {notifications.length === 0 ? (
+                            {loading ? (
+                                [1, 2, 3].map(i => (
+                                    <div key={i} className="skeleton p-3 mb-2" style={{ height: '70px', borderRadius: '12px' }}></div>
+                                ))
+                            ) : notifications.length === 0 ? (
                                 <div style={{ padding: '4rem 2rem', textAlign: 'center', opacity: 0.5 }}>
                                     <FiBell size={40} className="mb-3 text-muted" />
                                     <p className="m-0 small fw-bold text-muted">No notifications yet</p>

@@ -267,7 +267,7 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
                                 <p className="small fw-bold mb-0 text-truncate" style={{ fontSize: '0.75rem', color: 'var(--text)' }}>{user.username}</p>
                                 <span className="text-muted fw-bold" style={{ fontSize: '0.6rem', textTransform: 'uppercase', opacity: 0.6 }}>{user.role}</span>
                             </div>
-                            <FiLogOut className="text-muted ms-auto" size={14} style={{ opacity: 0.5 }} />
+                            <FiLogOut className="ms-auto" size={14} style={{ color: '#f43f5e' }} />
                         </>
                     )}
                 </div>

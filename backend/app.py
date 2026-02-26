@@ -46,6 +46,9 @@ def create_app(config_name=None):
     app.register_blueprint(ml_bp)
     app.register_blueprint(analytics_bp)
     app.register_blueprint(system_bp)
+
+    # Initialize Automation (Admin Reporting)
+    setup_automation(app)
     
     # Global Error Handler
     @app.errorhandler(Exception)
@@ -58,6 +61,32 @@ def create_app(config_name=None):
         }), 500
         
     return app
+
+def setup_automation(app):
+    """Background tasks for scheduled events."""
+    import threading
+    import time
+    from datetime import datetime
+    from services import ReportingService
+
+    def run_scheduler():
+        while True:
+            try:
+                # Check every hour
+                now = datetime.now()
+                # If Sunday at 9 AM, trigger the briefing
+                if now.weekday() == 6 and now.hour == 9:
+                    with app.app_context():
+                         ReportingService.trigger_weekend_briefing()
+                         app.logger.info(">>> AUTOMATION: Weekend briefing dispatched.")
+                         # Sleep for a bit to avoid double-triggering in the same hour
+                         time.sleep(3600) 
+            except Exception as e:
+                print(f">>> AUTOMATION ERROR: {e}")
+            time.sleep(3600) # Re-check every hour
+
+    thread = threading.Thread(target=run_scheduler, daemon=True)
+    thread.start()
 
 def configure_logging(app):
     if not app.debug:
