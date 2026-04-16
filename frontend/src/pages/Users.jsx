@@ -533,7 +533,7 @@ function Users({ user }) {
                         <div className="modal-content">
                             <div className="modal-header">
                                 <h5 className="fw-bold mb-0">Add New User</h5>
-                                <button className="btn-close btn-close-white" onClick={() => setShowAddModal(false)}></button>
+                                <button className="btn-close" style={{ filter: 'var(--close-filter)' }} onClick={() => setShowAddModal(false)}></button>
                             </div>
                             <form onSubmit={handleAddSingleUser}>
                                 <div className="modal-body text-start">
@@ -584,7 +584,7 @@ function Users({ user }) {
                             <div className="modal-header d-block">
                                 <div className="d-flex justify-content-between align-items-center">
                                     <h5 className="fw-bold mb-0">Edit User Profile</h5>
-                                    <button className="btn-close btn-close-white" onClick={() => setEditTarget(null)}></button>
+                                    <button className="btn-close" style={{ filter: 'var(--close-filter)' }} onClick={() => setEditTarget(null)}></button>
                                 </div>
                                 <p className="text-muted small mb-0 mt-1">Editing configuration for {editTarget.username}</p>
                             </div>
@@ -696,7 +696,7 @@ function Users({ user }) {
                                 </div>
                                 <div className="modal-footer">
                                     <div className="d-flex gap-2 w-100">
-                                        <button type="button" className="btn btn-primary-dim flex-grow-1" onClick={() => setEditTarget(null)}>Cancel</button>
+                                        <button type="button" className="btn btn-secondary-dim flex-grow-1" onClick={() => setEditTarget(null)}>Cancel</button>
                                         <button type="submit" className="btn btn-gradient flex-grow-1 fw-bold" disabled={editSaving}>
                                             {editSaving ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Save Changes'}
                                         </button>

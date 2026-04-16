@@ -1,0 +1,42 @@
+[
+    {
+        "timestamp": "2026-04-16T20:08:12.273875",
+        "total_records": 10000,
+        "training_records": 8500,
+        "test_records": 1500,
+        "accuracy": 96.53,
+        "precision": 96.53,
+        "recall": 96.53,
+        "f1_score": 96.53,
+        "feature_importance": {
+            "day": 0.0393,
+            "hour": 0.0379,
+            "type": 0.0754,
+            "attendance": 0.8405,
+            "is_weekend": 0.0003,
+            "time_bin": 0.0066
+        },
+        "status": "success",
+        "analysis": "Model knowledge successfully expanded."
+    },
+    {
+        "timestamp": "2026-04-16T20:10:38.045725",
+        "total_records": 10000,
+        "training_records": 8500,
+        "test_records": 1500,
+        "accuracy": 96.87,
+        "precision": 96.87,
+        "recall": 96.87,
+        "f1_score": 96.87,
+        "feature_importance": {
+            "day": 0.0446,
+            "hour": 0.0409,
+            "type": 0.0564,
+            "attendance": 0.8492,
+            "is_weekend": 0.0003,
+            "time_bin": 0.0086
+        },
+        "status": "success",
+        "analysis": "Model knowledge successfully expanded."
+    }
+]

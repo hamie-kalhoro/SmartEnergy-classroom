@@ -61,6 +61,7 @@
 
     --sidebar-w: 265px;
     --sidebar-collapsed-w: 72px;
+    --close-filter: invert(1) brightness(200%);
 
     /* Fonts */
     --font-heading: 'Outfit', sans-serif;
@@ -95,6 +96,7 @@
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
     --gradient-glow: radial-gradient(ellipse at 50% 0%, rgba(0, 210, 106, 0.05) 0%, transparent 60%);
+    --close-filter: none;
 }
 
 /* Global Reset */
@@ -121,6 +123,10 @@ body {
 }
 
 /* ========== UTILITIES ========== */
+.cursor-pointer {
+    cursor: pointer !important;
+}
+
 .viewport-section {
     min-height: 100vh;
     display: flex;

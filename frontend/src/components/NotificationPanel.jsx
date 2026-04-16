@@ -240,7 +240,7 @@ function NotificationPanel({ user }) {
                                         <div style={{
                                             width: '36px', height: '36px', borderRadius: '10px',
                                             background: 'var(--bg-elevated)', display: 'flex',
-                                            alignItems: 'center', justifyCenter: 'center', flexShrink: 0,
+                                            alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                                             border: '1px solid rgba(255,255,255,0.05)'
                                         }}>
                                             <div style={{ margin: 'auto' }}>{getIcon(n.type)}</div>

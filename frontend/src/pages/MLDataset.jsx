@@ -50,21 +50,63 @@ function MLDataset() {
 
                         <div className="d-flex flex-column gap-2 mb-4">
                             {[
-                                { key: 'train', icon: <FiDatabase />, label: 'Train Model', desc: 'Upload data to retrain the AI' },
-                                { key: 'predict', icon: <FiActivity />, label: 'Batch Predict', desc: 'Get predictions for a dataset' }
+                                { 
+                                    key: 'train', 
+                                    icon: (
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                            <defs>
+                                                <linearGradient id="trainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="#00d26a" />
+                                                    <stop offset="100%" stopColor="#06b6d4" />
+                                                </linearGradient>
+                                            </defs>
+                                            <path d="M12 2C6.48 2 2 4.24 2 7V17C2 19.76 6.48 22 12 22C17.52 22 22 19.76 22 17V7C22 4.24 17.52 2 12 2Z" fill="url(#trainGrad)" fillOpacity="0.2" stroke="url(#trainGrad)" strokeWidth="2" />
+                                            <ellipse cx="12" cy="7" rx="10" ry="5" stroke="url(#trainGrad)" strokeWidth="2" fill="url(#trainGrad)" fillOpacity="0.1" />
+                                            <path d="M22 12C22 14.76 17.52 17 12 17C6.48 17 2 14.76 2 12" stroke="url(#trainGrad)" strokeWidth="2" strokeLinecap="round" />
+                                        </svg>
+                                    ), 
+                                    label: 'Train Model', 
+                                    desc: 'Build AI intelligence patterns' 
+                                },
+                                { 
+                                    key: 'predict', 
+                                    icon: (
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                            <defs>
+                                                <linearGradient id="predictGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="#7c3aed" />
+                                                    <stop offset="100%" stopColor="#ec4899" />
+                                                </linearGradient>
+                                            </defs>
+                                            <path d="M22 12H18L15 21L9 3L6 12H2" stroke="url(#predictGrad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            <circle cx="12" cy="12" r="9" stroke="url(#predictGrad)" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.4" />
+                                        </svg>
+                                    ), 
+                                    label: 'Batch Predict', 
+                                    desc: 'Run forecasting on datasets' 
+                                }
                             ].map(m => (
                                 <div
                                     key={m.key}
-                                    className={`p-3 border rounded-3 cursor-pointer transition-all ${mode === m.key ? 'border-primary bg-primary bg-opacity-5' : ''}`}
+                                    className={`p-3 border rounded-4 cursor-pointer transition-all ${mode === m.key ? 'bg-primary border-primary shadow-lg' : 'bg-surface hover-bg-elevated'}`}
                                     onClick={() => { setMode(m.key); setResult(null); setError(''); }}
+                                    style={{ 
+                                        transform: mode === m.key ? 'translateY(-3px)' : 'none',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        borderWidth: '2px !important'
+                                    }}
                                 >
                                     <div className="d-flex align-items-center gap-3">
-                                        <div className={`p-2 rounded-3 ${mode === m.key ? 'bg-primary text-white' : 'bg-secondary bg-opacity-10 text-muted'}`}>
+                                        <div className={`icon-box ${mode === m.key ? 'bg-white bg-opacity-20' : 'bg-secondary bg-opacity-5'}`}>
                                             {m.icon}
                                         </div>
                                         <div>
-                                            <div className="fw-bold small">{m.label}</div>
-                                            <div className="extra-small text-muted">{m.desc}</div>
+                                            <div className={`fw-bold ${mode === m.key ? 'text-white' : ''}`} style={{ color: mode === m.key ? '#ffffff' : 'var(--text)' }}>
+                                                {m.label}
+                                            </div>
+                                            <div className={`small ${mode === m.key ? 'text-white text-opacity-80' : 'text-muted'}`}>
+                                                {m.desc}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -112,40 +154,71 @@ function MLDataset() {
                                     <div className="d-flex align-items-center gap-3 mb-4">
                                         <FiCheckCircle className="text-success h3 mb-0" />
                                         <div>
-                                            <h5 className="fw-bold mb-0">Training Complete</h5>
-                                            <small className="text-muted">Model updated successfully</small>
+                                            <h5 className="fw-bold mb-0" style={{ color: 'var(--text)' }}>Training Complete</h5>
+                                            <small className="text-secondary fw-medium">Model behavioral patterns updated successfully</small>
                                         </div>
                                     </div>
 
                                     <div className="row g-3 mb-4">
                                         {[
-                                            { label: 'Total Records', val: result?.report?.total_records || 0 },
-                                            { label: 'Train Set', val: result?.report?.training_records || 0 },
-                                            { label: 'Test Set', val: result?.report?.test_records || 0 },
-                                            { label: 'Accuracy', val: `${result?.report?.accuracy || 0}%`, color: 'success' }
+                                            { label: 'Knowledge Base', val: result?.report?.total_records || 0, icon: <FiDatabase size={14} /> },
+                                            { label: 'Accuracy', val: `${result?.report?.accuracy || 0}%`, color: result?.report?.status === 'warning' ? 'danger' : 'success' },
+                                            { label: 'Precision', val: `${result?.report?.precision || 0}%`, color: 'primary' },
+                                            { label: 'Recall', val: `${result?.report?.recall || 0}%`, color: 'warning' },
+                                            { label: 'F1 Score', val: `${result?.report?.f1_score || 0}%`, color: 'info' }
                                         ].map((s, i) => (
-                                            <div className="col-md-3" key={i}>
-                                                <div className={`p-3 rounded-3 ${s.color ? `bg-${s.color} bg-opacity-10` : 'bg-secondary bg-opacity-5'}`}>
-                                                    <div className={`h5 fw-bold mb-0 ${s.color ? `text-${s.color}` : ''}`}>{s.val}</div>
-                                                    <small className="text-muted">{s.label}</small>
+                                            <div className="col-md" key={i}>
+                                                <div className={`p-3 rounded-4 h-100 ${s.color ? `bg-${s.color} bg-opacity-10 border border-${s.color} border-opacity-10` : 'bg-surface border'}`}>
+                                                    <div className={`h5 fw-bold mb-1 ${s.color ? `text-${s.color}` : 'var(--text)'}`}>{s.val}</div>
+                                                    <small className="text-secondary fw-medium d-flex align-items-center gap-1">
+                                                        {s.icon} {s.label}
+                                                    </small>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
 
-                                    <h6 className="fw-bold text-muted small mb-3">Feature Importance</h6>
+                                    {/* AI Insight Section */}
+                                    <div className={`p-3 rounded-4 mb-4 border ${result?.report?.status === 'warning' ? 'border-danger bg-danger bg-opacity-5' : 'border-success bg-success bg-opacity-5'}`}>
+                                        <div className="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 className={`fw-bold small mb-1 ${result?.report?.status === 'warning' ? 'text-danger' : 'text-success'}`}>
+                                                    {result?.report?.status === 'warning' ? 'Stability Alert' : 'Intelligence Expanded'}
+                                                </h6>
+                                                <p className="extra-small text-muted m-0">{result?.report?.analysis}</p>
+                                            </div>
+                                            {result?.report?.status === 'warning' && (
+                                                <button className="btn btn-sm btn-danger px-3 py-1 fw-bold" style={{ fontSize: '0.65rem' }}>ROLLBACK</button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <h6 className="fw-bold text-muted small mb-3">Feature Importance Mapping</h6>
                                     <div className="row g-2">
                                         {Object.entries(result?.report?.feature_importance || {}).map(([key, val]) => (
                                             <div className="col-md-6" key={key}>
                                                 <div className="d-flex justify-content-between align-items-center mb-1">
-                                                    <span className="text-capitalize small">{key}</span>
-                                                    <span className="small fw-bold">{Math.round((val || 0) * 100)}%</span>
+                                                    <div className="d-flex align-items-center gap-2">
+                                                        <span className="text-capitalize small fw-bold text-secondary">{key.replace('_', ' ')}</span>
+                                                        <span className="extra-small opacity-50" title={key} style={{ color: 'var(--text)' }}>
+                                                            {key === 'attendance' ? '(Count)' : key === 'type' ? '(Lab/Lec)' : key === 'hour' ? '(Time)' : '(Context)'}
+                                                        </span>
+                                                    </div>
+                                                    <span className="small fw-bold text-primary">{Math.round((val || 0) * 100)}%</span>
                                                 </div>
-                                                <div className="progress" style={{ height: '8px' }}>
+                                                <div className="progress" style={{ height: '8px', background: 'rgba(255,255,255,0.05)' }}>
                                                     <div className="progress-bar bg-primary" style={{ width: `${(val || 0) * 100}%` }}></div>
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+
+                                    <div className="mt-4 p-3 rounded-3 bg-white bg-opacity-5 border border-white border-opacity-5">
+                                        <h6 className="fw-bold small mb-2"><FiAlertCircle className="me-2" /> Understanding Importance</h6>
+                                        <p className="extra-small text-muted m-0 lh-sm"> 
+                                            <strong>Attendance:</strong> Direct driver of occupancy levels. <br/>
+                                            <strong>Why are some 0%?</strong> Features like "Is Weekend" or "Time Bin" are currently redundant because the model already learned these patterns from the raw "Day" and "Hour" data.
+                                        </p>
                                     </div>
                                 </div>
                             )}
@@ -170,9 +243,9 @@ function MLDataset() {
                                             { label: 'Optimized', val: result.summary.optimized_count, color: 'primary' }
                                         ].map((s, i) => (
                                             <div className="col-md-3" key={i}>
-                                                <div className={`p-3 rounded-3 bg-${s.color} bg-opacity-10 text-center`}>
+                                                <div className={`p-3 rounded-3 bg-${s.color} bg-opacity-10 text-center border border-${s.color} border-opacity-10`}>
                                                     <div className={`h4 fw-bold mb-0 text-${s.color}`}>{s.val}</div>
-                                                    <small className="text-muted">{s.label}</small>
+                                                    <small className="text-secondary fw-medium">{s.label}</small>
                                                 </div>
                                             </div>
                                         ))}
@@ -193,16 +266,16 @@ function MLDataset() {
                                             <tbody>
                                                 {result.predictions.slice(0, 50).map((p, i) => (
                                                     <tr key={i}>
-                                                        <td className="fw-bold">{p.day}</td>
-                                                        <td>{p.hour}</td>
-                                                        <td className="text-capitalize">{p.type}</td>
-                                                        <td className="fw-bold text-primary">{p.attendance}%</td>
-                                                        <td>
+                                                        <td className="fw-bold py-3 text-white">{p.day}</td>
+                                                        <td className="py-3">{p.hour}</td>
+                                                        <td className="text-capitalize py-3">{p.type || 'N/A'}</td>
+                                                        <td className="fw-bold text-primary py-3">{p.attendance !== undefined ? `${p.attendance}%` : '--'}</td>
+                                                        <td className="py-3">
                                                             <span className={`badge bg-${p.predicted_occupancy === 'High' ? 'success' : p.predicted_occupancy === 'Medium' ? 'warning' : 'danger'} bg-opacity-10 text-${p.predicted_occupancy === 'High' ? 'success' : p.predicted_occupancy === 'Medium' ? 'warning' : 'danger'}`}>
                                                                 {p.predicted_occupancy}
                                                             </span>
                                                         </td>
-                                                        <td className="small text-secondary">{p.recommendation}</td>
+                                                        <td className="small text-secondary py-3">{p.recommendation}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>

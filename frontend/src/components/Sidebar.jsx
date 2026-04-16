@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiGrid, FiBox, FiTrendingUp, FiCalendar, FiLogOut, FiZap, FiUsers, FiChevronDown, FiChevronUp, FiCpu, FiChevronLeft, FiMap, FiGlobe, FiDatabase, FiWifi } from 'react-icons/fi';
+import { FiGrid, FiBox, FiTrendingUp, FiCalendar, FiLogOut, FiZap, FiUsers, FiChevronDown, FiChevronUp, FiCpu, FiChevronLeft, FiMap, FiGlobe, FiDatabase, FiWifi, FiActivity } from 'react-icons/fi';
 import api from '../api';
 import ConfirmModal from './ConfirmModal';
 import SmartLogo from './SmartLogo';
@@ -192,6 +192,9 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
                                         <NavLink to="/ml-lab" className="nav-link">
                                             <FiCpu /> <span>ML Laboratory</span>
                                         </NavLink>
+                                        <NavLink to="/model-status" className="nav-link">
+                                            <FiActivity className="pulse-slow" /> <span>Intelligence Profile</span>
+                                        </NavLink>
                                     </div>
                                 </motion.div>
                             )}
@@ -257,7 +260,7 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
                         flexShrink: 0,
                         boxShadow: isCollapsed ? '0 4px 12px rgba(0, 210, 106, 0.3)' : 'none'
                     }}>
-                        {user.username.charAt(0).toUpperCase()}
+                        {(user?.username || 'U').charAt(0).toUpperCase()}
                     </div>
 
                     {/* Info - Hidden in collapsed */}

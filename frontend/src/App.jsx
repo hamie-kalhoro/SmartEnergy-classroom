@@ -9,6 +9,7 @@ import Sidebar from './components/Sidebar';
 import Signup from './pages/Signup';
 import Timetable from './pages/Timetable';
 import MLDataset from './pages/MLDataset';
+import ModelStatus from './pages/ModelStatus';
 import Users from './pages/Users';
 import LandingPage from './pages/LandingPage';
 import NotificationPanel from './components/NotificationPanel';
@@ -16,8 +17,39 @@ import CampusMap from './pages/CampusMap';
 
 import * as FiIcons from 'react-icons/fi';
 
+// Global Error Boundary to catch render-time issues
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false };
+    }
+    static getDerivedStateFromError() { return { hasError: true }; }
+    componentDidCatch(error, errorInfo) { console.error("Global Error Caught:", error, errorInfo); }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#09090b', color: 'white', flexDirection: 'column', textAlign: 'center', padding: '2rem' }}>
+                    <FiIcons.FiAlertCircle size={48} color="#ef4444" className="mb-4" />
+                    <h1>System Halt Detected</h1>
+                    <p className="text-muted">An critical error occurred in the Dashboard engine.</p>
+                    <button className="btn btn-primary mt-4" onClick={() => { localStorage.clear(); window.location.href = '/'; }}>Reset & Reload Hub</button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 function App() {
-    const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
+    const [user, setUser] = useState(() => {
+        try {
+            const saved = localStorage.getItem('user');
+            return saved ? JSON.parse(saved) : null;
+        } catch (e) {
+            console.error("Failed to parse user from localStorage", e);
+            return null;
+        }
+    });
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(localStorage.getItem('sidebarCollapsed') === 'true');
 
@@ -101,9 +133,16 @@ function App() {
                     <Routes>
                         <Route path="/login" element={!user ? <Login onLogin={handleLogin} theme={theme} toggleTheme={toggleTheme} /> : <Navigate to="/" />} />
                         <Route path="/signup" element={!user ? <Signup /> : <Navigate to="/" />} />
-                        <Route path="/" element={user ? <Dashboard /> : <LandingPage />} />
+                        <Route path="/" element={
+                            user ? (
+                                <ErrorBoundary fallback={<div className="p-5 text-center"><h3>Something went wrong in Dashboard.</h3><button className="btn btn-primary mt-3" onClick={() => window.location.reload()}>Reload Hub</button></div>}>
+                                    <Dashboard />
+                                </ErrorBoundary>
+                            ) : <LandingPage />
+                        } />
                         <Route path="/classrooms" element={user ? <Classrooms user={user} /> : <Navigate to="/login" />} />
                         <Route path="/predictions" element={user ? <Predictions /> : <Navigate to="/login" />} />
+                        <Route path="/model-status" element={user ? <ModelStatus /> : <Navigate to="/login" />} />
                         <Route path="/map" element={user ? <CampusMap user={user} /> : <Navigate to="/login" />} />
                         <Route path="/timetable" element={user ? <Timetable user={user} /> : <Navigate to="/login" />} />
                         <Route path="/ml-lab" element={user ? <MLDataset /> : <Navigate to="/login" />} />

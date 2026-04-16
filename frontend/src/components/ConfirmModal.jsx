@@ -189,15 +189,23 @@ function ConfirmModal({
                                         padding: '0.65rem 1rem',
                                         borderRadius: '12px',
                                         border: '1px solid var(--border)',
-                                        background: 'var(--bg-elevated)',
-                                        color: 'var(--text-secondary)',
+                                        background: 'var(--bg-surface)',
+                                        color: 'var(--text)',
                                         fontSize: '0.85rem',
                                         fontWeight: '600',
                                         cursor: 'pointer',
-                                        transition: 'all 0.2s ease',
+                                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                     }}
-                                    onMouseEnter={(e) => e.target.style.background = 'var(--border)'}
-                                    onMouseLeave={(e) => e.target.style.background = 'var(--bg-elevated)'}
+                                    onMouseEnter={(e) => {
+                                        e.target.style.background = 'var(--bg-elevated)';
+                                        e.target.style.borderColor = 'var(--primary)';
+                                        e.target.style.color = 'var(--primary)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.target.style.background = 'var(--bg-surface)';
+                                        e.target.style.borderColor = 'var(--border)';
+                                        e.target.style.color = 'var(--text)';
+                                    }}
                                 >
                                     {noLabel}
                                 </button>

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import api from '../api';
-import { FiCpu, FiPlay, FiTrendingUp, FiActivity, FiZap, FiSun, FiWind, FiCheckCircle } from 'react-icons/fi';
+import { FiCpu, FiPlay, FiTrendingUp, FiActivity, FiZap, FiSun, FiWind, FiCheckCircle, FiArrowUpRight } from 'react-icons/fi';
+import { NavLink } from 'react-router-dom';
 import DynamicLoader from '../components/DynamicLoader';
 
 function Predictions() {
@@ -36,7 +37,7 @@ function Predictions() {
     return (
         <div className="fade-in">
             {/* Header */}
-            <div className="d-flex justify-content-between align-items-end mb-5">
+            <div className="d-flex justify-content-between align-items-end mb-4">
                 <div>
                     <div className="d-flex align-items-center gap-2 mb-2">
                         <span className="badge" style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#a78bfa', fontSize: '0.7rem' }}>
@@ -59,6 +60,22 @@ function Predictions() {
                         <><FiPlay className="me-2" /> Run Analysis</>
                     )}
                 </button>
+            </div>
+
+            {/* Quick Status Bar - NAVIGATION TO INTELLIGENCE PROFILE */}
+            <div className="d-flex align-items-center justify-content-between p-3 rounded-4 mb-5 border" style={{ background: 'var(--bg-elevated)', borderStyle: 'dashed !important' }}>
+                <div className="d-flex align-items-center gap-3">
+                    <div className="icon-box-sm bg-primary bg-opacity-10 text-primary">
+                        <FiActivity size={18} />
+                    </div>
+                    <div>
+                        <div className="fw-bold small" style={{ color: 'var(--text)' }}>Looking for AI Health?</div>
+                        <div className="extra-small text-muted">Deep technical metrics and accuracy history have moved to the Intelligence Profile.</div>
+                    </div>
+                </div>
+                <NavLink to="/model-status" className="btn btn-sm btn-link text-primary fw-bold text-decoration-none d-flex align-items-center gap-1" style={{ fontSize: '0.7rem' }}>
+                    OPEN PROFILE <FiArrowUpRight size={14} />
+                </NavLink>
             </div>
 
             {/* Results Summary */}
@@ -85,7 +102,7 @@ function Predictions() {
                                     {s.icon}
                                 </div>
                                 <div>
-                                    <h4 className="fw-bold mb-0">{s.val}</h4>
+                                    <h4 className="fw-bold mb-0" style={{ color: 'var(--text)' }}>{s.val}</h4>
                                     <span className="text-muted small text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.1em' }}>{s.label}</span>
                                 </div>
                             </div>
@@ -100,7 +117,6 @@ function Predictions() {
                     {predictions.map((p, i) => (
                         <div className="col-md-6 col-lg-4" key={i}>
                             <div className="card h-100 fade-in-delay" style={{ animationDelay: `${i * 0.05}s` }}>
-                                {/* Top Glow */}
                                 <div style={{
                                     position: 'absolute',
                                     top: '-1px',
@@ -114,8 +130,8 @@ function Predictions() {
 
                                 <div className="d-flex justify-content-between align-items-start mb-4">
                                     <div>
-                                        <h5 className="fw-bold mb-1">{p.classroom}</h5>
-                                        <span className="text-muted small">{p.subject}</span>
+                                        <h5 className="fw-bold mb-1" style={{ color: 'var(--text)' }}>{p.classroom}</h5>
+                                        <p className="text-secondary small fw-medium m-0">{p.subject}</p>
                                     </div>
                                     <span className="badge fw-bold" style={{
                                         background: `${getOccupancyColor(p.occupancy)}20`,
@@ -125,33 +141,37 @@ function Predictions() {
                                     </span>
                                 </div>
 
-                                {/* Metrics */}
                                 <div className="row g-3 mb-4">
                                     <div className="col-6">
                                         <div className="p-2 rounded-2" style={{ background: 'var(--bg-elevated)' }}>
-                                            <div className="small text-muted" style={{ fontSize: '0.65rem' }}>TIME</div>
-                                            <div className="fw-bold">{p.time}</div>
+                                            <div className="text-secondary opacity-75 fw-bold" style={{ fontSize: '0.65rem', letterSpacing: '0.05em' }}>TIME</div>
+                                            <div className="fw-bold mt-1" style={{ color: 'var(--text)' }}>{p.time}</div>
                                         </div>
                                     </div>
                                     <div className="col-6">
                                         <div className="p-2 rounded-2" style={{ background: 'var(--bg-elevated)' }}>
-                                            <div className="small text-muted" style={{ fontSize: '0.65rem' }}>ATTENDANCE</div>
-                                            <div className="fw-bold">{p.attendance}%</div>
+                                            <div className="text-secondary opacity-75 fw-bold" style={{ fontSize: '0.65rem', letterSpacing: '0.05em' }}>ATTENDANCE</div>
+                                            <div className="fw-bold text-primary mt-1">{p.attendance}%</div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Recommendation */}
                                 <div className="p-3 rounded-3" style={{ background: 'rgba(124, 58, 237, 0.05)', border: '1px solid rgba(124, 58, 237, 0.1)' }}>
-                                    <div className="small text-muted mb-2" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>AI Recommendation</div>
-                                    <div className="d-flex gap-3">
+                                    <div className="text-secondary small fw-bold mb-2 pb-1 border-bottom border-white border-opacity-10" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                                        AI Recommendation
+                                    </div>
+                                    <div className="d-flex gap-4">
                                         <div className="d-flex align-items-center gap-2">
-                                            <FiSun style={{ color: p.recommendation.includes('Lights ON') ? '#f59e0b' : 'var(--text-muted)', opacity: p.recommendation.includes('Lights ON') ? 1 : 0.3 }} />
-                                            <span className="small">{p.recommendation.includes('Lights ON') ? 'ON' : 'OFF'}</span>
+                                            <FiSun style={{ color: p.recommendation.includes('Lights ON') ? '#f59e0b' : '#64748b', opacity: p.recommendation.includes('Lights ON') ? 1 : 0.5 }} />
+                                            <span className={`small fw-bold ${p.recommendation.includes('Lights ON') ? '' : 'opacity-50'}`} style={{ color: p.recommendation.includes('Lights ON') ? 'var(--text)' : 'var(--text-secondary)' }}>
+                                                {p.recommendation.includes('Lights ON') ? 'LIGHTS ON' : 'LIGHTS OFF'}
+                                            </span>
                                         </div>
                                         <div className="d-flex align-items-center gap-2">
-                                            <FiWind style={{ color: p.recommendation.includes('AC ON') ? '#06b6d4' : 'var(--text-muted)', opacity: p.recommendation.includes('AC ON') ? 1 : 0.3 }} />
-                                            <span className="small">{p.recommendation.includes('AC ON') ? 'ON' : 'OFF'}</span>
+                                            <FiWind style={{ color: p.recommendation.includes('AC ON') ? '#06b6d4' : '#64748b', opacity: p.recommendation.includes('AC ON') ? 1 : 0.5 }} />
+                                            <span className={`small fw-bold ${p.recommendation.includes('AC ON') ? '' : 'opacity-50'}`} style={{ color: p.recommendation.includes('AC ON') ? 'var(--text)' : 'var(--text-secondary)' }}>
+                                                {p.recommendation.includes('AC ON') ? 'AC ON' : 'AC OFF'}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -165,13 +185,14 @@ function Predictions() {
                         width: '80px',
                         height: '80px',
                         margin: '0 auto 1.5rem',
-                        borderRadius: '50%',
-                        background: 'var(--bg-elevated)',
+                        borderRadius: '24px',
+                        background: 'rgba(0, 210, 106, 0.05)',
+                        border: '1px solid rgba(0, 210, 106, 0.1)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
                     }}>
-                        <FiCpu style={{ fontSize: '2rem', opacity: 0.3 }} />
+                        <FiCpu style={{ fontSize: '2rem', color: 'var(--primary)', opacity: 0.6 }} />
                     </div>
                     <h5 className="fw-bold mb-2">No Predictions Yet</h5>
                     <p className="text-muted mb-4">Click "Run Analysis" to generate AI predictions for all scheduled classes</p>

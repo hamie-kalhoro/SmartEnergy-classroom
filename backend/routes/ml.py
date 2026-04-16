@@ -107,6 +107,8 @@ def predict_batch():
             results.append({
                 'day': row.get('day'),
                 'hour': row.get('hour'),
+                'type': row.get('type'),
+                'attendance': row.get('attendance'),
                 'predicted_occupancy': level_name,
                 'confidence': conf,
                 'reasoning': reasoning,
@@ -136,4 +138,14 @@ def predict_batch():
 def get_ml_status():
     from ml_engine import MLEngine
     ml = MLEngine()
-    return jsonify(ml.get_model_stats())
+    # If the engine doesn't have get_model_stats, use intelligence profile
+    try:
+        return jsonify(ml.get_model_stats())
+    except:
+        return jsonify(ml.get_intelligence_profile())
+
+@ml_bp.route('/api/ml/intelligence-pulse', methods=['GET'])
+def get_intelligence_pulse():
+    from ml_engine import MLEngine
+    ml = MLEngine()
+    return jsonify(ml.get_intelligence_profile())

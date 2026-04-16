@@ -108,10 +108,10 @@ function Timetable({ user }) {
 
     return (
         <div className="fade-in">
-            <div className="d-flex justify-content-between align-items-center mb-5">
+            <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2 className="fw-bold tracking-tight">Academic Timetable</h2>
-                    <p className="text-muted small m-0">Manage class schedules for energy optimization</p>
+                    <h2 className="fw-bold tracking-tight mb-1" style={{ fontSize: '1.5rem' }}>Academic Timetable</h2>
+                    <p className="text-muted small m-0">Optimize energy based on class schedules</p>
                 </div>
                 <div className="d-flex gap-2">
                     <button className="btn btn-primary-dim" onClick={() => setShowImportModal(true)}>
@@ -123,19 +123,19 @@ function Timetable({ user }) {
                 </div>
             </div>
 
-            <div className="card border-0 shadow-sm">
+            <div className="card border-0 shadow-sm mb-4">
                 <div className="table-container">
                     <table className="table">
                         <thead>
-                            <tr>
-                                <th>Classroom</th>
-                                <th>Day</th>
-                                <th>Time</th>
-                                <th>Subject</th>
-                                <th>Type</th>
-                                <th>Teacher</th>
-                                <th>Attendance</th>
-                                <th></th>
+                            <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                                <th className="py-2 px-3 small opacity-50">Classroom</th>
+                                <th className="py-2 px-3 small opacity-50">Day</th>
+                                <th className="py-2 px-3 small opacity-50">Time</th>
+                                <th className="py-2 px-3 small opacity-50">Subject</th>
+                                <th className="py-2 px-3 small opacity-50">Type</th>
+                                <th className="py-2 px-3 small opacity-50">Teacher</th>
+                                <th className="py-2 px-3 small opacity-50 text-center">Att%</th>
+                                <th className="py-2 px-3"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -161,20 +161,20 @@ function Timetable({ user }) {
                             ) : (
                                 schedules.map(s => (
                                     <tr key={s.id}>
-                                        <td className="fw-bold text-primary">{s.classroom}</td>
-                                        <td className="fw-bold">{s.day}</td>
-                                        <td>{s.time}</td>
-                                        <td className="fw-bold">{s.subject}</td>
-                                        <td>
-                                            <span className={`badge ${s.type === 'lab' ? 'bg-info' : s.type === 'seminar' ? 'bg-warning' : 'bg-primary'} bg-opacity-10 text-${s.type === 'lab' ? 'info' : s.type === 'seminar' ? 'warning' : 'primary'}`}>
+                                        <td className="py-2 px-3 fw-bold text-primary small">{s.classroom}</td>
+                                        <td className="py-2 px-3 fw-bold small">{s.day}</td>
+                                        <td className="py-2 px-3 small">{s.time}</td>
+                                        <td className="py-2 px-3 fw-bold small">{s.subject}</td>
+                                        <td className="py-2 px-3">
+                                            <span className={`badge ${s.type === 'lab' ? 'bg-info' : s.type === 'seminar' ? 'bg-warning' : 'bg-primary'} bg-opacity-10 text-${s.type === 'lab' ? 'info' : s.type === 'seminar' ? 'warning' : 'primary'}`} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem' }}>
                                                 {s.type}
                                             </span>
                                         </td>
-                                        <td className="fw-bold">{s.teacher}</td>
-                                        <td className="fw-bold text-primary">{s.attendance}%</td>
-                                        <td>
-                                            <button className="btn btn-sm text-danger" onClick={() => handleDelete(s.id)}>
-                                                <FiTrash2 />
+                                        <td className="py-2 px-3 fw-bold small">{s.teacher}</td>
+                                        <td className="py-2 px-3 fw-bold text-primary small text-center">{s.attendance}%</td>
+                                        <td className="py-2 px-3 text-end">
+                                            <button className="btn btn-sm text-danger p-1" onClick={() => handleDelete(s.id)}>
+                                                <FiTrash2 size={14} />
                                             </button>
                                         </td>
                                     </tr>
@@ -192,7 +192,7 @@ function Timetable({ user }) {
                         <div className="modal-content">
                             <div className="modal-header">
                                 <h5 className="fw-bold mb-0">Add Schedule Entry</h5>
-                                <button className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
+                                <button className="btn-close" style={{ filter: 'var(--close-filter)' }} onClick={() => setShowModal(false)}></button>
                             </div>
                             <form onSubmit={handleAdd}>
                                 <div className="modal-body">
@@ -256,7 +256,7 @@ function Timetable({ user }) {
                         <div className="modal-content">
                             <div className="modal-header">
                                 <h5 className="fw-bold mb-0">Bulk Import Timetable</h5>
-                                <button className="btn-close btn-close-white" onClick={() => { setShowImportModal(false); setImportResult(null); }}></button>
+                                <button className="btn-close" style={{ filter: 'var(--close-filter)' }} onClick={() => { setShowImportModal(false); setImportResult(null); }}></button>
                             </div>
                             <div className="modal-body">
                                 {importResult ? (

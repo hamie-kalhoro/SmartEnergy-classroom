@@ -191,7 +191,7 @@ function Classrooms({ user }) {
 
                                 <div className="d-flex justify-content-between align-items-start mb-4">
                                     <div>
-                                        <h5 className="fw-bold mb-1">{c.name}</h5>
+                                        <h5 className="fw-bold mb-1 text-white-target" style={{ color: 'var(--text)' }}>{c.name}</h5>
                                         <div className="d-flex gap-2 align-items-center">
                                             <span className="badge" style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#a78bfa', fontSize: '0.7rem' }}>
                                                 Building {c.building}
@@ -215,19 +215,19 @@ function Classrooms({ user }) {
                                 <div className="d-flex justify-content-between mb-3">
                                     <div className="text-center px-1">
                                         <span className="text-muted small d-block" style={{ fontSize: '0.65rem', fontWeight: 'bold' }}>CAPACITY</span>
-                                        <span className="fw-bold text-white" style={{ fontSize: '0.9rem' }}>{c.capacity}</span>
+                                        <span className="fw-bold" style={{ fontSize: '0.9rem', color: 'var(--text)' }}>{c.capacity}</span>
                                     </div>
                                     <div className="text-center px-1">
                                         <span className="text-muted small d-block" style={{ fontSize: '0.65rem', fontWeight: 'bold' }}>LIGHTS</span>
-                                        <span className="fw-bold text-white" style={{ fontSize: '0.9rem' }}>{c.lights}</span>
+                                        <span className="fw-bold" style={{ fontSize: '0.9rem', color: 'var(--text)' }}>{c.lights}</span>
                                     </div>
                                     <div className="text-center px-1">
                                         <span className="text-muted small d-block" style={{ fontSize: '0.65rem', fontWeight: 'bold' }}>ACs</span>
-                                        <span className="fw-bold text-white" style={{ fontSize: '0.9rem' }}>{c.acs}</span>
+                                        <span className="fw-bold" style={{ fontSize: '0.9rem', color: 'var(--text)' }}>{c.acs}</span>
                                     </div>
                                     <div className="text-center px-1">
                                         <span className="text-muted small d-block" style={{ fontSize: '0.65rem', fontWeight: 'bold' }}>FANS</span>
-                                        <span className="fw-bold text-white" style={{ fontSize: '0.9rem' }}>{c.fans || 0}</span>
+                                        <span className="fw-bold" style={{ fontSize: '0.9rem', color: 'var(--text)' }}>{c.fans || 0}</span>
                                     </div>
                                 </div>
 
@@ -256,7 +256,7 @@ function Classrooms({ user }) {
                         <div className="modal-content">
                             <div className="modal-header">
                                 <h5 className="fw-bold mb-0">Add Smart Node</h5>
-                                <button className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
+                                <button className="btn-close" style={{ filter: 'var(--close-filter)' }} onClick={() => setShowModal(false)}></button>
                             </div>
                             <form onSubmit={handleAdd}>
                                 <div className="modal-body text-start">
@@ -305,7 +305,7 @@ function Classrooms({ user }) {
                         <div className="modal-content">
                             <div className="modal-header">
                                 <h5 className="fw-bold mb-0">Update Node Configuration</h5>
-                                <button className="btn-close btn-close-white" onClick={() => setEditRoom(null)}></button>
+                                <button className="btn-close" style={{ filter: 'var(--close-filter)' }} onClick={() => setEditRoom(null)}></button>
                             </div>
                             <form onSubmit={handleUpdate}>
                                 <div className="modal-body text-start">
@@ -354,7 +354,7 @@ function Classrooms({ user }) {
                         <div className="modal-content">
                             <div className="modal-header">
                                 <h5 className="fw-bold mb-0">Bulk Import Classrooms</h5>
-                                <button className="btn-close btn-close-white" onClick={() => { setShowBulkModal(false); setImportResult(null); }}></button>
+                                <button className="btn-close" style={{ filter: 'var(--close-filter)' }} onClick={() => { setShowBulkModal(false); setImportResult(null); }}></button>
                             </div>
                             <div className="modal-body">
                                 {importResult ? (

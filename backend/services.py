@@ -672,6 +672,46 @@ class ReportingService:
         }
 
     @staticmethod
+    def get_today_estimation():
+        """Predicts total savings by EOD by combining real savings so far with future predictions."""
+        from ml_engine import MLEngine
+        from sqlalchemy import func
+        from datetime import datetime, timedelta
+        from models import Timetable
+        
+        # Align with user's local timezone (UTC+5)
+        user_now = datetime.utcnow() + timedelta(hours=5)
+        today_date = user_now.date()
+        today_day_name = user_now.strftime('%A')
+        
+        # 1. Actual Savings So Far
+        actual_saved = db.session.query(func.sum(EnergyDecision.energy_saved_kwh))\
+            .filter(func.date(EnergyDecision.timestamp) == today_date).scalar() or 0
+        
+        # 2. AI Projected Savings for Remaining Slots
+        ml = MLEngine()
+        current_hour = user_now.hour
+        future_slots = Timetable.query.filter_by(day_of_week=today_day_name).all()
+        
+        projected_future = 0
+        for slot in future_slots:
+            try:
+                slot_hour = int(slot.time_slot.split(':')[0])
+                if slot_hour > current_hour:
+                    # Ask the AI what it expects to do
+                    _, level_idx, _, _ = ml.predict(
+                        slot.day_of_week, slot.time_slot, 
+                        slot.subject_type, slot.expected_attendance
+                    )
+                    # Mapping: Low/Med usually saves 2.5/1.2 kWh
+                    if level_idx == 0: projected_future += 2.5
+                    elif level_idx == 1: projected_future += 1.2
+            except:
+                continue
+                
+        return round(float(actual_saved) + projected_future, 1)
+
+    @staticmethod
     def trigger_weekend_briefing():
         """Logic to send reports to all admins."""
         admins = User.query.filter_by(role='admin', is_active_account=True).all()

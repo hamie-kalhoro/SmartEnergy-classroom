@@ -6,7 +6,14 @@ const api = axios.create({
 
 // Interceptor to add JWT token to headers
 api.interceptors.request.use((config) => {
-    const user = JSON.parse(localStorage.getItem('user'));
+    let user = null;
+    try {
+        const saved = localStorage.getItem('user');
+        user = saved ? JSON.parse(saved) : null;
+    } catch (e) {
+        console.error("API Interceptor: Failed to parse user", e);
+    }
+    
     if (user && user.token) {
         config.headers.Authorization = `Bearer ${user.token}`;
     }
