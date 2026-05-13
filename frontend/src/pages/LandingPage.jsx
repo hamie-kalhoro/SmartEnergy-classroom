@@ -1,12 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import * as FiIcons from 'react-icons/fi';
 import SmartLogo from '../components/SmartLogo';
 import EnergyBackground from '../components/EnergyBackground';
 
 const LandingPage = () => {
+    const videoRef = useRef(null);
+    const isVideoInView = useInView(videoRef, { amount: 0.5 });
+
+    useEffect(() => {
+        if (isVideoInView && videoRef.current) {
+            videoRef.current.play().catch(e => console.log("Video autoplay prevented:", e));
+        } else if (!isVideoInView && videoRef.current) {
+            videoRef.current.pause();
+        }
+    }, [isVideoInView]);
+
     const [activeFeature, setActiveFeature] = useState(0);
+    const [teamIndex, setTeamIndex] = useState(0);
+    const teamMembers = [
+        { name: "Hamid Ali (GL)", roll: "(22CS002)" },
+        { name: "Karan Kumar", roll: "(22CS008)" },
+        { name: "Mir Liaquat", roll: "(22CS018)" }
+    ];
 
     const [popups, setPopups] = useState([
         { id: 1, text: "Wait! AC is running in empty room!", type: 'alert' },
@@ -14,23 +31,26 @@ const LandingPage = () => {
         { id: 3, text: "Optimizing airflow...", type: 'success' },
     ]);
 
+    const [scrolled, setScrolled] = useState(false);
+    
     useEffect(() => {
-        const featureInterval = setInterval(() => {
+        const timer4s = setInterval(() => {
+            setTeamIndex(prev => (prev + 1) % teamMembers.length);
             setActiveFeature(prev => (prev + 1) % 3);
         }, 4000);
-        return () => clearInterval(featureInterval);
-    }, []);
 
-    useEffect(() => {
-        // Cycle popups to demonstrate "coming up and disappearing"
-        const interval = setInterval(() => {
-            setPopups(prev => {
-                const first = prev[0];
-                const rest = prev.slice(1);
-                return [...rest, first];
-            });
+        const timer3s = setInterval(() => {
+            setPopups(prev => [...prev.slice(1), prev[0]]);
         }, 3000);
-        return () => clearInterval(interval);
+
+        const handleScroll = () => setScrolled(window.scrollY > 50);
+        window.addEventListener('scroll', handleScroll, { passive: true });
+
+        return () => {
+            clearInterval(timer4s);
+            clearInterval(timer3s);
+            window.removeEventListener('scroll', handleScroll);
+        };
     }, []);
 
     const features = [
@@ -68,26 +88,88 @@ const LandingPage = () => {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                padding: '1.25rem 5%',
-                zIndex: 100,
-                background: 'rgba(5, 5, 5, 0.8)',
-                backdropFilter: 'blur(12px)',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+                padding: scrolled ? '0.75rem 6%' : '1.5rem 6%',
+                zIndex: 1000,
+                background: scrolled ? 'rgba(2, 6, 23, 0.7)' : 'transparent',
+                backdropFilter: scrolled ? 'blur(20px) saturate(180%)' : 'none',
+                borderBottom: scrolled ? '1px solid rgba(0, 210, 106, 0.15)' : '1px solid transparent',
+                boxShadow: scrolled ? '0 10px 40px rgba(0, 0, 0, 0.3), inset 0 0 20px rgba(0, 210, 106, 0.05)' : 'none',
+                transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', transform: scrolled ? 'scale(0.9)' : 'scale(1)', transition: 'transform 0.5s ease' }}>
                     <SmartLogo size={28} />
                 </div>
-                <div style={{ display: 'flex', gap: '2.5rem', alignItems: 'center' }}>
-                    <Link to="/map" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500', fontSize: '0.95rem' }}>Campus Map</Link>
-                    <Link to="/login" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontWeight: '500', fontSize: '0.95rem' }}>Sign In</Link>
-                    <Link to="/signup" className="btn btn-primary" style={{ padding: '0.6rem 1.5rem', borderRadius: '50px', fontWeight: '600' }}>Get Started</Link>
+                
+                {/* Navbar Links (Always Visible, Morphing on Scroll) */}
+                <div className="d-flex gap-4 align-items-center">
+                    {[
+                        { to: '/map', label: 'Campus Map' },
+                        { to: '/login', label: 'Sign In' }
+                    ].map(link => (
+                        <Link key={link.to} to={link.to} style={{ 
+                            color: scrolled ? 'rgba(255,255,255,0.9)' : 'var(--text-secondary)', 
+                            textDecoration: 'none', 
+                            fontWeight: '500', 
+                            fontSize: scrolled ? '0.8rem' : '0.9rem',
+                            transition: 'all 0.5s ease'
+                        }}>{link.label}</Link>
+                    ))}
+                    <Link to="/signup" className="btn btn-primary" style={{ 
+                        padding: scrolled ? '0.4rem 1rem' : '0.5rem 1.25rem', 
+                        borderRadius: '50px', 
+                        fontWeight: '600', 
+                        fontSize: scrolled ? '0.75rem' : '0.9rem',
+                        background: scrolled ? 'linear-gradient(135deg, #00d26a 0%, #059669 100%)' : 'var(--primary)',
+                        border: 'none',
+                        transition: 'all 0.5s ease',
+                        boxShadow: scrolled ? '0 0 15px rgba(0, 210, 106, 0.3)' : 'none'
+                    }}>Get Started</Link>
                 </div>
             </nav>
+
+            {/* Floating Vertical Navigation (Appears on Scroll) */}
+            <AnimatePresence>
+                {scrolled && (
+                    <motion.div 
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 50 }}
+                        style={{
+                            position: 'fixed',
+                            right: '1rem', // Further to the right
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            zIndex: 1000,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '1.25rem',
+                            background: 'rgba(2, 6, 23, 0.4)',
+                            backdropFilter: 'blur(20px)',
+                            padding: '1.5rem 0.75rem',
+                            borderRadius: '100px',
+                            border: '1px solid rgba(255, 255, 255, 0.05)',
+                            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.4)'
+                        }}
+                    >
+                        {[
+                            { to: '/signup', icon: <FiIcons.FiPlayCircle />, label: 'Get Started', active: true },
+                            { to: '/login', icon: <FiIcons.FiUser />, label: 'Sign In' },
+                            { to: '/map', icon: <FiIcons.FiMapPin />, label: 'Campus Map' }
+                        ].map(item => (
+                            <Link key={item.to} to={item.to} className={`nav-side-btn ${item.active ? 'active' : ''}`} title={item.label}>
+                                {item.icon}
+                                <span className="nav-side-label">{item.label}</span>
+                            </Link>
+                        ))}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Part 1: Hero Section (Picture 1) */}
             <header className="viewport-section" style={{
                 textAlign: 'center',
-                background: 'radial-gradient(circle at center, rgba(0, 210, 106, 0.08) 0%, transparent 70%)'
+                paddingTop: '12rem', // Shifted down for premium look
+                background: 'radial-gradient(circle at center, rgba(0, 210, 106, 0.1) 0%, transparent 60%)'
             }}>
                 <motion.h1
                     initial={{ opacity: 0, y: 30 }}
@@ -221,11 +303,12 @@ const LandingPage = () => {
                                 background: '#0a0a0a',
                             }}>
                                 <video
-                                    src=""
+                                    ref={videoRef}
+                                    src="/assets/preview/FYP%20design.mp4"
                                     poster="/assets/dashboard_preview.png"
-                                    autoPlay
                                     muted
                                     loop
+                                    playsInline
                                     style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
                                 />
                             </div>
@@ -409,11 +492,130 @@ const LandingPage = () => {
             </section>
 
             {/* Part 5: Premium Footer (Picture 5) */}
-            <footer className="viewport-section" style={{
+            {/* Part 5: Development Team & About Us */}
+            {/* Part 5: Development Team (3D Carousel Flip) */}
+            <section style={{ 
+                padding: '6rem 5% 4rem 5%', // Reduced padding
+                background: 'radial-gradient(circle at top, rgba(0, 210, 106, 0.05) 0%, #050505 100%)', 
+                borderTop: '1px solid rgba(0, 210, 106, 0.1)',
+                minHeight: 'auto', // Dynamic height
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center'
+            }}>
+                <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center', width: '100%' }}>
+                    <h2 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '4rem', letterSpacing: '-0.03em', color: 'var(--text)' }}>
+                        The <span style={{ color: 'var(--primary)' }}>Intelligence</span> Team
+                    </h2>
+                    
+                    <div style={{ 
+                        position: 'relative', 
+                        height: '260px', // Lowered height for better fit
+                        display: 'flex', 
+                        justifyContent: 'center', 
+                        alignItems: 'center'
+                    }}>
+                        {teamMembers.map((member, i) => {
+                            const isCenter = i === teamIndex;
+                            const isLeft = i === (teamIndex - 1 + teamMembers.length) % teamMembers.length;
+                            const isRight = i === (teamIndex + 1) % teamMembers.length;
+                            
+                            let position = 'center';
+                            if (isLeft) position = 'left';
+                            if (isRight) position = 'right';
+                            if (!isCenter && !isLeft && !isRight) return null;
+
+                            return (
+                                <motion.div
+                                    key={i}
+                                    animate={{
+                                        x: position === 'left' ? -320 : position === 'right' ? 320 : 0,
+                                        scale: isCenter ? 1.1 : 0.8,
+                                        opacity: isCenter ? 1 : 0.3,
+                                        filter: isCenter ? 'blur(0px)' : 'blur(6px)',
+                                        zIndex: isCenter ? 10 : 5,
+                                        rotate: 45, // Diamond Shape
+                                    }}
+                                    transition={{ duration: 0.6, ease: "easeInOut" }}
+                                    style={{
+                                        position: 'absolute',
+                                        width: '220px',
+                                        height: '220px',
+                                        background: isCenter 
+                                            ? 'rgba(255, 255, 255, 0.05)' 
+                                            : 'rgba(255, 255, 255, 0.02)',
+                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                        borderRadius: '32px', // Rounded edges
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        boxShadow: isCenter ? '0 30px 60px rgba(0, 0, 0, 0.6)' : 'none',
+                                        backdropFilter: isCenter ? 'blur(20px)' : 'blur(5px)',
+                                    }}
+                                >
+                                    <motion.div
+                                        animate={{ rotate: -45 }} // Keep text horizontal
+                                        style={{ textAlign: 'center' }}
+                                    >
+                                        {isCenter ? (
+                                            <motion.div
+                                                initial={{ opacity: 0, scale: 0.8 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                transition={{ delay: 0.3 }}
+                                            >
+                                                <div style={{ 
+                                                    width: '50px', 
+                                                    height: '50px', 
+                                                    background: 'var(--primary)', 
+                                                    borderRadius: '50%', 
+                                                    display: 'flex', 
+                                                    alignItems: 'center', 
+                                                    justifyContent: 'center',
+                                                    color: '#050505',
+                                                    fontSize: '1.25rem',
+                                                    marginBottom: '0.75rem',
+                                                    margin: '0 auto 0.75rem auto',
+                                                    fontWeight: '800'
+                                                }}>
+                                                    {member.name.charAt(0)}
+                                                </div>
+                                                <h4 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '0.2rem', color: 'var(--text)' }}>{member.name}</h4>
+                                                <p style={{ color: 'var(--primary)', fontWeight: '700', fontSize: '0.8rem', letterSpacing: '0.05em' }}>{member.roll}</p>
+                                            </motion.div>
+                                        ) : (
+                                            <div style={{ opacity: 0.1 }}>
+                                                <SmartLogo size={40} />
+                                            </div>
+                                        )}
+                                    </motion.div>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                    
+                    <div style={{ 
+                        marginTop: '6rem', // Tightened spacing
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '1.25rem', 
+                        padding: '1rem 2rem', 
+                        background: 'rgba(0, 210, 106, 0.08)', 
+                        border: '1px solid rgba(0, 210, 106, 0.25)', 
+                        borderRadius: '100px',
+                        boxShadow: '0 0 30px rgba(0, 210, 106, 0.1)'
+                    }}>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Supervision</span>
+                        <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)' }}></div>
+                        <span style={{ fontSize: '1.1rem', color: 'var(--text)', fontWeight: '800' }}>Madam <span style={{ color: 'var(--primary)' }}>Anam Ali</span></span>
+                    </div>
+                </div>
+            </section>
+
+            {/* Footer */}
+            <footer style={{
                 padding: '6rem 5% 4rem 5%',
                 background: 'var(--bg-deep)',
-                borderTop: '1px solid var(--border)',
-                justifyContent: 'flex-start' // Reset for footer
+                borderTop: '1px solid var(--border)'
             }}>
                 <div style={{
                     maxWidth: '1200px',
@@ -441,11 +643,11 @@ const LandingPage = () => {
                     </div>
 
                     <div>
-                        <h5 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '1.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Company</h5>
+                        <h5 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '1.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Project</h5>
                         <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            <li><a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>About Us</a></li>
-                            <li><a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Ethical AI</a></li>
-                            <li><a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Sustainability</a></li>
+                            <li><a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Privacy Policy</a></li>
+                            <li><a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Terms of Use</a></li>
+                            <li><a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Documentation</a></li>
                         </ul>
                     </div>
                 </div>
@@ -453,19 +655,11 @@ const LandingPage = () => {
                 <div style={{
                     paddingTop: '3rem',
                     borderTop: '1px solid var(--border)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: '1.5rem'
+                    textAlign: 'center'
                 }}>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
-                        © {new Date().getFullYear()} SmartEnergy. Crafted for a greener future.
+                        © {new Date().getFullYear()} SmartEnergy (FYP Prototype). All Rights Reserved.
                     </p>
-                    <div style={{ display: 'flex', gap: '2rem' }}>
-                        <a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.85rem' }}>Privacy Policy</a>
-                        <a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.85rem' }}>Terms of Service</a>
-                    </div>
                 </div>
             </footer>
         </div>

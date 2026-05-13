@@ -47,6 +47,12 @@ class Config:
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
+    # Engine options to prevent database connection drops
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
+    
     # Environment
     FLASK_ENV = os.getenv('FLASK_ENV', 'development')
     DEBUG = FLASK_ENV == 'development'

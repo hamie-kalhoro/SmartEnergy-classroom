@@ -41,7 +41,7 @@ class Timetable(db.Model):
 
 class AttendanceHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    timetable_id = db.Column(db.Integer, db.ForeignKey('timetable.id'), nullable=False)
+    timetable_id = db.Column(db.Integer, db.ForeignKey('timetable.id', ondelete='CASCADE'), nullable=False)
     date = db.Column(db.Date, default=datetime.utcnow)
     actual_attendance = db.Column(db.Float)
     
@@ -51,14 +51,14 @@ class AttendanceHistory(db.Model):
     subject_type = db.Column(db.String(20))
     expected_attendance = db.Column(db.Float)
     
-    timetable = db.relationship('Timetable', backref=db.backref('history', lazy=True))
+    timetable = db.relationship('Timetable', backref=db.backref('history', lazy=True, cascade="all, delete-orphan", passive_deletes=True))
 
 # NEW: Decision History for AI explainability
 class EnergyDecision(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     classroom_id = db.Column(db.Integer, db.ForeignKey('classroom.id'), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    predicted_occupancy = db.Column(db.String(20)) # Low, Medium, High
+    predicted_occupancy = db.Column(db.String(20)) # Empty, Trace, Light, Balanced, Maximum
     lights_action = db.Column(db.String(10)) # ON, OFF, DIM
     ac_action = db.Column(db.String(10)) # ON, OFF
     energy_saved_kwh = db.Column(db.Float, default=0)

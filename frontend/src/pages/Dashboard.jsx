@@ -6,7 +6,7 @@ import {
     registerables
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
-import { FiZap, FiHome, FiUsers, FiGlobe, FiCpu, FiActivity, FiArrowUpRight, FiChevronRight } from 'react-icons/fi';
+import { FiZap, FiHome, FiUsers, FiGlobe, FiCpu, FiActivity, FiArrowUpRight, FiChevronRight, FiThermometer } from 'react-icons/fi';
 
 ChartJS.register(...registerables);
 
@@ -54,6 +54,7 @@ function Dashboard() {
     const [activeRange, setActiveRange] = useState('1w'); // '1w' or '1m'
     const [recentDecisions, setRecentDecisions] = useState([]);
     const [maturity, setMaturity] = useState({ evolution_level: 'Seedling', coverage_pct: 10 });
+    const [climateData, setClimateData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -62,12 +63,14 @@ function Dashboard() {
             api.get(`/api/dashboard/stats?range=${activeRange}`),
             api.get(`/api/dashboard/charts?range=${activeRange}`),
             api.get('/api/decisions/recent'),
-            api.get('/api/ml/intelligence-pulse')
-        ]).then(([statsRes, chartsRes, recentRes, mlRes]) => {
+            api.get('/api/ml/intelligence-pulse'),
+            api.get('/api/climate')
+        ]).then(([statsRes, chartsRes, recentRes, mlRes, climateRes]) => {
             setStats(statsRes.data);
             setCharts(chartsRes.data);
             setRecentDecisions(recentRes.data);
             setMaturity(mlRes.data);
+            setClimateData(climateRes.data);
         }).catch(err => {
             console.error("Dashboard Fetch Error:", err);
         }).finally(() => setLoading(false));
@@ -201,8 +204,20 @@ function Dashboard() {
                                 AI Level: {maturity.evolution_level}
                             </span>
                         </div>
+                        {climateData && (
+                            <div className="d-flex align-items-center gap-2 px-3 py-1 rounded-pill" style={{ 
+                                background: `${climateData.climate_mode_color || '#f59e0b'}10`, 
+                                border: `1px solid ${climateData.climate_mode_color || '#f59e0b'}30`,
+                                boxShadow: `0 0 15px ${climateData.climate_mode_color || '#f59e0b'}08`
+                            }}>
+                                <FiThermometer style={{ fontSize: '0.7rem', color: climateData.climate_mode_color || '#f59e0b' }} />
+                                <span className="fw-bold extra-small text-uppercase tracking-wider" style={{ color: climateData.climate_mode_color || '#f59e0b', fontSize: '0.65rem' }}>
+                                    {climateData.climate_mode_icon} {climateData.temperature}°C · {climateData.season_label}
+                                </span>
+                            </div>
+                        )}
                     </div>
-                    <p className="text-muted small m-0">Live energy consumption & attendance forecasting</p>
+                    <p className="text-muted small m-0">Live energy consumption & climate-aware forecasting</p>
                 </div>
                 <div className="d-flex gap-2">
                     <span className="badge" style={{ background: 'rgba(0, 210, 106, 0.08)', color: 'var(--primary-light)', padding: '0.45rem 0.9rem', borderRadius: '6px', border: '1px solid rgba(0,210,106,0.15)' }}>
@@ -334,9 +349,15 @@ function Dashboard() {
                                 </div>
                                 <div className="d-flex flex-column gap-2" style={{ maxHeight: '220px', overflowY: 'auto' }}>
                                     {recentDecisions.length > 0 ? recentDecisions.slice(0, 5).map(d => (
-                                        <div key={d.id} className="d-flex align-items-center justify-content-between p-2 rounded-2" style={{ background: 'rgba(255, 255, 255, 0.03)', borderBottom: '1px solid var(--border)' }}>
+                                        <div key={d.id} className="d-flex justify-content-between align-items-center mb-2">
                                             <div className="d-flex align-items-center gap-2">
-                                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: d.occupancy === 'High' ? '#10b981' : d.occupancy === 'Medium' ? '#f59e0b' : '#ef4444' }}></div>
+                                                <div style={{ 
+                                                    width: '8px', height: '8px', borderRadius: '50%', 
+                                                    background: d.occupancy === 'Maximum' ? '#10b981' : 
+                                                                d.occupancy === 'Balanced' ? '#06b6d4' : 
+                                                                d.occupancy === 'Light' ? '#f59e0b' : 
+                                                                d.occupancy === 'Trace' ? '#f97316' : '#ef4444' 
+                                                }}></div>
                                                 <span className="small fw-bold" style={{ color: 'var(--text)' }}>{d.classroom}</span>
                                             </div>
                                             <span className="text-muted small">{d.saved} kWh</span>

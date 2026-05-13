@@ -7,10 +7,12 @@ import joblib
 import os
 import json
 from datetime import datetime
+from climate_service import get_climate_context, get_device_overrides
 
-MODEL_PATH = 'occupancy_model.pkl'
-MASTER_HISTORY_PATH = 'data/processed_history.csv'
-TRAINING_LOG_PATH = 'data/training_history.json'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, 'occupancy_model.pkl')
+MASTER_HISTORY_PATH = os.path.join(BASE_DIR, 'data', 'processed_history.csv')
+TRAINING_LOG_PATH = os.path.join(BASE_DIR, 'data', 'training_history.json')
 
 class MLEngine:
     def __init__(self):
@@ -19,8 +21,8 @@ class MLEngine:
         self.retrain_threshold = 50 # Retrain every 50 new real-world data points
         self.new_data_count = 0
         
-        # Create data directory if it doesn't exist
-        os.makedirs('data', exist_ok=True)
+        # Create data directory relative to BASE_DIR if it doesn't exist
+        os.makedirs(os.path.join(BASE_DIR, 'data'), exist_ok=True)
         
         if os.path.exists(MODEL_PATH):
             try:
@@ -50,7 +52,12 @@ class MLEngine:
                         else:
                             attendance = np.random.randint(5, 30)
                             
-                    label = 0 if attendance <= 33 else (1 if attendance <= 66 else 2)
+                    # 5-Level Labeling Logic (0-4)
+                    if attendance <= 5: label = 0    # Empty
+                    elif attendance <= 25: label = 1 # Trace
+                    elif attendance <= 50: label = 2 # Light
+                    elif attendance <= 75: label = 3 # Balanced
+                    else: label = 4                  # Maximum
                     data.append([day, hour, sub_type, attendance, label])
         
         df = pd.DataFrame(data, columns=['day', 'hour', 'type', 'attendance', 'label'])
@@ -70,12 +77,20 @@ class MLEngine:
             # New feature: Is Weekend
             df['is_weekend'] = df['day'].apply(lambda x: 1 if x >= 5 else 0)
         
-        # Hour: 08:00 -> 8
+        # Hour: 08:00 or 2:00 PM -> 8 or 14
+        if 'start_time' in df.columns and 'hour' not in df.columns:
+            df['hour'] = df['start_time']
+            
         if 'hour' in df.columns:
             def parse_hour(x):
                 try:
-                    s = str(x).strip()
-                    h = int(s.split(':')[0]) if ':' in s else int(float(s))
+                    s = str(x).strip().upper()
+                    h_str = s.replace('AM', '').replace('PM', '').strip()
+                    h = int(h_str.split(':')[0]) if ':' in h_str else int(float(h_str))
+                    if 'PM' in s and h != 12:
+                        h += 12
+                    elif 'AM' in s and h == 12:
+                        h = 0
                     return h
                 except: return 8
             df['hour'] = df['hour'].apply(parse_hour).astype(int)
@@ -90,11 +105,20 @@ class MLEngine:
         if 'type' in df.columns:
             df['type'] = df['type'].apply(lambda x: 1 if str(x).lower().strip() in ['lab', 'practical', '1'] else 0)
             
+        # Handle new dataset format where numeric percentage is in occupancy_pct
+        if 'occupancy_pct' in df.columns:
+            df['attendance'] = df['occupancy_pct']
+            
         if 'attendance' in df.columns:
             df['attendance'] = pd.to_numeric(df['attendance'], errors='coerce').fillna(50).astype(float)
-            
-        if 'label' not in df.columns and 'attendance' in df.columns:
-            df['label'] = df['attendance'].apply(lambda x: 0 if x <= 33 else (1 if x <= 66 else 2))
+            # 5-Level Safety First Labeling
+            def get_label(x):
+                if x <= 5: return 0    # Empty (0-5%)
+                if x <= 25: return 1   # Trace (6-25%) - Min Comfort Active
+                if x <= 50: return 2   # Light (26-50%)
+                if x <= 75: return 3   # Balanced (51-75%)
+                return 4               # Maximum (76-100%)
+            df['label'] = df['attendance'].apply(get_label)
             
         return df
 
@@ -104,11 +128,12 @@ class MLEngine:
         
         if os.path.exists(MASTER_HISTORY_PATH):
             history_df = pd.read_csv(MASTER_HISTORY_PATH)
-            # Combine logic: if we have thousands of records, we might want to prune, 
-            # but for now, we follow 'learn from everything'
             cumulative_df = pd.concat([history_df, processed_new], ignore_index=True)
         else:
             cumulative_df = processed_new
+            
+        # Re-apply labeling to the entire history to maintain consistency
+        cumulative_df = self._preprocess_dataframe(cumulative_df)
             
         # Limit history to latest 10,000 records to maintain performance
         if len(cumulative_df) > 10000:
@@ -147,10 +172,10 @@ class MLEngine:
         coverage_pct = min(100, round((mastered_count / essential_scenarios) * 100, 1))
         
         # Evolution Level based on knowledge coverage and data depth
-        if coverage_pct < 30: level = "Observant Seedling"
-        elif coverage_pct < 50: level = "Knowledge Gatherer"
-        elif coverage_pct < 70: level = "Pattern Engine"
-        elif coverage_pct < 90: level = "Strategic Analyst"
+        if coverage_pct < 25: level = "Observant Seedling"
+        elif coverage_pct < 45: level = "Knowledge Gatherer"
+        elif coverage_pct < 65: level = "Pattern Engine"
+        elif coverage_pct < 85: level = "Strategic Analyst"
         else: level = "Intelligence Core"
         
         # Calculate Delta from last training
@@ -215,12 +240,11 @@ class MLEngine:
         df = pd.read_csv(MASTER_HISTORY_PATH)
         required_features = ['day', 'hour', 'type', 'attendance', 'is_weekend', 'time_bin']
         
-        # Ensure all features exist (handle legacy data)
-        if 'is_weekend' not in df.columns:
-            df = self._preprocess_dataframe(df)
+        # Re-process to ensure new labeling is applied to history
+        df = self._preprocess_dataframe(df)
             
-        X = df[required_features]
-        y = df['label']
+        X = df[required_features].fillna(0) # CRITICAL FIX: Prevent NaNs from crashing the model
+        y = df['label'].fillna(0)
         
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=42)
         
@@ -248,7 +272,7 @@ class MLEngine:
             'f1_score': round(float(f1) * 100, 2),
             'feature_importance': dict(zip(required_features, [round(float(x), 4) for x in self.model.feature_importances_])),
             'status': 'success',
-            'analysis': 'Model knowledge successfully expanded.'
+            'analysis': 'Model knowledge successfully expanded with 5-Level granularity.'
         }
         
         # Check for Accuracy Drop
@@ -309,54 +333,156 @@ class MLEngine:
         probabilities = self.model.predict_proba(processed[features])[0]
         
         confidence = round(float(np.max(probabilities)) * 100, 1)
-        levels = {0: 'Low', 1: 'Medium', 2: 'High'}
-        result_label = levels[prediction]
+        levels = {0: 'Empty', 1: 'Trace', 2: 'Light', 3: 'Balanced', 4: 'Maximum'}
+        result_label = levels.get(int(prediction), 'Balanced')
         
-        # --- Intelligence Guard ---
-        # If attendance is < 33.3%, it MUST be Low, regardless of model variance.
+        # --- Intelligence Guard (SAFETY FIRST) ---
         actual_attendance = processed['attendance'].iloc[0]
-        if actual_attendance <= 33.3:
+        if actual_attendance == 0:
             prediction = 0
-            result_label = 'Low'
-        elif actual_attendance >= 66.6 and (prediction == 0):
-            prediction = 2
-            result_label = 'High'
-        # ----------------------------
+            result_label = 'Empty'
+        elif actual_attendance > 0 and actual_attendance <= 25:
+            # FORCE Level 1 (Trace) even if model says 0, to ensure 1 student gets service
+            prediction = 1
+            result_label = 'Trace'
+        elif actual_attendance >= 85:
+            prediction = 4
+            result_label = 'Maximum'
+        # -----------------------------------------
         
         # Reasoning Engine
         reasoning = self._generate_reasoning(processed, result_label, confidence)
         
         return result_label, int(prediction), reasoning, confidence
 
-    def _generate_reasoning(self, row, label, confidence):
+    def _generate_reasoning(self, processed, label, confidence):
         day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        day = day_names[row['day'].iloc[0]]
-        hour = row['hour'].iloc[0]
-        is_weekend = row['is_weekend'].iloc[0]
+        row = processed.iloc[0]
+        day = day_names[int(row['day'])]
+        hour = int(row['hour'])
+        is_weekend = int(row['is_weekend'])
+        attendance = float(row['attendance'])
         
         reasons = []
-        if is_weekend:
-            reasons.append(f"It's {day}, and behavioral history shows minimal student presence on weekends.")
+        if attendance == 0:
+            reasons.append("Room is currently vacant; system entering deep hibernation.")
+        elif attendance <= 25:
+            reasons.append(f"Trace occupancy detected ({attendance}%). Minimum comfort protocol activated for student presence.")
+        
+        if is_weekend and attendance > 0:
+            reasons.append(f"Unusual {day} activity detected. Adjusting to accommodate weekend presence.")
+            
         if hour < 9 or hour > 17:
             reasons.append("Current time is outside standard heavy-traffic academic hours.")
-        if label == 'High' and confidence > 80:
-            reasons.append(f"High-confidence match with past {day} peak performance datasets.")
-        if label == 'Low' and row['attendance'].iloc[0] < 20:
-            reasons.append("Projected attendance is very low, aligning with historical efficiency profiles.")
             
         if not reasons:
             reasons.append(f"Standard {label} occupancy pattern detected based on {day} academic schedules.")
             
         return " ".join(reasons)
 
+    def get_climate_aware_recommendation(self, level_idx, climate_context=None):
+        """Enhanced recommendation that factors in climate conditions.
+        
+        This method wraps get_recommendation() with climate intelligence.
+        If no climate context is provided, falls back to standard logic.
+        """
+        if not climate_context:
+            # Fetch live climate context
+            try:
+                climate_context = get_climate_context()
+            except Exception:
+                # Ultimate fallback: standard recommendation
+                return self._build_fallback_recommendation(level_idx)
+        
+        climate_mode = climate_context.get('climate_mode', 'moderate')
+        temperature = climate_context.get('temperature', 25)
+        
+        # Get climate-aware device overrides
+        overrides = get_device_overrides(level_idx, climate_mode)
+        
+        if not overrides:
+            return self._build_fallback_recommendation(level_idx)
+        
+        # Inject actual temperature into reasoning
+        reasoning = overrides['reasoning'].format(temp=f"{temperature}")
+        
+        levels = {0: 'Low', 1: 'Medium', 2: 'High'}
+        
+        return {
+            'occupancy_level': levels.get(int(level_idx), 'Medium'),
+            'lights': overrides['lights'],
+            'ac': overrides['ac'],
+            'fan': overrides['fan'],
+            'recommendation': overrides['recommendation'],
+            'climate_reasoning': reasoning,
+            'energy_mode': overrides['energy_mode'],
+            'climate_mode': climate_mode,
+            'temperature': temperature,
+            'season': climate_context.get('season_label', 'Unknown')
+        }
+
+    def _build_fallback_recommendation(self, level_idx):
+        """Standard recommendation when climate data is unavailable."""
+        level_idx = int(level_idx)
+        levels = {0: 'Empty', 1: 'Trace', 2: 'Light', 3: 'Balanced', 4: 'Maximum'}
+        if level_idx == 0:
+            return {
+                'occupancy_level': 'Empty',
+                'lights': 'OFF', 'ac': 'OFF', 'fan': 'OFF',
+                'recommendation': 'System Dormant (Eco Mode)',
+                'climate_reasoning': 'Room is empty. Systems deactivated.',
+                'energy_mode': 'eco', 'climate_mode': 'unknown',
+                'temperature': None, 'season': 'Unknown'
+            }
+        elif level_idx == 1:
+            return {
+                'occupancy_level': 'Trace',
+                'lights': 'DIM (50%)', 'ac': 'OFF', 'fan': 'ON',
+                'recommendation': 'Trace Presence (Minimal Power)',
+                'climate_reasoning': 'Student detected. Ventilation only.',
+                'energy_mode': 'eco', 'climate_mode': 'unknown',
+                'temperature': None, 'season': 'Unknown'
+            }
+        elif level_idx == 2:
+            return {
+                'occupancy_level': 'Light',
+                'lights': 'ON', 'ac': 'OFF', 'fan': 'ON',
+                'recommendation': 'Light Occupancy (Balanced Mode)',
+                'climate_reasoning': 'Comfortable conditions maintained.',
+                'energy_mode': 'balanced', 'climate_mode': 'unknown',
+                'temperature': None, 'season': 'Unknown'
+            }
+        elif level_idx == 3:
+            return {
+                'occupancy_level': 'Balanced',
+                'lights': 'ON', 'ac': 'ECO', 'fan': 'ON',
+                'recommendation': 'Balanced Occupancy (Comfort Mode)',
+                'climate_reasoning': 'Active cooling starting to maintain stability.',
+                'energy_mode': 'comfort', 'climate_mode': 'unknown',
+                'temperature': None, 'season': 'Unknown'
+            }
+        else:
+            return {
+                'occupancy_level': 'Maximum',
+                'lights': 'ON', 'ac': 'ON', 'fan': 'HIGH',
+                'recommendation': 'Maximum Capacity (Full Power)',
+                'climate_reasoning': 'Full room cooling active.',
+                'energy_mode': 'full', 'climate_mode': 'unknown',
+                'temperature': None, 'season': 'Unknown'
+            }
+
     def get_recommendation(self, level_idx):
         level_idx = int(level_idx)
         if level_idx == 0:
-            return "Lights OFF, AC OFF (Eco Mode)", "Low"
+            return "Lights OFF, AC OFF (Eco Mode)", "Empty"
         elif level_idx == 1:
-            return "Lights ON (50%), AC OFF (Fan only)", "Medium"
+            return "Lights DIM, AC OFF (Trace Mode)", "Trace"
+        elif level_idx == 2:
+            return "Lights ON, AC OFF (Light Mode)", "Light"
+        elif level_idx == 3:
+            return "Lights ON, AC ECO (Balanced Mode)", "Balanced"
         else:
-            return "Full Power: Lights ON, AC ON", "High"
+            return "Full Power: Lights ON, AC ON", "Maximum"
     
     def add_to_history(self, day, hour, sub_type, attendance, label):
         """Add a single real-world decision to the history and retrain if threshold met."""

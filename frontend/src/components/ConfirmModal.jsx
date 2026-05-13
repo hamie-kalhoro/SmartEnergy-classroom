@@ -114,38 +114,63 @@ function ConfirmModal({
                     }}
                 >
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.85, y: 20 }}
+                        initial={{ opacity: 0, scale: 0.95, y: 15 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.85, y: 20 }}
-                        transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                         style={{
                             width: '100%',
-                            maxWidth: '380px',
-                            background: 'var(--bg-surface)',
-                            border: '1px solid var(--border)',
-                            borderRadius: '14px',
+                            maxWidth: '400px',
+                            background: 'rgba(10, 10, 12, 0.75)',
+                            backdropFilter: 'blur(30px) saturate(150%)',
+                            WebkitBackdropFilter: 'blur(30px) saturate(150%)',
+                            border: '1px solid rgba(255, 255, 255, 0.06)',
+                            borderRadius: '24px',
                             overflow: 'hidden',
-                            boxShadow: `0 25px 60px rgba(0,0,0,0.4), 0 0 40px ${accent}15`,
+                            boxShadow: `0 40px 80px -20px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.02), 0 0 40px ${accent}10`,
+                            position: 'relative'
                         }}
                     >
-                        {/* Accent Top Bar */}
+                        {/* Premium Glowing Top Line */}
                         <div style={{
-                            height: '3px',
-                            background: `linear-gradient(90deg, ${accent}, ${accent}88)`,
+                            position: 'absolute',
+                            top: 0,
+                            left: '20%',
+                            right: '20%',
+                            height: '1px',
+                            background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
+                            boxShadow: `0 0 20px 2px ${accent}60`,
                         }} />
 
                         {/* Content */}
-                        <div style={{ padding: '1.75rem 1.75rem 1.25rem', textAlign: 'center' }}>
+                        <div style={{ padding: '2.5rem 2rem 1.5rem', textAlign: 'center', position: 'relative' }}>
+                            {/* Ambient background glow behind the icon */}
+                            <div style={{
+                                position: 'absolute',
+                                top: '25%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                width: '120px',
+                                height: '120px',
+                                background: `${accent}`,
+                                filter: 'blur(60px)',
+                                opacity: 0.15,
+                                pointerEvents: 'none'
+                            }} />
+
                             {/* Icon */}
                             <div style={{
-                                width: '56px',
-                                height: '56px',
-                                borderRadius: '16px',
-                                background: `${accent}15`,
+                                width: '68px',
+                                height: '68px',
+                                borderRadius: '20px',
+                                background: `linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)`,
+                                border: `1px solid rgba(255,255,255,0.08)`,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                margin: '0 auto 1rem',
+                                margin: '0 auto 1.5rem',
+                                position: 'relative',
+                                boxShadow: `inset 0 2px 20px rgba(255,255,255,0.02), 0 10px 20px rgba(0,0,0,0.2)`,
                             }}>
                                 {iconMap[type] || iconMap.confirm}
                             </div>
@@ -153,10 +178,11 @@ function ConfirmModal({
                             {/* Title */}
                             <h4 style={{
                                 margin: '0 0 0.5rem',
-                                fontSize: '1.1rem',
-                                fontWeight: '700',
+                                fontSize: '1.25rem',
+                                fontWeight: '800',
                                 color: 'var(--text)',
-                                fontFamily: 'var(--font-heading)',
+                                fontFamily: 'var(--font-heading, "Inter", sans-serif)',
+                                letterSpacing: '-0.02em'
                             }}>
                                 {title}
                             </h4>
@@ -165,9 +191,10 @@ function ConfirmModal({
                             {message && (
                                 <p style={{
                                     margin: 0,
-                                    fontSize: '0.85rem',
+                                    fontSize: '0.95rem',
                                     color: 'var(--text-muted)',
-                                    lineHeight: 1.5,
+                                    lineHeight: 1.6,
+                                    padding: '0 0.5rem',
                                 }}>
                                     {message}
                                 </p>
@@ -177,8 +204,8 @@ function ConfirmModal({
                         {/* Actions */}
                         <div style={{
                             display: 'flex',
-                            gap: '10px',
-                            padding: '0 1.75rem 1.5rem',
+                            gap: '12px',
+                            padding: '0 2rem 2rem',
                             justifyContent: 'center',
                         }}>
                             {isConfirm && (
@@ -186,25 +213,23 @@ function ConfirmModal({
                                     onClick={onCancel}
                                     style={{
                                         flex: 1,
-                                        padding: '0.65rem 1rem',
-                                        borderRadius: '12px',
-                                        border: '1px solid var(--border)',
-                                        background: 'var(--bg-surface)',
-                                        color: 'var(--text)',
-                                        fontSize: '0.85rem',
+                                        padding: '0.8rem 1rem',
+                                        borderRadius: '16px',
+                                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                                        background: 'rgba(255, 255, 255, 0.03)',
+                                        color: 'var(--text-secondary)',
+                                        fontSize: '0.95rem',
                                         fontWeight: '600',
                                         cursor: 'pointer',
-                                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                                     }}
                                     onMouseEnter={(e) => {
-                                        e.target.style.background = 'var(--bg-elevated)';
-                                        e.target.style.borderColor = 'var(--primary)';
-                                        e.target.style.color = 'var(--primary)';
+                                        e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+                                        e.target.style.color = 'var(--text)';
                                     }}
                                     onMouseLeave={(e) => {
-                                        e.target.style.background = 'var(--bg-surface)';
-                                        e.target.style.borderColor = 'var(--border)';
-                                        e.target.style.color = 'var(--text)';
+                                        e.target.style.background = 'rgba(255, 255, 255, 0.03)';
+                                        e.target.style.color = 'var(--text-secondary)';
                                     }}
                                 >
                                     {noLabel}
@@ -215,19 +240,26 @@ function ConfirmModal({
                                 autoFocus
                                 style={{
                                     flex: 1,
-                                    padding: '0.6rem 1rem',
-                                    borderRadius: '8px',
-                                    border: 'none',
-                                    background: accent,
-                                    color: 'white',
-                                    fontSize: '0.85rem',
-                                    fontWeight: '600',
+                                    padding: '0.8rem 1rem',
+                                    borderRadius: '16px',
+                                    border: `1px solid ${accent}40`,
+                                    background: `linear-gradient(135deg, ${accent}dd 0%, ${accent} 100%)`,
+                                    color: '#ffffff',
+                                    fontSize: '0.95rem',
+                                    fontWeight: '700',
                                     cursor: 'pointer',
-                                    transition: 'all 0.2s ease',
-                                    boxShadow: `0 4px 15px ${accent}40`,
+                                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                                    boxShadow: `0 10px 25px -5px ${accent}60, inset 0 2px 5px rgba(255,255,255,0.3)`,
+                                    textShadow: '0 2px 4px rgba(0,0,0,0.1)'
                                 }}
-                                onMouseEnter={(e) => e.target.style.transform = 'translateY(-1px)'}
-                                onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+                                onMouseEnter={(e) => {
+                                    e.target.style.transform = 'translateY(-2px)';
+                                    e.target.style.boxShadow = `0 15px 35px -5px ${accent}80, inset 0 2px 5px rgba(255,255,255,0.4)`;
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = `0 10px 25px -5px ${accent}60, inset 0 2px 5px rgba(255,255,255,0.3)`;
+                                }}
                             >
                                 {okLabel}
                             </button>

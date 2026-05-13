@@ -38,5 +38,125 @@
         },
         "status": "success",
         "analysis": "Model knowledge successfully expanded."
+    },
+    {
+        "timestamp": "2026-04-21T06:12:46.598481",
+        "total_records": 10000,
+        "training_records": 8500,
+        "test_records": 1500,
+        "accuracy": 97.87,
+        "precision": 97.87,
+        "recall": 97.87,
+        "f1_score": 97.87,
+        "feature_importance": {
+            "day": 0.0481,
+            "hour": 0.0386,
+            "type": 0.0422,
+            "attendance": 0.8622,
+            "is_weekend": 0.0003,
+            "time_bin": 0.0087
+        },
+        "status": "success",
+        "analysis": "Model knowledge successfully expanded."
+    },
+    {
+        "timestamp": "2026-04-21T06:23:20.119221",
+        "total_records": 10000,
+        "training_records": 8500,
+        "test_records": 1500,
+        "accuracy": 100.0,
+        "precision": 100.0,
+        "recall": 100.0,
+        "f1_score": 100.0,
+        "feature_importance": {
+            "day": 0.0474,
+            "hour": 0.026,
+            "type": 0.0129,
+            "attendance": 0.9051,
+            "is_weekend": 0.0003,
+            "time_bin": 0.0083
+        },
+        "status": "success",
+        "analysis": "Model knowledge successfully expanded."
+    },
+    {
+        "timestamp": "2026-04-23T12:57:00.295551",
+        "total_records": 10000,
+        "training_records": 8500,
+        "test_records": 1500,
+        "accuracy": 100.0,
+        "precision": 100.0,
+        "recall": 100.0,
+        "f1_score": 100.0,
+        "feature_importance": {
+            "day": 0.0442,
+            "hour": 0.0237,
+            "type": 0.0132,
+            "attendance": 0.9116,
+            "is_weekend": 0.0004,
+            "time_bin": 0.0068
+        },
+        "status": "success",
+        "analysis": "Model knowledge successfully expanded."
+    },
+    {
+        "timestamp": "2026-04-23T18:25:17.832736",
+        "total_records": 10000,
+        "training_records": 8500,
+        "test_records": 1500,
+        "accuracy": 99.93,
+        "precision": 99.93,
+        "recall": 99.93,
+        "f1_score": 99.93,
+        "feature_importance": {
+            "day": 0.0112,
+            "hour": 0.0099,
+            "type": 0.0025,
+            "attendance": 0.9747,
+            "is_weekend": 0.0,
+            "time_bin": 0.0017
+        },
+        "status": "success",
+        "analysis": "Model knowledge successfully expanded."
+    },
+    {
+        "timestamp": "2026-04-23T18:25:45.997978",
+        "total_records": 10000,
+        "training_records": 8500,
+        "test_records": 1500,
+        "accuracy": 100.0,
+        "precision": 100.0,
+        "recall": 100.0,
+        "f1_score": 100.0,
+        "feature_importance": {
+            "day": 0.0105,
+            "hour": 0.01,
+            "type": 0.003,
+            "attendance": 0.9746,
+            "is_weekend": 0.0002,
+            "time_bin": 0.0017
+        },
+        "status": "success",
+        "analysis": "Model knowledge successfully expanded."
+    },
+    {
+        "timestamp": "2026-05-09T19:04:41.600717",
+        "total_records": 10000,
+        "training_records": 8500,
+        "test_records": 1500,
+        "accuracy": 100.0,
+        "precision": 100.0,
+        "recall": 100.0,
+        "f1_score": 100.0,
+        "feature_importance": {
+            "day": 0.0087,
+            "hour": 0.028,
+            "type": 0.0132,
+            "attendance": 0.9473,
+            "is_weekend": 0.0,
+            "time_bin": 0.0028
+        },
+        "status": "success",
+        "analysis": "Model knowledge successfully expanded with 5-Level granularity."
     }
 ]

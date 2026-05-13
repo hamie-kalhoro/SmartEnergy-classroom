@@ -42,16 +42,9 @@ const EnergyBackground = () => {
                 <defs>
                     <linearGradient id="pulse-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stopColor="transparent" />
-                        <stop offset="50%" stopColor="var(--primary)" stopOpacity="0.4" />
+                        <stop offset="50%" stopColor="var(--primary)" stopOpacity="0.8" />
                         <stop offset="100%" stopColor="transparent" />
                     </linearGradient>
-                    <filter id="glow">
-                        <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                        <feMerge>
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                    </filter>
                 </defs>
 
                 {lines.map((line) => (
@@ -62,7 +55,6 @@ const EnergyBackground = () => {
                         width={line.angle === 0 ? line.length : 1.5}
                         height={line.angle === 90 ? line.length : 1.5}
                         fill="url(#pulse-gradient)"
-                        filter="url(#glow)"
                         initial={{ opacity: 0 }}
                         animate={{
                             opacity: [0, 0.8, 0],
@@ -82,8 +74,7 @@ const EnergyBackground = () => {
             {/* Ambient Radial Gradients (Subtle Glows) */}
             <motion.div
                 animate={{
-                    opacity: [0.3, 0.5, 0.3],
-                    scale: [1, 1.2, 1]
+                    opacity: [0.3, 0.5, 0.3]
                 }}
                 transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
                 style={{
@@ -93,14 +84,12 @@ const EnergyBackground = () => {
                     width: '600px',
                     height: '600px',
                     background: 'radial-gradient(circle, rgba(0, 210, 106, 0.05) 0%, transparent 70%)',
-                    borderRadius: '50%',
-                    filter: 'blur(100px)'
+                    borderRadius: '50%'
                 }}
             />
             <motion.div
                 animate={{
-                    opacity: [0.3, 0.5, 0.3],
-                    scale: [1.2, 1, 1.2]
+                    opacity: [0.3, 0.5, 0.3]
                 }}
                 transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
                 style={{
@@ -110,8 +99,7 @@ const EnergyBackground = () => {
                     width: '800px',
                     height: '800px',
                     background: 'radial-gradient(circle, rgba(0, 210, 106, 0.08) 0%, transparent 70%)',
-                    borderRadius: '50%',
-                    filter: 'blur(120px)'
+                    borderRadius: '50%'
                 }}
             />
         </div>

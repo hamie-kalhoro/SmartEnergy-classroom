@@ -39,6 +39,18 @@ def generate():
         theory_rooms = Classroom.query.filter(Classroom.name.like('Room%')).all()
         lab_rooms = Classroom.query.filter(Classroom.name.like('%Lab%')).all()
 
+        FACULTY = [
+            ("Dr. Hamid Raza", "hamid.raza@university.edu"),
+            ("Engr. Aisha Khan", "aisha.k@university.edu"),
+            ("Dr. Yasir Shah", "yasir.s@university.edu"),
+            ("Prof. Zahid Ali", "zahid.a@university.edu"),
+            ("Dr. Saira Ahmed", "saira.a@university.edu"),
+            ("Engr. Ali Raza", "ali.raza@university.edu"),
+            ("Dr. Maryam Bilal", "maryam.b@university.edu"),
+            ("Prof. Kashif Memon", "kashif.m@university.edu"),
+            ("Dr. Nadia Siddiqui", "nadia.s@university.edu")
+        ]
+
         timetable_data = []
 
         # Logic for Majors (3hr blocks) - REDUCED to 10
@@ -46,6 +58,7 @@ def generate():
             day = random.choice(weekdays)
             room = random.choice(theory_rooms)
             start_hour = random.choice([8, 11]) 
+            teacher = random.choice(FACULTY)
             for offset in range(3):
                 t = Timetable(
                     classroom_id=room.id,
@@ -53,6 +66,8 @@ def generate():
                     time_slot=f"{start_hour+offset:02d}:00",
                     subject=f"Major Course {i}",
                     subject_type="theory",
+                    teacher_name=teacher[0],
+                    teacher_email=teacher[1],
                     expected_attendance=random.randint(25, 75)
                 )
                 db.session.add(t)
@@ -63,6 +78,7 @@ def generate():
             days = random.sample(weekdays, 2)
             room = random.choice(theory_rooms)
             hour = random.choice([8, 9, 10, 11, 13, 14, 15])
+            teacher = random.choice(FACULTY)
             for d in days:
                 t = Timetable(
                     classroom_id=room.id,
@@ -70,6 +86,8 @@ def generate():
                     time_slot=f"{hour:02d}:00",
                     subject=f"Minor Course {i}",
                     subject_type="theory",
+                    teacher_name=teacher[0],
+                    teacher_email=teacher[1],
                     expected_attendance=random.randint(15, 60)
                 )
                 db.session.add(t)
@@ -80,6 +98,7 @@ def generate():
             day = random.choice(weekdays)
             room = random.choice(lab_rooms)
             start_hour = 9 
+            teacher = random.choice(FACULTY)
             for offset in range(3):
                 t = Timetable(
                     classroom_id=room.id,
@@ -87,6 +106,8 @@ def generate():
                     time_slot=f"{start_hour+offset:02d}:00",
                     subject=f"Practical Lab {i}",
                     subject_type="lab",
+                    teacher_name=teacher[0],
+                    teacher_email=teacher[1],
                     expected_attendance=random.randint(20, 80)
                 )
                 db.session.add(t)

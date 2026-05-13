@@ -53,7 +53,7 @@ def get_stats():
         
         # Align today's metrics
         stats.update({
-            'saved_today': ReportingService.get_today_savings(), 
+            'saved_today': EnergyService.get_daily_summary()['savings'], 
             'weekly_savings': round(float(db.session.query(func.sum(EnergyDecision.energy_saved_kwh)).filter(EnergyDecision.timestamp >= (user_now - timedelta(days=7) - timedelta(hours=5))).scalar() or 0), 2),
             'efficiency_growth': profile['delta'], 
             'growth_label': 'higher' if profile['delta'] >= 0 else 'lower'

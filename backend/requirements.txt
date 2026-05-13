@@ -17,3 +17,4 @@ waitress
 flask-talisman
 python-multipart
 watchdog
+requests

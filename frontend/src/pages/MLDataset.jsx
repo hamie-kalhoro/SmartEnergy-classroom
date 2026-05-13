@@ -235,52 +235,63 @@ function MLDataset() {
                                         </div>
                                     </div>
 
-                                    <div className="row g-3 mb-4">
-                                        {[
-                                            { label: 'Low Occupancy', val: result.summary.low_occupancy, color: 'danger' },
-                                            { label: 'Medium', val: result.summary.medium_occupancy, color: 'warning' },
-                                            { label: 'High', val: result.summary.high_occupancy, color: 'success' },
-                                            { label: 'Optimized', val: result.summary.optimized_count, color: 'primary' }
-                                        ].map((s, i) => (
-                                            <div className="col-md-3" key={i}>
-                                                <div className={`p-3 rounded-3 bg-${s.color} bg-opacity-10 text-center border border-${s.color} border-opacity-10`}>
-                                                    <div className={`h4 fw-bold mb-0 text-${s.color}`}>{s.val}</div>
-                                                    <small className="text-secondary fw-medium">{s.label}</small>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    <div className="row g-2 mb-4">
+                                         {[
+                                             { label: 'Empty', val: result.summary.empty_count, color: 'danger' },
+                                             { label: 'Trace', val: result.summary.trace_count, color: 'warning' },
+                                             { label: 'Light', val: result.summary.light_count, color: 'info' },
+                                             { label: 'Balanced', val: result.summary.balanced_count, color: 'primary' },
+                                             { label: 'Maximum', val: result.summary.maximum_count, color: 'success' }
+                                         ].map((s, i) => (
+                                             <div className="col" key={i}>
+                                                 <div className={`p-2 rounded-3 bg-${s.color} bg-opacity-10 text-center border border-${s.color} border-opacity-10`}>
+                                                     <div className={`h6 fw-bold mb-0 text-${s.color}`}>{s.val}</div>
+                                                     <div className="extra-small text-secondary fw-medium" style={{ fontSize: '0.6rem' }}>{s.label}</div>
+                                                 </div>
+                                             </div>
+                                         ))}
+                                     </div>
 
-                                    <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                                        <table className="table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Day</th>
-                                                    <th>Hour</th>
-                                                    <th>Type</th>
-                                                    <th>Attendance</th>
-                                                    <th>Prediction</th>
-                                                    <th>Recommendation</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {result.predictions.slice(0, 50).map((p, i) => (
-                                                    <tr key={i}>
-                                                        <td className="fw-bold py-3 text-white">{p.day}</td>
-                                                        <td className="py-3">{p.hour}</td>
-                                                        <td className="text-capitalize py-3">{p.type || 'N/A'}</td>
-                                                        <td className="fw-bold text-primary py-3">{p.attendance !== undefined ? `${p.attendance}%` : '--'}</td>
-                                                        <td className="py-3">
-                                                            <span className={`badge bg-${p.predicted_occupancy === 'High' ? 'success' : p.predicted_occupancy === 'Medium' ? 'warning' : 'danger'} bg-opacity-10 text-${p.predicted_occupancy === 'High' ? 'success' : p.predicted_occupancy === 'Medium' ? 'warning' : 'danger'}`}>
-                                                                {p.predicted_occupancy}
-                                                            </span>
-                                                        </td>
-                                                        <td className="small text-secondary py-3">{p.recommendation}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                     <div className="table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                                         <table className="table">
+                                             <thead>
+                                                 <tr>
+                                                     <th>Day</th>
+                                                     <th>Hour</th>
+                                                     <th>Type</th>
+                                                     <th>Attendance</th>
+                                                     <th>Prediction</th>
+                                                     <th>Recommendation</th>
+                                                 </tr>
+                                             </thead>
+                                             <tbody>
+                                                 {result.predictions.slice(0, 50).map((p, i) => {
+                                                     const getBadgeColor = (lvl) => {
+                                                         if (lvl === 'Maximum') return 'success';
+                                                         if (lvl === 'Balanced') return 'primary';
+                                                         if (lvl === 'Light') return 'info';
+                                                         if (lvl === 'Trace') return 'warning';
+                                                         return 'danger';
+                                                     };
+                                                     const color = getBadgeColor(p.predicted_occupancy);
+                                                     return (
+                                                         <tr key={i}>
+                                                             <td className="fw-bold py-3 text-white">{p.day}</td>
+                                                             <td className="py-3">{p.hour}</td>
+                                                             <td className="text-capitalize py-3">{p.type || 'N/A'}</td>
+                                                             <td className="fw-bold text-primary py-3">{p.attendance !== undefined ? `${p.attendance}%` : '--'}</td>
+                                                             <td className="py-3">
+                                                                 <span className={`badge bg-${color} bg-opacity-10 text-${color}`}>
+                                                                     {p.predicted_occupancy}
+                                                                 </span>
+                                                             </td>
+                                                             <td className="small text-secondary py-3">{p.recommendation}</td>
+                                                         </tr>
+                                                     );
+                                                 })}
+                                             </tbody>
+                                         </table>
+                                     </div>
                                     {result.predictions.length > 50 && (
                                         <p className="text-muted small text-center mt-3">Showing first 50 of {result.predictions.length} results</p>
                                     )}

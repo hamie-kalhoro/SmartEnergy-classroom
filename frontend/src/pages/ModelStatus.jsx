@@ -184,27 +184,31 @@ const ModelStatus = () => {
             {/* Bottom Row: Insights & Definitions */}
             <div className="row g-4 mb-5">
                 <div className="col-lg-8">
-                    <div className="card p-4 border-0" style={{ background: 'var(--bg-elevated)' }}>
-                        <h6 className="fw-bold mb-4 d-flex align-items-center gap-2">
+                    <div className="card p-4 border-0" style={{ background: 'var(--bg-elevated)', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)' }}>
+                        <h6 className="fw-bold mb-4 d-flex align-items-center gap-2" style={{ letterSpacing: '0.05em' }}>
                             <FiCpu className="text-primary" /> Intelligence Insights Engine
                         </h6>
                         <div className="row g-3">
                             <div className="col-md-6">
-                                <div className="p-3 rounded-4 bg-white bg-opacity-5 border border-white border-opacity-5">
+                                <div className="insight-card-premium">
                                     <div className="d-flex align-items-center gap-2 mb-2">
-                                        <FiCheckCircle className="text-success" size={14} />
-                                        <span className="small fw-bold" style={{ color: 'var(--text)' }}>Stability Index</span>
+                                        <div className="status-dot-sm bg-success"></div>
+                                        <span className="small fw-bold text-white">Stability Index</span>
                                     </div>
-                                    <p className="extra-small text-muted m-0">The model shows high consistency on weekdays. Predictability for Lab rooms is 15% higher than classrooms.</p>
+                                    <p className="extra-small text-muted m-0" style={{ lineHeight: '1.6' }}>
+                                        The model shows high consistency on weekdays. Predictability for Lab rooms is 15% higher than classrooms.
+                                    </p>
                                 </div>
                             </div>
                             <div className="col-md-6">
-                                <div className="p-3 rounded-4 bg-white bg-opacity-5 border border-white border-opacity-5">
+                                <div className="insight-card-premium border-primary-glow">
                                     <div className="d-flex align-items-center gap-2 mb-2">
-                                        <FiRefreshCcw className="text-primary" size={14} />
-                                        <span className="small fw-bold" style={{ color: 'var(--text)' }}>Self-Learning Goal</span>
+                                        <div className="status-dot-sm bg-primary"></div>
+                                        <span className="small fw-bold text-white">Self-Learning Goal</span>
                                     </div>
-                                    <p className="extra-small text-muted m-0">AI identifies a data gap for Friday morning sessions (8AM-10AM). Uploading more data for this slot will boost accuracy.</p>
+                                    <p className="extra-small text-muted m-0" style={{ lineHeight: '1.6' }}>
+                                        AI identifies a data gap for Friday morning sessions (8AM-10AM). Uploading more data for this slot will boost accuracy.
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -232,24 +236,82 @@ const ModelStatus = () => {
                 
                 .w-fit { width: fit-content; }
                 .z-index-1 { z-index: 1; }
+
+                .insight-card-premium {
+                    padding: 1.25rem;
+                    border-radius: 1.25rem;
+                    background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-left: 4px solid #00d26a;
+                    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+                    position: relative;
+                    overflow: hidden;
+                    backdrop-filter: blur(10px);
+                }
+
+                .insight-card-premium::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: -100%;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+                    transition: 0.5s;
+                }
+
+                .insight-card-premium:hover::before {
+                    left: 100%;
+                }
+
+                .insight-card-premium:hover {
+                    background: rgba(255, 255, 255, 0.06);
+                    transform: translateY(-5px) scale(1.02);
+                    box-shadow: 0 15px 35px rgba(0,0,0,0.4), 0 0 15px rgba(0, 210, 106, 0.1);
+                    border-left-width: 6px;
+                }
+
+                .insight-card-premium.border-primary-glow {
+                    border-left-color: var(--primary);
+                }
+                
+                .insight-card-premium.border-primary-glow:hover {
+                    box-shadow: 0 15px 35px rgba(0,0,0,0.4), 0 0 15px rgba(6, 182, 212, 0.1);
+                }
+
+                .status-dot-sm {
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    box-shadow: 0 0 12px currentColor;
+                    animation: pulse-soft 2s infinite;
+                }
+
+                @keyframes pulse-soft {
+                    0% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.2); opacity: 0.7; }
+                    100% { transform: scale(1); opacity: 1; }
+                }
                 
                 /* Out-of-the-Box Orb Animations */
                 .intelligence-core-orb {
-                    width: 140px;
-                    height: 140px;
-                    background: radial-gradient(circle at 30% 30%, var(--primary-light), var(--primary));
+                    width: 160px;
+                    height: 160px;
+                    background: radial-gradient(circle at 30% 30%, #4ade80, #00d26a);
                     border-radius: 50%;
                     position: relative;
-                    box-shadow: 0 0 60px rgba(0, 210, 106, 0.4), inset -10px -10px 40px rgba(0,0,0,0.5);
+                    box-shadow: 0 0 80px rgba(0, 210, 106, 0.4), 
+                                inset -15px -15px 50px rgba(0,0,0,0.6),
+                                inset 10px 10px 30px rgba(255,255,255,0.4);
                     animation: orbFloat 6s ease-in-out infinite;
                 }
 
                 .orb-inner-glow {
                     position: absolute;
-                    inset: 5px;
+                    inset: 8px;
                     border-radius: 50%;
-                    border: 1px solid rgba(255,255,255,0.2);
-                    box-shadow: inset 0 0 20px var(--primary-light);
+                    border: 2px solid rgba(255,255,255,0.2);
+                    box-shadow: inset 0 0 30px #4ade80;
                     animation: orbRotate 12s linear infinite;
                 }
 
@@ -257,30 +319,41 @@ const ModelStatus = () => {
                     position: absolute;
                     inset: 0;
                     background-image: 
-                        linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.1) 49%, rgba(255,255,255,0.1) 51%, transparent 52%),
-                        linear-gradient(-45deg, transparent 48%, rgba(255,255,255,0.1) 49%, rgba(255,255,255,0.1) 51%, transparent 52%);
-                    background-size: 20px 20px;
+                        repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 11px);
                     border-radius: 50%;
-                    opacity: 0.5;
+                    opacity: 0.6;
                     animation: orbRotate -15s linear infinite;
                 }
 
                 .orb-ring-large {
                     position: absolute;
-                    width: 240px;
-                    height: 240px;
-                    border: 1px dashed rgba(0, 210, 106, 0.15);
+                    width: 280px;
+                    height: 280px;
+                    border: 1px dashed rgba(0, 210, 106, 0.2);
                     border-radius: 50%;
-                    animation: orbRotate 20s linear infinite;
+                    animation: orbRotate 25s linear infinite;
                 }
 
                 .orb-ring-medium {
                     position: absolute;
-                    width: 190px;
-                    height: 190px;
-                    border: 1px solid rgba(255, 255, 255, 0.03);
+                    width: 220px;
+                    height: 220px;
+                    border: 1px solid rgba(255, 255, 255, 0.05);
                     border-radius: 50%;
-                    animation: orbRotate -15s linear infinite;
+                    animation: orbRotate -18s linear infinite;
+                }
+
+                /* Text Gradient Animation */
+                .text-gradient {
+                    background: linear-gradient(90deg, #00d26a, #06b6d4, #00d26a);
+                    background-size: 200% auto;
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    animation: shine 3s linear infinite;
+                }
+
+                @keyframes shine {
+                    to { background-position: 200% center; }
                 }
 
                 @keyframes orbFloat {

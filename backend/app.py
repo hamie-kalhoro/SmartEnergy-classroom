@@ -1,6 +1,11 @@
 import os
+import sys
 import logging
 from logging.handlers import RotatingFileHandler
+
+# Path Guard: Ensure the backend directory is in the system path for sub-modules
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_talisman import Talisman
@@ -186,7 +191,7 @@ if __name__ == '__main__':
     seed_database(app)
     port = int(os.getenv('PORT', 5000))
     if app.config['DEBUG']:
-        app.run(debug=True, host='0.0.0.0', port=port)
+        app.run(debug=True, host='0.0.0.0', port=port, use_reloader=False)
     else:
         try:
             from waitress import serve

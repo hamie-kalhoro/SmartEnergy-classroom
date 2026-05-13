@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import db, Timetable, Classroom, Notification, User
+from models import db, Timetable, Classroom, Notification, User, AttendanceHistory
 import pandas as pd
 
 timetable_bp = Blueprint('timetable', __name__)
@@ -51,6 +51,10 @@ def delete_timetable(id):
     if entry:
         subj = entry.subject
         room = entry.classroom.name
+        
+        # Clean up related history first to avoid integrity errors
+        AttendanceHistory.query.filter_by(timetable_id=id).delete()
+        
         db.session.delete(entry)
         
         # System Tracking Notification
@@ -145,13 +149,27 @@ def record_attendance():
         
     from models import AttendanceHistory
     from ml_engine import MLEngine
+    ml = MLEngine()
     
+    # Sophisticated hour parsing to handle AM/PM correctly for AI
+    def parse_hour(x):
+        try:
+            s = str(x).strip().upper()
+            h_str = s.replace('AM', '').replace('PM', '').strip()
+            h = int(h_str.split(':')[0]) if ':' in h_str else int(float(h_str))
+            if 'PM' in s and h != 12:
+                h += 12
+            elif 'AM' in s and h == 12:
+                h = 0
+            return h
+        except: return 8
+
     # Create Ground Truth record (Feedback Loop)
     history = AttendanceHistory(
         timetable_id=timetable_id,
         actual_attendance=actual_attendance,
         day_of_week=entry.day_of_week,
-        hour=int(entry.time_slot.split(':')[0]) if ':' in entry.time_slot else 8,
+        hour=parse_hour(entry.time_slot),
         subject_type=entry.subject_type,
         expected_attendance=entry.expected_attendance
     )

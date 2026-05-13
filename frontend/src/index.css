@@ -1615,3 +1615,62 @@ tbody tr:hover {
 .role-card:active {
     transform: translateY(0);
 }
+
+/* Premium Floating Sidebar Styles */
+.nav-side-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    text-decoration: none;
+    border: 1px solid transparent;
+}
+
+.nav-side-btn:hover {
+    color: var(--primary);
+    background: rgba(0, 210, 106, 0.1);
+    border-color: rgba(0, 210, 106, 0.2);
+    box-shadow: 0 0 15px rgba(0, 210, 106, 0.1);
+}
+
+.nav-side-btn.active {
+    background: var(--gradient-primary);
+    color: #020617;
+    box-shadow: 0 0 20px rgba(0, 210, 106, 0.4);
+}
+
+.nav-side-label {
+    position: absolute;
+    right: 64px;
+    background: rgba(2, 6, 23, 0.8);
+    backdrop-filter: blur(10px);
+    color: var(--text);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(10px);
+    transition: all 0.3s ease;
+    border: 1px solid var(--border);
+}
+
+.nav-side-btn:hover .nav-side-label {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Landing Page Utilities */
+.hover-lift:hover {
+    transform: translateY(-8px);
+    border-color: rgba(0, 210, 106, 0.3) !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}

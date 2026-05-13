@@ -5,13 +5,17 @@ import os
 import pandas as pd
 from models import Timetable, Classroom
 from services import EnergyService
+from ml_engine import MLEngine
+from climate_service import get_climate_context
 
 ml_bp = Blueprint('ml', __name__)
 
 @ml_bp.route('/api/predict', methods=['GET'])
 def get_recommendations():
-    from ml_engine import MLEngine
     ml = MLEngine()
+    
+    # Fetch climate context ONCE for this batch (cached for 10 min)
+    climate_context = get_climate_context()
     
     timetable = Timetable.query.all()
     results = []
@@ -21,14 +25,34 @@ def get_recommendations():
             entry.day_of_week, entry.time_slot, 
             entry.subject_type, entry.expected_attendance
         )
-        rec, _ = ml.get_recommendation(level_idx)
         
-        # Calculate and log energy decision
-        lights_action = 'OFF' if level_idx == 0 else 'ON'
-        ac_action = 'ON' if level_idx == 2 else 'OFF'
-        energy_saved = round(2.5 if level_idx < 2 else 0, 2)
+        # Climate-Aware Recommendation (NEW)
+        climate_rec = ml.get_climate_aware_recommendation(level_idx, climate_context)
         
-        EnergyService.log_decision(classroom.id, level_name, lights_action, ac_action, energy_saved)
+        # Legacy-compatible device actions for energy logging
+        lights_action = climate_rec['lights']
+        ac_action = climate_rec['ac']
+        fan_action = climate_rec['fan']
+        
+        # Energy saved calculation — climate-aware
+        energy_mode = climate_rec.get('energy_mode', 'balanced')
+        if energy_mode == 'eco':
+            energy_saved = 3.5  # Maximum savings (everything off/min)
+        elif energy_mode == 'balanced':
+            energy_saved = 2.0  # Significant savings (Fans only/Eco AC)
+        elif energy_mode == 'comfort':
+            energy_saved = 0.8  # Slight savings (Optimized AC)
+        elif energy_mode == 'full':
+            energy_saved = 0.1  # Minimal savings (Full power but managed)
+        else:
+            energy_saved = 0
+        
+        EnergyService.log_decision(
+            classroom.id, level_name, 
+            'ON' if lights_action != 'OFF' else 'OFF', 
+            'ON' if ac_action not in ('OFF',) else 'OFF', 
+            round(energy_saved, 2)
+        )
         
         results.append({
             'classroom': classroom.name,
@@ -37,16 +61,47 @@ def get_recommendations():
             'occupancy': level_name,
             'confidence': confidence,
             'reasoning': reasoning,
-            'recommendation': rec,
-            'attendance': entry.expected_attendance
+            'recommendation': climate_rec['recommendation'],
+            'attendance': entry.expected_attendance,
+            # Climate Intelligence Fields (NEW)
+            'lights_action': climate_rec['lights'],
+            'ac_action': climate_rec['ac'],
+            'fan_action': climate_rec['fan'],
+            'climate_reasoning': climate_rec['climate_reasoning'],
+            'energy_mode': climate_rec['energy_mode'],
+            'climate_mode': climate_rec['climate_mode'],
+            'temperature': climate_rec['temperature'],
+            'season': climate_rec['season']
         })
-    return jsonify(results)
+    
+    return jsonify({
+        'predictions': results,
+        'climate': {
+            'season': climate_context.get('season_label'),
+            'season_icon': climate_context.get('season_icon'),
+            'temperature': climate_context.get('temperature'),
+            'feels_like': climate_context.get('feels_like'),
+            'humidity': climate_context.get('humidity'),
+            'climate_mode': climate_context.get('climate_mode'),
+            'climate_mode_label': climate_context.get('climate_mode_label'),
+            'climate_mode_color': climate_context.get('climate_mode_color'),
+            'climate_mode_icon': climate_context.get('climate_mode_icon'),
+            'city': climate_context.get('city'),
+            'source': climate_context.get('source'),
+            'description': climate_context.get('description')
+        }
+    })
+
+@ml_bp.route('/api/climate', methods=['GET'])
+def get_climate():
+    """Dedicated endpoint for climate context — used by Dashboard and other pages."""
+    from climate_service import get_climate_context
+    return jsonify(get_climate_context())
 
 @ml_bp.route('/api/ml/upload-train', methods=['POST'])
 @jwt_required()
 def upload_and_train():
     """Upload a CSV dataset, digest it into history, and delete original."""
-    from ml_engine import MLEngine
     ml = MLEngine()
     
     if 'file' not in request.files:
@@ -89,8 +144,8 @@ def upload_and_train():
 @jwt_required()
 def predict_batch():
     """Upload a CSV dataset and get smart predictions."""
-    from ml_engine import MLEngine
     ml = MLEngine()
+    climate_context = get_climate_context()
     
     if 'file' not in request.files:
         return jsonify({'success': False, 'message': 'No file provided'}), 400
@@ -98,37 +153,67 @@ def predict_batch():
     file = request.files['file']
     try:
         df = pd.read_csv(file)
-        results = []
-        for _, row in df.iterrows():
-            level_name, idx, reasoning, conf = ml.predict(
-                row.get('day'), row.get('hour'), row.get('type'), row.get('attendance')
-            )
-            rec, _ = ml.get_recommendation(idx)
-            results.append({
-                'day': row.get('day'),
-                'hour': row.get('hour'),
-                'type': row.get('type'),
-                'attendance': row.get('attendance'),
-                'predicted_occupancy': level_name,
-                'confidence': conf,
-                'reasoning': reasoning,
-                'recommendation': rec
-            })
         
-        # Calculate summary for frontend
-        low = sum(1 for p in results if p['predicted_occupancy'] == 'Low')
-        med = sum(1 for p in results if p['predicted_occupancy'] == 'Medium')
-        high = sum(1 for p in results if p['predicted_occupancy'] == 'High')
+        # Robustness: Normalize column names (lowercase & stripped)
+        df.columns = [c.lower().strip() for c in df.columns]
+        
+        results = []
+        for index, row in df.iterrows():
+            try:
+                # Get values with flexible type handling
+                day_val = row.get('day', 'Monday')
+                hour_val = row.get('hour', 9)
+                type_val = row.get('type', 'theory')
+                attendance_val = row.get('attendance', 0)
+                
+                level_name, idx, reasoning, conf = ml.predict(
+                    day_val, hour_val, type_val, attendance_val
+                )
+                
+                climate_rec = ml.get_climate_aware_recommendation(idx, climate_context)
+                results.append({
+                    'day': day_val,
+                    'hour': hour_val,
+                    'type': type_val,
+                    'attendance': attendance_val,
+                    'predicted_occupancy': level_name,
+                    'confidence': conf,
+                    'reasoning': reasoning,
+                    'recommendation': climate_rec['recommendation'],
+                    'lights_action': climate_rec['lights'],
+                    'ac_action': climate_rec['ac'],
+                    'fan_action': climate_rec['fan'],
+                    'climate_reasoning': climate_rec['climate_reasoning'],
+                    'energy_mode': climate_rec['energy_mode']
+                })
+            except Exception as row_error:
+                print(f"[WARN] ML Batch: Skipping malformed row {index} - {str(row_error)}")
+                continue
+        
+        # Calculate summary for frontend (5-Level System)
+        empty = sum(1 for p in results if p['predicted_occupancy'] == 'Empty')
+        trace = sum(1 for p in results if p['predicted_occupancy'] == 'Trace')
+        light = sum(1 for p in results if p['predicted_occupancy'] == 'Light')
+        balanced = sum(1 for p in results if p['predicted_occupancy'] == 'Balanced')
+        maximum = sum(1 for p in results if p['predicted_occupancy'] == 'Maximum')
         
         return jsonify({
             'success': True,
             'predictions': results,
+            'climate': {
+                'season': climate_context.get('season_label'),
+                'temperature': climate_context.get('temperature'),
+                'climate_mode': climate_context.get('climate_mode'),
+                'climate_mode_label': climate_context.get('climate_mode_label')
+            },
             'summary': {
                 'total_records': len(results),
-                'low_occupancy': low,
-                'medium_occupancy': med,
-                'high_occupancy': high,
-                'optimized_count': low + med # Assume low/med are optimized
+                'empty_count': empty,
+                'trace_count': trace,
+                'light_count': light,
+                'balanced_count': balanced,
+                'maximum_count': maximum,
+                'optimized_count': empty + trace + light + balanced # Everything except Maximum
             }
         })
     except Exception as e:
@@ -136,16 +221,16 @@ def predict_batch():
 
 @ml_bp.route('/api/ml/status', methods=['GET'])
 def get_ml_status():
-    from ml_engine import MLEngine
     ml = MLEngine()
-    # If the engine doesn't have get_model_stats, use intelligence profile
-    try:
-        return jsonify(ml.get_model_stats())
-    except:
-        return jsonify(ml.get_intelligence_profile())
+    return jsonify(ml.get_intelligence_profile())
+
+@ml_bp.route('/api/ml/intelligence-profile', methods=['GET'])
+def get_intelligence_profile():
+    ml = MLEngine()
+    return jsonify(ml.get_intelligence_profile())
 
 @ml_bp.route('/api/ml/intelligence-pulse', methods=['GET'])
 def get_intelligence_pulse():
-    from ml_engine import MLEngine
+    """Alias for pulse-based profile fetch used by ModelStatus.jsx"""
     ml = MLEngine()
     return jsonify(ml.get_intelligence_profile())
