@@ -62,7 +62,7 @@ function Dashboard() {
         Promise.all([
             api.get(`/api/dashboard/stats?range=${activeRange}`),
             api.get(`/api/dashboard/charts?range=${activeRange}`),
-            api.get('/api/decisions/recent'),
+            api.get(`/api/decisions/recent?range=${activeRange}`),
             api.get('/api/ml/intelligence-pulse'),
             api.get('/api/climate')
         ]).then(([statsRes, chartsRes, recentRes, mlRes, climateRes]) => {
@@ -329,7 +329,7 @@ function Dashboard() {
                                 <div className="d-flex justify-content-between align-items-center mb-4">
                                     <div>
                                         <h6 className="fw-bold mb-1">Occupancy Trend</h6>
-                                        <p className="text-muted small m-0">Today's classroom activity</p>
+                                        <p className="text-muted small m-0">{activeRange === '1d' ? "Today's" : activeRange === '1w' ? "Weekly" : "Monthly"} classroom activity</p>
                                     </div>
                                 </div>
                                 <div style={{ height: '200px' }}>
