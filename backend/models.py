@@ -1,3 +1,4 @@
+from datetime import timezone
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
@@ -14,7 +15,7 @@ class User(UserMixin, db.Model):
     is_pending_admin = db.Column(db.Boolean, default=False)
     is_permanent = db.Column(db.Boolean, default=False) # Only superior admin can toggle this
     activation_token = db.Column(db.String(100), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 class Classroom(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -42,7 +43,7 @@ class Timetable(db.Model):
 class AttendanceHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     timetable_id = db.Column(db.Integer, db.ForeignKey('timetable.id', ondelete='CASCADE'), nullable=False)
-    date = db.Column(db.Date, default=datetime.utcnow)
+    date = db.Column(db.Date, default=lambda: datetime.now(timezone.utc))
     actual_attendance = db.Column(db.Float)
     
     # Snapshots for robust historical training
@@ -57,7 +58,7 @@ class AttendanceHistory(db.Model):
 class EnergyDecision(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     classroom_id = db.Column(db.Integer, db.ForeignKey('classroom.id'), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     predicted_occupancy = db.Column(db.String(20)) # Empty, Trace, Light, Balanced, Maximum
     lights_action = db.Column(db.String(10)) # ON, OFF, DIM
     ac_action = db.Column(db.String(10)) # ON, OFF
@@ -68,7 +69,7 @@ class EnergyDecision(db.Model):
 # NEW: Energy Analytics for reporting
 class DailyEnergyLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.Date, default=datetime.utcnow, unique=True)
+    date = db.Column(db.Date, default=lambda: datetime.now(timezone.utc), unique=True)
     total_consumption_kwh = db.Column(db.Float, default=0)
     total_savings_kwh = db.Column(db.Float, default=0)
     avg_occupancy_percent = db.Column(db.Float, default=0)
@@ -83,4 +84,4 @@ class Notification(db.Model):
     related_user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
     created_by = db.Column(db.String(80), nullable=True)     # admin username who approved
     is_read = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))

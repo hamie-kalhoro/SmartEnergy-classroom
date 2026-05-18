@@ -1,3 +1,4 @@
+from datetime import timezone
 import os
 import uuid
 import smtplib
@@ -104,7 +105,7 @@ class EnergyService:
     @staticmethod
     def get_daily_summary():
         from sqlalchemy import func
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         savings = db.session.query(func.sum(EnergyDecision.energy_saved_kwh)).filter(func.date(EnergyDecision.timestamp) == today).scalar() or 0
         decisions = EnergyDecision.query.filter(func.date(EnergyDecision.timestamp) == today).count()
         return {'savings': round(float(savings), 2), 'decisions': decisions}
@@ -115,7 +116,7 @@ class ReportingService:
         from ml_engine import MLEngine
         from sqlalchemy import func
         from models import Timetable
-        now = datetime.utcnow() # Needs UTC+5 logic in production
+        now = datetime.now(timezone.utc) # Needs UTC+5 logic in production
         actual = db.session.query(func.sum(EnergyDecision.energy_saved_kwh)).filter(func.date(EnergyDecision.timestamp) == now.date()).scalar() or 0
         ml = MLEngine(); future_slots = Timetable.query.all(); projected = 0
         for slot in future_slots:
@@ -130,7 +131,7 @@ class ReportingService:
     def generate_weekly_stats():
         from sqlalchemy import func
         from datetime import timedelta
-        ago = datetime.utcnow() - timedelta(days=7); prev = datetime.utcnow() - timedelta(days=14)
+        ago = datetime.now(timezone.utc) - timedelta(days=7); prev = datetime.now(timezone.utc) - timedelta(days=14)
         current = db.session.query(func.sum(EnergyDecision.energy_saved_kwh)).filter(EnergyDecision.timestamp >= ago).scalar() or 0
         decisions = EnergyDecision.query.filter(EnergyDecision.timestamp >= ago).count()
         prev_s = db.session.query(func.sum(EnergyDecision.energy_saved_kwh)).filter(EnergyDecision.timestamp >= prev, EnergyDecision.timestamp < ago).scalar() or 0

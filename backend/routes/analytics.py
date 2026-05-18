@@ -1,3 +1,4 @@
+from datetime import timezone
 from flask import Blueprint, jsonify, request
 from models import db, Classroom, EnergyDecision, User
 from services import EnergyService, ReportingService
@@ -9,7 +10,7 @@ analytics_bp = Blueprint('analytics', __name__)
 
 def get_user_now():
     """System-wide anchor for UTC+5 alignment."""
-    return datetime.utcnow() + timedelta(hours=5)
+    return datetime.now(timezone.utc) + timedelta(hours=5)
 
 @analytics_bp.route('/api/dashboard/stats', methods=['GET'])
 @jwt_required()

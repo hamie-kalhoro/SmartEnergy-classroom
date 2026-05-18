@@ -1,3 +1,4 @@
+from datetime import timezone
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -262,7 +263,7 @@ class MLEngine:
         joblib.dump(self.model, MODEL_PATH)
         
         report = {
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'total_records': len(df),
             'training_records': len(X_train),
             'test_records': len(X_test),
@@ -489,7 +490,7 @@ class MLEngine:
         new_row = pd.DataFrame([{
             'day': day, 'hour': hour, 'type': sub_type, 
             'attendance': attendance, 'label': label,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.now(timezone.utc).isoformat()
         }])
         
         # Preprocess to ensure is_weekend and time_bin are added

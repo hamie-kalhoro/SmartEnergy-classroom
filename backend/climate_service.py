@@ -1,3 +1,4 @@
+from datetime import timezone
 """
 Climate Intelligence Service
 =============================
@@ -95,7 +96,7 @@ def _estimate_temperature_from_season(season, month):
     based on the specific month and time of day for Jamshoro, Sindh.
     """
     # Get current hour (UTC+5 for Pakistan)
-    user_hour = (datetime.utcnow() + timedelta(hours=5)).hour
+    user_hour = (datetime.now(timezone.utc) + timedelta(hours=5)).hour
     
     # Precise historical averages for Jamshoro
     monthly_day_temps = {
@@ -182,7 +183,7 @@ def get_climate_context():
         return _cache['data']
     
     # Get season info from current date
-    user_now = datetime.utcnow() + timedelta(hours=5)  # UTC+5 Pakistan
+    user_now = datetime.now(timezone.utc) + timedelta(hours=5)  # UTC+5 Pakistan
     season_info = _get_pakistan_season(user_now.month)
     
     # Try API first, fall back to estimation

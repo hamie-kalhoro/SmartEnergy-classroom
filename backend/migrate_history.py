@@ -1,3 +1,4 @@
+from datetime import timezone
 import pandas as pd
 from datetime import datetime, timedelta
 import random
@@ -16,7 +17,7 @@ def migrate():
         
         # 3. Process records with UTC+5 Anchor
         # Anchor is early morning April 16th (User's Today)
-        anchor = datetime.utcnow() + timedelta(hours=5)
+        anchor = datetime.now(timezone.utc) + timedelta(hours=5)
         
         print(f"Migrating {len(df)} records for 20 rooms...")
         
