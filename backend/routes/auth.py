@@ -94,7 +94,7 @@ def get_pending_admins():
 def approve_admin(id):
     """Approve a pending admin registration."""
     current_user_id = get_jwt_identity()
-    approver = User.query.get(int(current_user_id))
+    approver = db.session.get(User, int(current_user_id))
     approved_by = approver.username if approver else None
     
     success, error = AuthService.approve_admin(id, approved_by=approved_by)
@@ -106,7 +106,7 @@ def approve_admin(id):
 @jwt_required()
 def activate_user_manual(id):
     """Manually activate a user (failover for email service)."""
-    user = User.query.get(id)
+    user = db.session.get(User, id)
     if not user:
         return jsonify({'success': False, 'message': 'User not found'}), 404
     
@@ -120,7 +120,7 @@ def activate_user_manual(id):
 def get_notifications():
     """Retrieve notifications relevant to the user's role."""
     user_id = get_jwt_identity()
-    user = User.query.get(int(user_id))
+    user = db.session.get(User, int(user_id))
     
     if not user:
         return jsonify([]), 401
@@ -151,7 +151,7 @@ def get_notifications():
 @jwt_required()
 def next_notification_read(id):
     """Mark a notification as read."""
-    notif = Notification.query.get(id)
+    notif = db.session.get(Notification, id)
     if notif:
         notif.is_read = True
         db.session.commit()
@@ -240,12 +240,12 @@ def bulk_import_users():
 @jwt_required()
 def delete_user(id):
     current_user_id = get_jwt_identity()
-    current_user = User.query.get(int(current_user_id))
+    current_user = db.session.get(User, int(current_user_id))
     
     if not current_user or current_user.role != 'admin':
         return jsonify({'success': False, 'message': 'Admin access required'}), 403
         
-    target_user = User.query.get(id)
+    target_user = db.session.get(User, id)
     if not target_user:
         return jsonify({'success': False, 'message': 'User not found'}), 404
 
@@ -308,12 +308,12 @@ def delete_user(id):
 def update_user(id):
     """Admin edits a user's profile, role, status, or password."""
     current_user_id = get_jwt_identity()
-    editor = User.query.get(int(current_user_id))
+    editor = db.session.get(User, int(current_user_id))
     
     if not editor or editor.role != 'admin':
         return jsonify({'success': False, 'message': 'Admin access required'}), 403
     
-    user = User.query.get(id)
+    user = db.session.get(User, id)
     if not user:
         return jsonify({'success': False, 'message': 'User not found'}), 404
     

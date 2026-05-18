@@ -16,16 +16,23 @@ def get_user_now():
 def get_stats():
     print("DEBUG: /api/dashboard/stats requested")
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     range_param = request.args.get('range', '1w')
     
     user_now = get_user_now()
-    days = 7 if range_param == '1w' else 30
+    if range_param == '1w':
+        days = 7
+        local_start_of_range = (user_now - timedelta(days=days)).replace(hour=0, minute=0, second=0)
+    elif range_param == '1m':
+        days = user_now.day
+        local_start_of_range = user_now.replace(day=1, hour=0, minute=0, second=0)
+    else: # '1d'
+        days = 1
+        local_start_of_range = user_now.replace(hour=0, minute=0, second=0)
     
     # Decisions in local-aligned UTC
     # Local Today starts at (user_now.date()) midnight. 
     # In UTC that is (user_now.date() - 5 hours).
-    local_start_of_range = (user_now - timedelta(days=days)).replace(hour=0, minute=0, second=0)
     utc_start = local_start_of_range - timedelta(hours=5)
 
     decisions_range_query = EnergyDecision.query.filter(EnergyDecision.timestamp >= utc_start)
@@ -67,32 +74,45 @@ def get_chart_data():
     print("DEBUG: /api/dashboard/charts requested")
     user_now = get_user_now()
     range_param = request.args.get('range', '1w')
-    days = 7 if range_param == '1w' else 30
     
     labels = []
     values = []
     today_projection = 0
     
-    for i in range(days - 1, -1, -1):
-        target_local_date = (user_now - timedelta(days=i)).date()
-        
-        # PERFECT WEEKEND SHUTDOWN: Force 0
-        if target_local_date.weekday() >= 5:
-            daily_saved = 0
-        else:
-            # Query by adjusting the day's local range to UTC
-            day_start_utc = datetime.combine(target_local_date, datetime.min.time()) - timedelta(hours=5)
-            day_end_utc = day_start_utc + timedelta(days=1)
+    if range_param == '1d':
+        hourly_labels = ['8AM', '9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM']
+        labels = hourly_labels
+        for idx, h in enumerate(range(8, 16)):
+            day_start_utc = datetime.combine(user_now.date(), datetime.min.time()) - timedelta(hours=5)
+            target_hour_utc = day_start_utc + timedelta(hours=h)
+            target_hour_end_utc = target_hour_utc + timedelta(hours=1)
             
-            daily_saved = db.session.query(func.sum(EnergyDecision.energy_saved_kwh))\
-                .filter(EnergyDecision.timestamp >= day_start_utc, EnergyDecision.timestamp < day_end_utc).scalar() or 0
-        
-        label = target_local_date.strftime('%a') if days <= 7 else target_local_date.strftime('%d %b')
-        labels.append(label)
-        values.append(round(float(daily_saved), 2))
-        
-        if i == 0:
-            today_projection = ReportingService.get_today_estimation()
+            hourly_saved = db.session.query(func.sum(EnergyDecision.energy_saved_kwh))\
+                .filter(EnergyDecision.timestamp >= target_hour_utc, EnergyDecision.timestamp < target_hour_end_utc).scalar() or 0
+            values.append(round(float(hourly_saved), 2))
+        today_projection = ReportingService.get_today_estimation()
+    else:
+        days = 7 if range_param == '1w' else user_now.day
+        for i in range(days - 1, -1, -1):
+            target_local_date = (user_now - timedelta(days=i)).date()
+            
+            # PERFECT WEEKEND SHUTDOWN: Force 0
+            if target_local_date.weekday() >= 5:
+                daily_saved = 0
+            else:
+                # Query by adjusting the day's local range to UTC
+                day_start_utc = datetime.combine(target_local_date, datetime.min.time()) - timedelta(hours=5)
+                day_end_utc = day_start_utc + timedelta(days=1)
+                
+                daily_saved = db.session.query(func.sum(EnergyDecision.energy_saved_kwh))\
+                    .filter(EnergyDecision.timestamp >= day_start_utc, EnergyDecision.timestamp < day_end_utc).scalar() or 0
+            
+            label = target_local_date.strftime('%a') if range_param == '1w' else target_local_date.strftime('%d %b')
+            labels.append(label)
+            values.append(round(float(daily_saved), 2))
+            
+            if i == 0:
+                today_projection = ReportingService.get_today_estimation()
     
     # Hourly: 8 AM - 3 PM
     hourly_labels = ['8AM', '9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM']

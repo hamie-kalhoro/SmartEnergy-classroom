@@ -172,7 +172,7 @@ function Dashboard() {
             unit: 'kWh',
             icon: <FiZap />,
             gradient: 'linear-gradient(135deg, #00d26a 0%, #06b6d4 100%)',
-            sub: stats.today_estimation !== undefined ? `${activeRange === '1w' ? 'Weekly' : 'Monthly'} Projection: ${stats.today_estimation} kWh` : `Est. Period EOD: ${stats.energy_saved || 0} kWh`
+            sub: stats.today_estimation !== undefined ? `${activeRange === '1d' ? 'Today' : activeRange === '1w' ? 'Weekly' : 'Monthly'} Projection: ${stats.today_estimation} kWh` : `Est. Period EOD: ${stats.energy_saved || 0} kWh`
         },
         stats.efficiency_growth !== undefined ? {
             label: 'Growth Rate',
@@ -180,7 +180,7 @@ function Dashboard() {
             unit: '%',
             icon: <FiActivity />,
             gradient: 'linear-gradient(135deg, #ef4444 0%, #f43f5e 100%)', // Restored to PINK/RED
-            sub: `${stats.growth_label || 'stable'} vs last ${activeRange === '1w' ? 'week' : 'month'}`
+            sub: `${stats.growth_label || 'stable'} vs last ${activeRange === '1d' ? 'day' : activeRange === '1w' ? 'week' : 'month'}`
         } : null,
         { label: 'Avg Occupancy', val: stats.avg_occupancy, unit: '%', icon: <FiUsers />, gradient: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)' },
         { label: 'Active Nodes', val: stats.active_classrooms, unit: '', icon: <FiHome />, gradient: 'linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%)' },
@@ -272,11 +272,12 @@ function Dashboard() {
                             <>
                                 <div className="d-flex justify-content-between align-items-center mb-4">
                                     <div>
-                                        <h6 className="fw-bold mb-1">Weekly Energy Consumption</h6>
+                                        <h6 className="fw-bold mb-1">{activeRange === '1d' ? "Today's Energy Consumption" : activeRange === '1w' ? "Weekly Energy Consumption" : "Monthly Energy Consumption"}</h6>
                                         <p className="text-muted small m-0">kWh usage by day</p>
                                     </div>
                                     <div className="d-flex gap-2">
                                         {[
+                                            { label: 'Today', val: '1d' },
                                             { label: '1Week', val: '1w' },
                                             { label: '1Month', val: '1m' }
                                         ].map((t) => (

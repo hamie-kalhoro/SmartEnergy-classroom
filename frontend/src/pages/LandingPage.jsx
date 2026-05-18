@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import * as FiIcons from 'react-icons/fi';
+import { FiActivity, FiCpu, FiShield, FiPlayCircle, FiUser, FiMapPin, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import SmartLogo from '../components/SmartLogo';
 import EnergyBackground from '../components/EnergyBackground';
+import QuantumAtomicBackground from '../components/QuantumAtomicBackground';
 
 const LandingPage = () => {
     const videoRef = useRef(null);
@@ -55,17 +56,17 @@ const LandingPage = () => {
 
     const features = [
         {
-            icon: <FiIcons.FiActivity size={40} />,
+            icon: <FiActivity size={40} />,
             title: "Real-time Monitoring",
             desc: "Track energy consumption pulse by pulse. Visualize data instantly."
         },
         {
-            icon: <FiIcons.FiCpu size={40} />,
+            icon: <FiCpu size={40} />,
             title: "Smart Predictions",
             desc: "AI-driven forecasts to anticipate high load and optimize resources."
         },
         {
-            icon: <FiIcons.FiShield size={40} />,
+            icon: <FiShield size={40} />,
             title: "Automated Control",
             desc: "Stop energy wastage before it happens with intelligent shut-offs."
         }
@@ -152,9 +153,9 @@ const LandingPage = () => {
                         }}
                     >
                         {[
-                            { to: '/signup', icon: <FiIcons.FiPlayCircle />, label: 'Get Started', active: true },
-                            { to: '/login', icon: <FiIcons.FiUser />, label: 'Sign In' },
-                            { to: '/map', icon: <FiIcons.FiMapPin />, label: 'Campus Map' }
+                            { to: '/signup', icon: <FiPlayCircle />, label: 'Get Started', active: true },
+                            { to: '/login', icon: <FiUser />, label: 'Sign In' },
+                            { to: '/map', icon: <FiMapPin />, label: 'Campus Map' }
                         ].map(item => (
                             <Link key={item.to} to={item.to} className={`nav-side-btn ${item.active ? 'active' : ''}`} title={item.label}>
                                 {item.icon}
@@ -171,60 +172,63 @@ const LandingPage = () => {
                 paddingTop: '12rem', // Shifted down for premium look
                 background: 'radial-gradient(circle at center, rgba(0, 210, 106, 0.1) 0%, transparent 60%)'
             }}>
-                <motion.h1
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.1 }}
-                    style={{
-                        fontSize: 'clamp(3.5rem, 10vw, 5.5rem)',
-                        fontWeight: '900',
-                        maxWidth: '1000px',
-                        lineHeight: '1.0',
-                        letterSpacing: '-0.05em',
-                        color: 'var(--text)'
-                    }}
-                >
-                    Stop Wasting Energy. <br />
-                    <span style={{
-                        background: 'var(--gradient-primary)',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        display: 'inline-block'
-                    }}>Start Saving Future.</span>
-                </motion.h1>
-
-                <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.8 }}
-                    style={{
-                        marginTop: '2rem',
-                        fontSize: '1.25rem',
-                        maxWidth: '700px',
-                        color: 'var(--text-secondary)',
-                        lineHeight: '1.6'
-                    }}
-                >
-                    Monitor, control, and optimize your energy footprint with the project SmartClass. Join the revolution of intelligent educational environments.
-                </motion.p>
-
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.6 }}
-                    style={{ marginTop: '3.5rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}
-                >
-                    <Link to="/signup" className="btn btn-primary btn-lg px-5" style={{ borderRadius: '50px', height: '56px', display: 'flex', alignItems: 'center' }}>
-                        Start Saving Now
-                    </Link>
-                    <button
-                        onClick={() => document.getElementById('live-simulation').scrollIntoView({ behavior: 'smooth' })}
-                        className="btn btn-secondary btn-lg px-5"
-                        style={{ borderRadius: '50px', height: '56px', display: 'flex', alignItems: 'center' }}
+                <QuantumAtomicBackground />
+                <div style={{ position: 'relative', zIndex: 2 }}>
+                    <motion.h1
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, delay: 0.1 }}
+                        style={{
+                            fontSize: 'clamp(3.5rem, 10vw, 5.5rem)',
+                            fontWeight: '900',
+                            maxWidth: '1000px',
+                            lineHeight: '1.0',
+                            letterSpacing: '-0.05em',
+                            color: 'var(--text)'
+                        }}
                     >
-                        Live Demo
-                    </button>
-                </motion.div>
+                        Stop Wasting Energy. <br />
+                        <span style={{
+                            background: 'var(--gradient-primary)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            display: 'inline-block'
+                        }}>Start Saving Future.</span>
+                    </motion.h1>
+
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3, duration: 0.8 }}
+                        style={{
+                            marginTop: '2rem',
+                            fontSize: '1.25rem',
+                            maxWidth: '700px',
+                            color: 'var(--text-secondary)',
+                            lineHeight: '1.6'
+                        }}
+                    >
+                        Monitor, control, and optimize your energy footprint with the project SmartClass. Join the revolution of intelligent educational environments.
+                    </motion.p>
+
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.6 }}
+                        style={{ marginTop: '3.5rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}
+                    >
+                        <Link to="/signup" className="btn btn-primary btn-lg px-5" style={{ borderRadius: '50px', height: '56px', display: 'flex', alignItems: 'center' }}>
+                            Start Saving Now
+                        </Link>
+                        <button
+                            onClick={() => document.getElementById('live-simulation').scrollIntoView({ behavior: 'smooth' })}
+                            className="btn btn-secondary btn-lg px-5"
+                            style={{ borderRadius: '50px', height: '56px', display: 'flex', alignItems: 'center' }}
+                        >
+                            Live Demo
+                        </button>
+                    </motion.div>
+                </div>
             </header>
 
             {/* Part 2: Live Simulation & Video (Picture 2) */}
@@ -475,7 +479,7 @@ const LandingPage = () => {
                                     fontSize: '1.5rem',
                                     display: 'flex'
                                 }}>
-                                    {popups[0].type === 'alert' ? <FiIcons.FiAlertCircle /> : <FiIcons.FiCheckCircle />}
+                                    {popups[0].type === 'alert' ? <FiAlertCircle /> : <FiCheckCircle />}
                                 </div>
                                 <div>
                                     <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.25rem' }}>

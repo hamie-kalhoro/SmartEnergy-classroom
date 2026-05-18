@@ -25,7 +25,8 @@ def check_supabase_connectivity():
             port = 5432
             
         start_time = time.time()
-        socket.create_connection((host, port), timeout=2)
+        with socket.create_connection((host, port), timeout=2):
+            pass
         latency = int((time.time() - start_time) * 1000)
         return True, latency
     except Exception:
