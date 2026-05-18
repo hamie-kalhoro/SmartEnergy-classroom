@@ -61,7 +61,7 @@ from services import ReportingService
 def trigger_briefing():
     """Manually trigger the weekend briefing for all admins."""
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user or user.role != 'admin':
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
         

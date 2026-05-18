@@ -89,7 +89,7 @@ class AuthService:
 
     @staticmethod
     def approve_admin(user_id, approved_by=None):
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if not user: return False, "User not found"
         user.is_pending_admin = False; user.is_active_account = True
         db.session.add(Notification(type='admin_approved', message=f'Your admin access was approved by {approved_by}', target_role='faculty', related_user_id=user.id))

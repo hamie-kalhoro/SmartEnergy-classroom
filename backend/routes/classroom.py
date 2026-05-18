@@ -27,7 +27,7 @@ def add_classroom():
     
     # System Tracking Notification
     user_id = get_jwt_identity()
-    user = User.query.get(int(user_id))
+    user = db.session.get(User, int(user_id))
     notif = Notification(
         type='system_update',
         message=f"New classroom '{new_room.name}' added to {new_room.building} building by {user.username if user else 'Admin'}",
@@ -41,13 +41,13 @@ def add_classroom():
 @classroom_bp.route('/api/classrooms/<int:id>', methods=['DELETE'])
 @jwt_required()
 def delete_classroom(id):
-    room = Classroom.query.get(id)
+    room = db.session.get(Classroom, id)
     if room:
         room.is_active = False
         
         # System Tracking Notification
         user_id = get_jwt_identity()
-        user = User.query.get(int(user_id))
+        user = db.session.get(User, int(user_id))
         notif = Notification(
             type='system_update',
             message=f"Classroom '{room.name}' (ID: {room.id}) was deactivated by {user.username if user else 'Admin'}",
@@ -62,7 +62,7 @@ def delete_classroom(id):
 @classroom_bp.route('/api/classrooms/<int:id>', methods=['PUT'])
 @jwt_required()
 def update_classroom(id):
-    room = Classroom.query.get(id)
+    room = db.session.get(Classroom, id)
     if not room:
         return jsonify({'success': False, 'message': 'Room not found'}), 404
         
@@ -76,7 +76,7 @@ def update_classroom(id):
     
     # System Tracking Notification
     user_id = get_jwt_identity()
-    user = User.query.get(int(user_id))
+    user = db.session.get(User, int(user_id))
     notif = Notification(
         type='system_update',
         message=f"Configuration for '{room.name}' was updated by {user.username if user else 'Admin'}",
@@ -129,7 +129,7 @@ def bulk_import_classrooms():
         
         # System Tracking Notification
         user_id = get_jwt_identity()
-        user = User.query.get(int(user_id))
+        user = db.session.get(User, int(user_id))
         notif = Notification(
             type='system_update',
             message=f"Bulk onboarded {added} classrooms to the system database.",

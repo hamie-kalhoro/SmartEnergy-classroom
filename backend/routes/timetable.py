@@ -33,7 +33,7 @@ def add_timetable():
     
     # System Tracking Notification
     user_id = get_jwt_identity()
-    user = User.query.get(int(user_id))
+    user = db.session.get(User, int(user_id))
     notif = Notification(
         type='schedule_update',
         message=f"Schedule updated: {new_entry.subject} in {new_entry.classroom.name} on {new_entry.day_of_week} by {user.username if user else 'Admin'}",
@@ -47,7 +47,7 @@ def add_timetable():
 @timetable_bp.route('/api/timetable/<int:id>', methods=['DELETE'])
 @jwt_required()
 def delete_timetable(id):
-    entry = Timetable.query.get(id)
+    entry = db.session.get(Timetable, id)
     if entry:
         subj = entry.subject
         room = entry.classroom.name
@@ -59,7 +59,7 @@ def delete_timetable(id):
         
         # System Tracking Notification
         user_id = get_jwt_identity()
-        user = User.query.get(int(user_id))
+        user = db.session.get(User, int(user_id))
         notif = Notification(
             type='schedule_update',
             message=f"Cancelled/Removed {subj} from {room} timetable by {user.username if user else 'Admin'}",
@@ -95,7 +95,7 @@ def bulk_import_timetable():
         
         for idx, row in df.iterrows():
             try:
-                classroom = Classroom.query.get(int(row['classroom_id']))
+                classroom = db.session.get(Classroom, int(row['classroom_id']))
                 if not classroom:
                     errors.append(f"Row {idx+1}: Classroom ID {row['classroom_id']} not found")
                     continue
@@ -117,7 +117,7 @@ def bulk_import_timetable():
         
         # System Tracking Notification
         user_id = get_jwt_identity()
-        user = User.query.get(int(user_id))
+        user = db.session.get(User, int(user_id))
         notif = Notification(
             type='schedule_update',
             message=f"Bulk imported {added} timetable entries to the system schedule.",
@@ -143,7 +143,7 @@ def record_attendance():
     timetable_id = data.get('timetable_id')
     actual_attendance = data.get('actual_attendance')
     
-    entry = Timetable.query.get(timetable_id)
+    entry = db.session.get(Timetable, timetable_id)
     if not entry:
         return jsonify({'success': False, 'message': 'Schedule entry not found'}), 404
         
