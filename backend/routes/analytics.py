@@ -136,9 +136,6 @@ def get_chart_data():
             
             if avg_bin:
                 occ_values[idx] = round(sum(occ_map.get(o[0], 0) for o in avg_bin) / len(avg_bin))
-            else:
-                hist = db.session.query(EnergyDecision.predicted_occupancy).filter(extract('hour', EnergyDecision.timestamp) == (h-5)).limit(10).all()
-                if hist: occ_values[idx] = round(sum(occ_map.get(o[0], 0) for o in hist) / len(hist))
     else:
         occ_labels = labels
         for i in range(days - 1, -1, -1):
@@ -168,14 +165,16 @@ def get_recent_decisions():
     user_now = get_user_now()
     if range_param == '1d':
         local_start = user_now.replace(hour=0, minute=0, second=0)
+        utc_start = local_start - timedelta(hours=5)
+        decisions = EnergyDecision.query.filter(EnergyDecision.timestamp >= utc_start).order_by(EnergyDecision.timestamp.desc()).limit(10).all()
     elif range_param == '1m':
         local_start = user_now.replace(day=1, hour=0, minute=0, second=0)
+        utc_start = local_start - timedelta(hours=5)
+        decisions = EnergyDecision.query.filter(EnergyDecision.timestamp >= utc_start).order_by(EnergyDecision.energy_saved_kwh.desc()).limit(10).all()
     else:
         local_start = (user_now - timedelta(days=7)).replace(hour=0, minute=0, second=0)
-        
-    utc_start = local_start - timedelta(hours=5)
-    
-    decisions = EnergyDecision.query.filter(EnergyDecision.timestamp >= utc_start).order_by(EnergyDecision.timestamp.desc()).limit(10).all()
+        utc_start = local_start - timedelta(hours=5)
+        decisions = EnergyDecision.query.filter(EnergyDecision.timestamp >= utc_start).order_by(EnergyDecision.energy_saved_kwh.desc()).limit(10).all()
     return jsonify([{
         'id': d.id,
         'classroom': d.classroom.name if d.classroom else "Unknown Room",

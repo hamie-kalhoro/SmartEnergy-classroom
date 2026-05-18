@@ -345,7 +345,7 @@ function Dashboard() {
                             <>
                                 <div className="d-flex justify-content-between align-items-center mb-4">
                                     <h6 className="fw-bold m-0">
-                                        <FiActivity className="me-2 text-primary" /> Recent AI Actions
+                                        <FiActivity className="me-2 text-primary" /> {activeRange === '1d' ? 'Recent' : 'Top'} AI Actions
                                     </h6>
                                 </div>
                                 <div className="d-flex flex-column gap-2" style={{ maxHeight: '220px', overflowY: 'auto' }}>
