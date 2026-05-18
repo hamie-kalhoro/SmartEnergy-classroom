@@ -248,7 +248,7 @@ function NotificationPanel({ user }) {
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div className="d-flex justify-content-between align-items-start mb-1">
                                                 <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '800', opacity: 0.6, color: 'var(--text-muted)' }}>
-                                                    {n.type.replace(/_/g, ' ')}
+                                                    {(n.type || 'System Alert').replace(/_/g, ' ')}
                                                 </span>
                                                 <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }} className="d-flex align-items-center gap-1">
                                                     <FiClock size={10} /> {timeAgo(n.created_at)}
