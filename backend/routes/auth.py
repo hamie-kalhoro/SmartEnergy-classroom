@@ -158,6 +158,31 @@ def next_notification_read(id):
         return jsonify({'success': True})
     return jsonify({'success': False, 'message': 'Notification not found'}), 404
 
+@auth_bp.route('/api/notifications/clear', methods=['DELETE'])
+@jwt_required()
+def clear_all_notifications():
+    """Delete all notifications visible to the current user's role."""
+    user_id = get_jwt_identity()
+    user = db.session.get(User, int(user_id))
+    
+    if not user:
+        return jsonify({'success': False, 'message': 'User not found'}), 401
+    
+    if user.role == 'admin':
+        Notification.query.filter(
+            (Notification.target_role == 'admin') | 
+            (Notification.target_role == 'faculty') |
+            (Notification.target_role == 'all')
+        ).delete(synchronize_session='fetch')
+    else:
+        Notification.query.filter(
+            (Notification.target_role == user.role) | 
+            (Notification.target_role == 'all')
+        ).delete(synchronize_session='fetch')
+    
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'All notifications cleared.'})
+
 @auth_bp.route('/api/users/create-single', methods=['POST'])
 @jwt_required()
 def create_single_user():

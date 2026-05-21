@@ -5,7 +5,7 @@ import React, { useMemo } from 'react';
  * Replaced 15 Framer Motion SVG animations with pure CSS @keyframes
  * for dramatically lower JS overhead.
  */
-const EnergyBackground = () => {
+const EnergyBackground = ({ styleOverride = {}, className = "" }) => {
     const lines = useMemo(() => 
         Array.from({ length: 8 }, (_, i) => ({
             id: i,
@@ -19,7 +19,7 @@ const EnergyBackground = () => {
     );
 
     return (
-        <div style={{
+        <div className={className} style={{
             position: 'fixed',
             top: 0,
             left: 0,
@@ -28,7 +28,8 @@ const EnergyBackground = () => {
             zIndex: -1,
             background: 'var(--bg-deep)',
             overflow: 'hidden',
-            pointerEvents: 'none'
+            pointerEvents: 'none',
+            ...styleOverride
         }}>
             {/* Subtle Grid Base */}
             <div style={{

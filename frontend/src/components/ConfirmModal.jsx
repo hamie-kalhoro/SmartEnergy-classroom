@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
@@ -89,185 +90,186 @@ function ConfirmModal({
         return () => window.removeEventListener('keydown', handler);
     }, [show, isConfirm, onCancel, onConfirm]);
 
-    return (
+    if (!show) return null;
+
+    return ReactDOM.createPortal(
         <AnimatePresence>
-            {show && (
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={(e) => {
+                    if (e.target === e.currentTarget) {
+                        isConfirm ? onCancel?.() : onConfirm?.();
+                    }
+                }}
+                style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 99999, // Extremely high to bypass everything
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    backdropFilter: 'blur(6px)',
+                }}
+            >
                 <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget) {
-                            isConfirm ? onCancel?.() : onConfirm?.();
-                        }
-                    }}
+                    initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                     style={{
-                        position: 'fixed',
-                        inset: 0,
-                        zIndex: 9999,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'rgba(0, 0, 0, 0.6)',
-                        backdropFilter: 'blur(6px)',
+                        width: '100%',
+                        maxWidth: '400px',
+                        background: 'rgba(10, 10, 12, 0.75)',
+                        backdropFilter: 'blur(30px) saturate(150%)',
+                        WebkitBackdropFilter: 'blur(30px) saturate(150%)',
+                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                        borderRadius: '24px',
+                        overflow: 'hidden',
+                        boxShadow: `0 40px 80px -20px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.02), 0 0 40px ${accent}10`,
+                        position: 'relative'
                     }}
                 >
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                        style={{
-                            width: '100%',
-                            maxWidth: '400px',
-                            background: 'rgba(10, 10, 12, 0.75)',
-                            backdropFilter: 'blur(30px) saturate(150%)',
-                            WebkitBackdropFilter: 'blur(30px) saturate(150%)',
-                            border: '1px solid rgba(255, 255, 255, 0.06)',
-                            borderRadius: '24px',
-                            overflow: 'hidden',
-                            boxShadow: `0 40px 80px -20px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.02), 0 0 40px ${accent}10`,
-                            position: 'relative'
-                        }}
-                    >
-                        {/* Premium Glowing Top Line */}
+                    {/* Premium Glowing Top Line */}
+                    <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: '20%',
+                        right: '20%',
+                        height: '1px',
+                        background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
+                        boxShadow: `0 0 20px 2px ${accent}60`,
+                    }} />
+
+                    {/* Content */}
+                    <div style={{ padding: '2.5rem 2rem 1.5rem', textAlign: 'center', position: 'relative' }}>
+                        {/* Ambient background glow behind the icon */}
                         <div style={{
                             position: 'absolute',
-                            top: 0,
-                            left: '20%',
-                            right: '20%',
-                            height: '1px',
-                            background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
-                            boxShadow: `0 0 20px 2px ${accent}60`,
+                            top: '25%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            width: '120px',
+                            height: '120px',
+                            background: `${accent}`,
+                            filter: 'blur(60px)',
+                            opacity: 0.15,
+                            pointerEvents: 'none'
                         }} />
 
-                        {/* Content */}
-                        <div style={{ padding: '2.5rem 2rem 1.5rem', textAlign: 'center', position: 'relative' }}>
-                            {/* Ambient background glow behind the icon */}
-                            <div style={{
-                                position: 'absolute',
-                                top: '25%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)',
-                                width: '120px',
-                                height: '120px',
-                                background: `${accent}`,
-                                filter: 'blur(60px)',
-                                opacity: 0.15,
-                                pointerEvents: 'none'
-                            }} />
-
-                            {/* Icon */}
-                            <div style={{
-                                width: '68px',
-                                height: '68px',
-                                borderRadius: '20px',
-                                background: `linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)`,
-                                border: `1px solid rgba(255,255,255,0.08)`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                margin: '0 auto 1.5rem',
-                                position: 'relative',
-                                boxShadow: `inset 0 2px 20px rgba(255,255,255,0.02), 0 10px 20px rgba(0,0,0,0.2)`,
-                            }}>
-                                {iconMap[type] || iconMap.confirm}
-                            </div>
-
-                            {/* Title */}
-                            <h4 style={{
-                                margin: '0 0 0.5rem',
-                                fontSize: '1.25rem',
-                                fontWeight: '800',
-                                color: 'var(--text)',
-                                fontFamily: 'var(--font-heading, "Inter", sans-serif)',
-                                letterSpacing: '-0.02em'
-                            }}>
-                                {title}
-                            </h4>
-
-                            {/* Message */}
-                            {message && (
-                                <p style={{
-                                    margin: 0,
-                                    fontSize: '0.95rem',
-                                    color: 'var(--text-muted)',
-                                    lineHeight: 1.6,
-                                    padding: '0 0.5rem',
-                                }}>
-                                    {message}
-                                </p>
-                            )}
+                        {/* Icon */}
+                        <div style={{
+                            width: '68px',
+                            height: '68px',
+                            borderRadius: '20px',
+                            background: `linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)`,
+                            border: `1px solid rgba(255,255,255,0.08)`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 1.5rem',
+                            position: 'relative',
+                            boxShadow: `inset 0 2px 20px rgba(255,255,255,0.02), 0 10px 20px rgba(0,0,0,0.2)`,
+                        }}>
+                            {iconMap[type] || iconMap.confirm}
                         </div>
 
-                        {/* Actions */}
-                        <div style={{
-                            display: 'flex',
-                            gap: '12px',
-                            padding: '0 2rem 2rem',
-                            justifyContent: 'center',
+                        {/* Title */}
+                        <h4 style={{
+                            margin: '0 0 0.5rem',
+                            fontSize: '1.25rem',
+                            fontWeight: '800',
+                            color: 'var(--text)',
+                            fontFamily: 'var(--font-heading, "Inter", sans-serif)',
+                            letterSpacing: '-0.02em'
                         }}>
-                            {isConfirm && (
-                                <button
-                                    onClick={onCancel}
-                                    style={{
-                                        flex: 1,
-                                        padding: '0.8rem 1rem',
-                                        borderRadius: '16px',
-                                        border: '1px solid rgba(255, 255, 255, 0.08)',
-                                        background: 'rgba(255, 255, 255, 0.03)',
-                                        color: 'var(--text-secondary)',
-                                        fontSize: '0.95rem',
-                                        fontWeight: '600',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.target.style.background = 'rgba(255, 255, 255, 0.08)';
-                                        e.target.style.color = 'var(--text)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.target.style.background = 'rgba(255, 255, 255, 0.03)';
-                                        e.target.style.color = 'var(--text-secondary)';
-                                    }}
-                                >
-                                    {noLabel}
-                                </button>
-                            )}
+                            {title}
+                        </h4>
+
+                        {/* Message */}
+                        {message && (
+                            <p style={{
+                                margin: 0,
+                                fontSize: '0.95rem',
+                                color: 'var(--text-muted)',
+                                lineHeight: 1.6,
+                                padding: '0 0.5rem',
+                            }}>
+                                {message}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{
+                        display: 'flex',
+                        gap: '12px',
+                        padding: '0 2rem 2rem',
+                        justifyContent: 'center',
+                    }}>
+                        {isConfirm && (
                             <button
-                                onClick={onConfirm}
-                                autoFocus
+                                onClick={onCancel}
                                 style={{
                                     flex: 1,
                                     padding: '0.8rem 1rem',
                                     borderRadius: '16px',
-                                    border: `1px solid ${accent}40`,
-                                    background: `linear-gradient(135deg, ${accent}dd 0%, ${accent} 100%)`,
-                                    color: '#ffffff',
+                                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                                    background: 'rgba(255, 255, 255, 0.03)',
+                                    color: 'var(--text-secondary)',
                                     fontSize: '0.95rem',
-                                    fontWeight: '700',
+                                    fontWeight: '600',
                                     cursor: 'pointer',
                                     transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                                    boxShadow: `0 10px 25px -5px ${accent}60, inset 0 2px 5px rgba(255,255,255,0.3)`,
-                                    textShadow: '0 2px 4px rgba(0,0,0,0.1)'
                                 }}
                                 onMouseEnter={(e) => {
-                                    e.target.style.transform = 'translateY(-2px)';
-                                    e.target.style.boxShadow = `0 15px 35px -5px ${accent}80, inset 0 2px 5px rgba(255,255,255,0.4)`;
+                                    e.target.style.background = 'rgba(255, 255, 255, 0.08)';
+                                    e.target.style.color = 'var(--text)';
                                 }}
                                 onMouseLeave={(e) => {
-                                    e.target.style.transform = 'translateY(0)';
-                                    e.target.style.boxShadow = `0 10px 25px -5px ${accent}60, inset 0 2px 5px rgba(255,255,255,0.3)`;
+                                    e.target.style.background = 'rgba(255, 255, 255, 0.03)';
+                                    e.target.style.color = 'var(--text-secondary)';
                                 }}
                             >
-                                {okLabel}
+                                {noLabel}
                             </button>
-                        </div>
-                    </motion.div>
+                        )}
+                        <button
+                            onClick={onConfirm}
+                            autoFocus
+                            style={{
+                                flex: 1,
+                                padding: '0.8rem 1rem',
+                                borderRadius: '16px',
+                                border: `1px solid ${accent}40`,
+                                background: `linear-gradient(135deg, ${accent}dd 0%, ${accent} 100%)`,
+                                color: '#ffffff',
+                                fontSize: '0.95rem',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                                boxShadow: `0 10px 25px -5px ${accent}60, inset 0 2px 5px rgba(255,255,255,0.3)`,
+                                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.target.style.transform = 'translateY(-2px)';
+                                e.target.style.boxShadow = `0 15px 35px -5px ${accent}80, inset 0 2px 5px rgba(255,255,255,0.4)`;
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.transform = 'translateY(0)';
+                                e.target.style.boxShadow = `0 10px 25px -5px ${accent}60, inset 0 2px 5px rgba(255,255,255,0.3)`;
+                            }}
+                        >
+                            {okLabel}
+                        </button>
+                    </div>
                 </motion.div>
-            )}
-        </AnimatePresence>
+            </motion.div>
+        </AnimatePresence>,
+        document.body
     );
 }
 

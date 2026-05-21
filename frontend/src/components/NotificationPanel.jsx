@@ -1,13 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import api from '../api';
-import { FiBell, FiAlertCircle, FiCheckCircle, FiTrash2, FiClock, FiWifiOff, FiDatabase, FiActivity } from 'react-icons/fi';
+import { FiBell, FiAlertCircle, FiCheckCircle, FiTrash2, FiClock, FiWifiOff, FiDatabase, FiActivity, FiZap } from 'react-icons/fi';
 
 function NotificationPanel({ user }) {
     // ─── Local State & Persistence ───
     const [notifications, setNotifications] = useState(() => {
-        const saved = localStorage.getItem(`notifications_${user.id}`);
-        return saved ? JSON.parse(saved) : [];
+        try {
+            const saved = localStorage.getItem(`notifications_${user.id}`);
+            const parsed = saved ? JSON.parse(saved) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            return [];
+        }
     });
     const [open, setOpen] = useState(false);
     const [offline, setOffline] = useState(!navigator.onLine);
@@ -47,7 +52,11 @@ function NotificationPanel({ user }) {
         try {
             const res = await api.get('/api/notifications');
             // Server is source of truth for new items
-            setNotifications(res.data);
+            if (Array.isArray(res.data)) {
+                setNotifications(res.data);
+            } else {
+                console.warn("API did not return an array for notifications", res.data);
+            }
         } catch (err) {
             console.error("Notification Sync Failed:", err);
             // On failure, we just keep using our local state (loaded from init)
@@ -71,9 +80,14 @@ function NotificationPanel({ user }) {
         }
     };
 
-    const clearAll = () => {
+    const clearAll = async () => {
         setNotifications([]);
         localStorage.removeItem(`notifications_${user.id}`);
+        try {
+            await api.delete('/api/notifications/clear');
+        } catch (err) {
+            console.error("Failed to clear notifications on server:", err);
+        }
     };
 
     const getIcon = (type) => {

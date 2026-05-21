@@ -41,14 +41,14 @@ const SyncStatus = ({ isCollapsed }) => {
     };
 
     if (isCollapsed) return (
-        <div className="d-flex flex-column align-items-center gap-2 mt-2" style={{ opacity: 0.8 }} title={status.is_cloud_available ? 'Supabase Cloud Synced' : 'Local Mode'}>
+        <div className="d-flex flex-column align-items-center gap-2 mt-2" style={{ opacity: 0.8, position: 'relative', zIndex: 1 }} title={status.is_cloud_available ? 'Supabase Cloud Synced' : 'Local Mode'}>
             <div className={`rounded-circle ${status.is_cloud_available ? 'pulse-green' : 'pulse-red'}`} style={{ width: '6px', height: '6px', background: getSignalColor() }} />
             <FiWifi size={14} style={{ color: getSignalColor() }} />
         </div>
     );
 
     return (
-        <div style={{ marginTop: '0.4rem' }}>
+        <div style={{ marginTop: '0.4rem', position: 'relative', zIndex: 1 }}>
             <div className="p-2 rounded-3" style={{
                 background: 'rgba(255,255,255,0.01)',
                 border: '1px solid rgba(255,255,255,0.03)',
@@ -103,24 +103,25 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
     };
 
     return (
-        <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+        <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`} style={{ position: 'relative' }}>
             {/* Collapse Toggle Button */}
             <button
                 className="sidebar-toggle-btn"
                 onClick={onToggle}
                 title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+                style={{ position: 'absolute', zIndex: 2 }}
             >
                 <FiChevronLeft />
             </button>
             {/* Logo Section - Fixed at top */}
-            <div className={isCollapsed ? "mb-4 mt-2" : "mb-4 mt-1"}>
+            <div className={isCollapsed ? "mb-4 mt-2" : "mb-4 mt-1"} style={{ position: 'relative', zIndex: 1 }}>
                 <div className={`d-flex align-items-center ${isCollapsed ? 'justify-content-center' : 'px-3'}`}>
                     <SmartLogo size={isCollapsed ? 24 : 32} useVideo={true} hideText={isCollapsed} className={isCollapsed ? "" : "w-100"} />
                 </div>
             </div>
 
             {/* Scrollable Navigation Area */}
-            <div className="sidebar-nav-container">
+            <div className="sidebar-nav-container" style={{ position: 'relative', zIndex: 1 }}>
                 <nav className="sidebar-nav-inner">
                     {/* Main Menu Section */}
                     <div>
@@ -238,7 +239,7 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
             </div>
 
             {/* User Section - Docked at bottom */}
-            <div className="sidebar-user-section">
+            <div className="sidebar-user-section" style={{ position: 'relative', zIndex: 1 }}>
                 <div
                     className={`d-flex align-items-center ${isCollapsed ? 'justify-content-center' : 'gap-2'} p-2 rounded-3 user-card-hover cursor-pointer`}
                     style={{ background: 'rgba(255,255,255,0.02)' }}
