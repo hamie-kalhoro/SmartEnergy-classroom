@@ -54,7 +54,7 @@ const iconMap = {
 };
 
 const accentMap = {
-    confirm: '#00d26a',
+    confirm: '#00f59b',
     alert: '#3b82f6',
     success: '#10b981',
     error: '#ef4444',

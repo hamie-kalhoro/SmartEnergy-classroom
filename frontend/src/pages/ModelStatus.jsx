@@ -47,7 +47,7 @@ const ModelStatus = () => {
             <div className="d-flex justify-content-between align-items-start mb-5">
                 <div>
                     <div className="d-flex align-items-center gap-2 mb-2">
-                        <span className="badge" style={{ background: 'rgba(0, 210, 106, 0.1)', color: 'var(--primary)', fontSize: '0.75rem' }}>
+                        <span className="badge" style={{ background: 'rgba(0, 245, 155, 0.1)', color: 'var(--primary)', fontSize: '0.75rem' }}>
                             <FiActivity className="me-1" /> CORE DIAGNOSTICS
                         </span>
                     </div>
@@ -223,7 +223,7 @@ const ModelStatus = () => {
                         <p className="extra-small text-muted mb-4">
                             Operational guardrails prevent the AI from making erratic energy decisions if accuracy drops below 85% or if data noise is detected.
                         </p>
-                        <button className="btn btn-outline-danger w-100 py-3 d-flex align-items-center justify-content-center gap-2" style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>
+                        <button className="btn btn-lg btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2" style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>
                             <FiRefreshCcw size={14} /> EMERGENCY MODEL ROLLBACK
                         </button>
                     </div>
@@ -232,7 +232,7 @@ const ModelStatus = () => {
 
             {/* Custom Styles for Orb and Theme Variables */}
             <style dangerouslySetInnerHTML={{ __html: `
-                .text-secondary-glow { color: var(--primary); text-shadow: 0 0 20px rgba(0, 210, 106, 0.3); }
+                .text-secondary-glow { color: var(--primary); text-shadow: 0 0 20px rgba(0, 245, 155, 0.3); }
                 
                 .w-fit { width: fit-content; }
                 .z-index-1 { z-index: 1; }
@@ -242,7 +242,7 @@ const ModelStatus = () => {
                     border-radius: 1.25rem;
                     background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
                     border: 1px solid rgba(255, 255, 255, 0.08);
-                    border-left: 4px solid #00d26a;
+                    border-left: 4px solid #00f59b;
                     transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
                     position: relative;
                     overflow: hidden;
@@ -267,7 +267,7 @@ const ModelStatus = () => {
                 .insight-card-premium:hover {
                     background: rgba(255, 255, 255, 0.06);
                     transform: translateY(-5px) scale(1.02);
-                    box-shadow: 0 15px 35px rgba(0,0,0,0.4), 0 0 15px rgba(0, 210, 106, 0.1);
+                    box-shadow: 0 15px 35px rgba(0,0,0,0.4), 0 0 15px rgba(0, 245, 155, 0.1);
                     border-left-width: 6px;
                 }
 
@@ -297,10 +297,10 @@ const ModelStatus = () => {
                 .intelligence-core-orb {
                     width: 160px;
                     height: 160px;
-                    background: radial-gradient(circle at 30% 30%, #4ade80, #00d26a);
+                    background: radial-gradient(circle at 30% 30%, #4ade80, #00f59b);
                     border-radius: 50%;
                     position: relative;
-                    box-shadow: 0 0 80px rgba(0, 210, 106, 0.4), 
+                    box-shadow: 0 0 80px rgba(0, 245, 155, 0.4), 
                                 inset -15px -15px 50px rgba(0,0,0,0.6),
                                 inset 10px 10px 30px rgba(255,255,255,0.4);
                     animation: orbFloat 6s ease-in-out infinite;
@@ -329,7 +329,7 @@ const ModelStatus = () => {
                     position: absolute;
                     width: 280px;
                     height: 280px;
-                    border: 1px dashed rgba(0, 210, 106, 0.2);
+                    border: 1px dashed rgba(0, 245, 155, 0.2);
                     border-radius: 50%;
                     animation: orbRotate 25s linear infinite;
                 }
@@ -345,7 +345,7 @@ const ModelStatus = () => {
 
                 /* Text Gradient Animation */
                 .text-gradient {
-                    background: linear-gradient(90deg, #00d26a, #06b6d4, #00d26a);
+                    background: linear-gradient(90deg, #00f59b, #06b6d4, #00f59b);
                     background-size: 200% auto;
                     -webkit-background-clip: text;
                     -webkit-text-fill-color: transparent;

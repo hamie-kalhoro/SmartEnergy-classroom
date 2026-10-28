@@ -90,9 +90,11 @@ const EnergyBackground = ({ styleOverride = {}, className = "" }) => {
                 left: '10%',
                 width: '600px',
                 height: '600px',
-                background: 'radial-gradient(circle, rgba(0, 210, 106, 0.05) 0%, transparent 70%)',
+                background: 'radial-gradient(circle, rgba(0, 245, 155, 0.05) 0%, transparent 70%)',
                 borderRadius: '50%',
                 animation: 'ambientPulse 10s ease-in-out infinite',
+                willChange: 'opacity',
+                transform: 'translateZ(0)'
             }} />
             <div style={{
                 position: 'absolute',
@@ -100,9 +102,11 @@ const EnergyBackground = ({ styleOverride = {}, className = "" }) => {
                 right: '5%',
                 width: '800px',
                 height: '800px',
-                background: 'radial-gradient(circle, rgba(0, 210, 106, 0.08) 0%, transparent 70%)',
+                background: 'radial-gradient(circle, rgba(0, 245, 155, 0.08) 0%, transparent 70%)',
                 borderRadius: '50%',
                 animation: 'ambientPulse 15s ease-in-out infinite',
+                willChange: 'opacity',
+                transform: 'translateZ(0)'
             }} />
 
             <style>{`

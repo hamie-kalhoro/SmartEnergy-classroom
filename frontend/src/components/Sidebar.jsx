@@ -259,7 +259,7 @@ function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
                         fontWeight: '700',
                         fontSize: '0.75rem',
                         flexShrink: 0,
-                        boxShadow: isCollapsed ? '0 4px 12px rgba(0, 210, 106, 0.3)' : 'none'
+                        boxShadow: isCollapsed ? '0 4px 12px rgba(0, 245, 155, 0.3)' : 'none'
                     }}>
                         {(user?.username || 'U').charAt(0).toUpperCase()}
                     </div>

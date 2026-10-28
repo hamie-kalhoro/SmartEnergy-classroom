@@ -15,12 +15,23 @@ MODEL_PATH = os.path.join(BASE_DIR, 'occupancy_model.pkl')
 MASTER_HISTORY_PATH = os.path.join(BASE_DIR, 'data', 'processed_history.csv')
 TRAINING_LOG_PATH = os.path.join(BASE_DIR, 'data', 'training_history.json')
 
+_shared_ml_engine = None
+
+def get_ml_engine():
+    """Singleton getter to prevent re-loading the 1.8MB model on every request."""
+    global _shared_ml_engine
+    if _shared_ml_engine is None:
+        _shared_ml_engine = MLEngine()
+    return _shared_ml_engine
+
 class MLEngine:
     def __init__(self):
         self.model = None
         self.last_training_report = None
         self.retrain_threshold = 50 # Retrain every 50 new real-world data points
         self.new_data_count = 0
+        self._profile_cache = None
+        self._profile_cache_time = 0
         
         # Create data directory relative to BASE_DIR if it doesn't exist
         os.makedirs(os.path.join(BASE_DIR, 'data'), exist_ok=True)
@@ -144,14 +155,18 @@ class MLEngine:
         return self.train_from_history()
 
     def get_intelligence_profile(self):
-        """Retrieve the AI's current knowledge status and experience metrics."""
+        """Retrieve the AI's current knowledge status and experience metrics (cached for 60s)."""
+        import time
+        if self._profile_cache and (time.time() - self._profile_cache_time < 60):
+            return self._profile_cache
+
         history = []
         if os.path.exists(TRAINING_LOG_PATH):
             with open(TRAINING_LOG_PATH, 'r') as f:
                 history = json.load(f)
 
         if not os.path.exists(MASTER_HISTORY_PATH):
-            return {
+            profile = {
                 "total_hours": 0,
                 "coverage_pct": 10, # Base synthetic
                 "accuracy": 0,
@@ -160,6 +175,9 @@ class MLEngine:
                 "history": [],
                 "delta": 0
             }
+            self._profile_cache = profile
+            self._profile_cache_time = time.time()
+            return profile
         
         df = pd.read_csv(MASTER_HISTORY_PATH)
         total_hours = len(df)
@@ -222,7 +240,7 @@ class MLEngine:
         if not recommendations:
             recommendations.append({"type": "info", "text": "AI Intelligence is stable. Monitoring for new environmental patterns...", "priority": "low"})
 
-        return {
+        profile = {
             "total_hours": total_hours,
             "coverage_pct": coverage_pct,
             "accuracy": round(self.last_training_report.get('accuracy', 0), 1) if self.last_training_report else 0,
@@ -232,9 +250,13 @@ class MLEngine:
             "delta": round(delta, 2),
             "recommendations": recommendations[:3] # Latest 3 insights
         }
+        self._profile_cache = profile
+        self._profile_cache_time = time.time()
+        return profile
 
     def train_from_history(self):
         """Core training logic based on cumulative digested history."""
+        self._profile_cache = None
         if not os.path.exists(MASTER_HISTORY_PATH):
             return None, "No history available to train"
             

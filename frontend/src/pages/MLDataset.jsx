@@ -56,7 +56,7 @@ function MLDataset() {
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                                             <defs>
                                                 <linearGradient id="trainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                    <stop offset="0%" stopColor="#00d26a" />
+                                                    <stop offset="0%" stopColor="#00f59b" />
                                                     <stop offset="100%" stopColor="#06b6d4" />
                                                 </linearGradient>
                                             </defs>
@@ -124,7 +124,7 @@ function MLDataset() {
                             <small className="text-muted d-block mb-4">
                                 Required columns: <code>day, hour, type, attendance</code>
                             </small>
-                            <button type="submit" className="btn btn-primary w-100 py-3" disabled={!file || loading}>
+                            <button type="submit" className="btn btn-lg btn-primary w-100" disabled={!file || loading}>
                                 {loading ? (
                                     <DynamicLoader size={20} color="var(--bg-deep)" className="me-2" />
                                 ) : (

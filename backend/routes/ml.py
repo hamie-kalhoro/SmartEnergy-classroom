@@ -5,14 +5,14 @@ import os
 import pandas as pd
 from models import Timetable, Classroom
 from services import EnergyService
-from ml_engine import MLEngine
+from ml_engine import MLEngine, get_ml_engine
 from climate_service import get_climate_context
 
 ml_bp = Blueprint('ml', __name__)
 
 @ml_bp.route('/api/predict', methods=['GET'])
 def get_recommendations():
-    ml = MLEngine()
+    ml = get_ml_engine()
     
     # Fetch climate context ONCE for this batch (cached for 10 min)
     climate_context = get_climate_context()
@@ -221,16 +221,16 @@ def predict_batch():
 
 @ml_bp.route('/api/ml/status', methods=['GET'])
 def get_ml_status():
-    ml = MLEngine()
+    ml = get_ml_engine()
     return jsonify(ml.get_intelligence_profile())
 
 @ml_bp.route('/api/ml/intelligence-profile', methods=['GET'])
 def get_intelligence_profile():
-    ml = MLEngine()
+    ml = get_ml_engine()
     return jsonify(ml.get_intelligence_profile())
 
 @ml_bp.route('/api/ml/intelligence-pulse', methods=['GET'])
 def get_intelligence_pulse():
     """Alias for pulse-based profile fetch used by ModelStatus.jsx"""
-    ml = MLEngine()
+    ml = get_ml_engine()
     return jsonify(ml.get_intelligence_profile())

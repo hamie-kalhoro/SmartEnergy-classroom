@@ -1,86 +1,171 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { FiActivity, FiCpu, FiShield, FiPlayCircle, FiUser, FiMapPin, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { 
+    FiActivity, 
+    FiCpu, 
+    FiShield, 
+    FiPlayCircle, 
+    FiUser, 
+    FiMapPin, 
+    FiAlertCircle, 
+    FiCheckCircle,
+    FiZap,
+    FiSliders,
+    FiTrendingUp,
+    FiServer,
+    FiWifi,
+    FiChevronRight,
+    FiArrowRight
+} from 'react-icons/fi';
 import SmartLogo from '../components/SmartLogo';
 import EnergyBackground from '../components/EnergyBackground';
-import QuantumAtomicBackground from '../components/QuantumAtomicBackground';
+import HeroVideoSection from '../components/HeroVideoSection';
 
 const LandingPage = () => {
-    const videoRef = useRef(null);
-    const isVideoInView = useInView(videoRef, { amount: 0.5 });
-
-    useEffect(() => {
-        if (isVideoInView && videoRef.current) {
-            videoRef.current.play().catch(e => console.log("Video autoplay prevented:", e));
-        } else if (!isVideoInView && videoRef.current) {
-            videoRef.current.pause();
-        }
-    }, [isVideoInView]);
-
     const [activeFeature, setActiveFeature] = useState(0);
     const [teamIndex, setTeamIndex] = useState(0);
+    const [scrolled, setScrolled] = useState(false);
+    const [activeScenario, setActiveScenario] = useState(0);
+
+    // Interactive Demo Simulation States (No heavy 160MB video streaming!)
+    const [simulatedRooms, setSimulatedRooms] = useState({
+        'Lab CS-06': { active: true, load: '2.4 kW', temp: '22°C', occupancy: 'Empty (Auto-Off in 2m)' },
+        'Seminar Hall': { active: false, load: '0.0 kW', temp: '25°C', occupancy: 'Vacant' },
+        'AI Lab': { active: true, load: '3.1 kW', temp: '21°C', occupancy: '32 Systems Active' },
+        'Library': { active: true, load: '1.8 kW', temp: '23°C', occupancy: 'Optimal' }
+    });
+
     const teamMembers = [
-        { name: "Hamid Ali (GL)", roll: "(22CS002)" },
-        { name: "Karan Kumar", roll: "(22CS008)" },
-        { name: "Mir Liaquat", roll: "(22CS018)" }
+        { 
+            name: "Karan Kumar", 
+            roll: "22CS008", 
+            role: "ML Modeling & Prediction",
+            desc: "Developed LSTM neural models for peak load prediction and historical trend forecasting."
+        },
+        { 
+            name: "Hamid Ali (GL)", 
+            roll: "22CS002", 
+            role: "Lead Architecture & IoT Systems",
+            desc: "Designed edge controller network, telemetry ingestion pipeline, and database optimization.",
+            isLeader: true
+        },
+        { 
+            name: "Mir Liaquat", 
+            roll: "22CS018", 
+            role: "Frontend Systems & UI/UX",
+            desc: "Crafted interactive spatial digital twin campus map, analytics dashboards, and reactive states."
+        }
     ];
 
-    const [popups, setPopups] = useState([
-        { id: 1, text: "Wait! AC is running in empty room!", type: 'alert' },
-        { id: 2, text: "System detected high energy usage.", type: 'warning' },
-        { id: 3, text: "Optimizing airflow...", type: 'success' },
-    ]);
+    const alertScenarios = [
+        {
+            id: 0,
+            title: "Empty Classroom AC Active",
+            type: "alert",
+            icon: <FiAlertCircle />,
+            room: "Lab CS-04",
+            metric: "2.8 kW wasted",
+            action: "AI Auto-Off Initiated: Relays decoupled, power saved immediately.",
+            status: "Resolved in 1.2s"
+        },
+        {
+            id: 1,
+            title: "Peak Grid Demand Surge",
+            type: "warning",
+            icon: <FiZap />,
+            room: "Main Academic Block",
+            metric: "14.2 kW Threshold",
+            action: "Dynamic Load Shedding: Secondary HVAC compressors throttled.",
+            status: "Grid Stabilized"
+        },
+        {
+            id: 2,
+            title: "Microgrid Solar Yield Rebalance",
+            type: "success",
+            icon: <FiCheckCircle />,
+            room: "Campus Substation",
+            metric: "+32% Green Yield",
+            action: "Renewable Routing: Library & Admin blocks switched to clean solar bank.",
+            status: "Zero Grid Draw"
+        }
+    ];
 
-    const [scrolled, setScrolled] = useState(false);
-    
     useEffect(() => {
-        const timer4s = setInterval(() => {
+        const teamTimer = setInterval(() => {
             setTeamIndex(prev => (prev + 1) % teamMembers.length);
+        }, 4500);
+
+        const featureTimer = setInterval(() => {
             setActiveFeature(prev => (prev + 1) % 3);
-        }, 4000);
+        }, 5000);
 
-        const timer3s = setInterval(() => {
-            setPopups(prev => [...prev.slice(1), prev[0]]);
-        }, 3000);
-
-        const handleScroll = () => setScrolled(window.scrollY > 50);
+        let ticking = false;
+        const handleScroll = () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    const isPassed = window.scrollY > 40;
+                    setScrolled(prev => (prev !== isPassed ? isPassed : prev));
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        };
         window.addEventListener('scroll', handleScroll, { passive: true });
 
         return () => {
-            clearInterval(timer4s);
-            clearInterval(timer3s);
+            clearInterval(teamTimer);
+            clearInterval(featureTimer);
             window.removeEventListener('scroll', handleScroll);
         };
     }, []);
 
+    const toggleSimRoom = (roomName) => {
+        setSimulatedRooms(prev => ({
+            ...prev,
+            [roomName]: {
+                ...prev[roomName],
+                active: !prev[roomName].active,
+                load: !prev[roomName].active ? '2.1 kW' : '0.0 kW'
+            }
+        }));
+    };
+
     const features = [
         {
-            icon: <FiActivity size={40} />,
-            title: "Real-time Monitoring",
-            desc: "Track energy consumption pulse by pulse. Visualize data instantly."
+            icon: <FiActivity size={32} />,
+            title: "Real-time Edge Monitoring",
+            desc: "Sub-second IoT telemetry streaming with instant kilowatt pulse visualizers.",
+            tag: "Edge Ingestion",
+            metric: "< 20ms Latency"
         },
         {
-            icon: <FiCpu size={40} />,
-            title: "Smart Predictions",
-            desc: "AI-driven forecasts to anticipate high load and optimize resources."
+            icon: <FiCpu size={32} />,
+            title: "Smart Predictive AI",
+            desc: "Deep learning models predict campus demand curves 24h ahead to stop tariff spikes.",
+            tag: "LSTM Neural Net",
+            metric: "94.8% Accuracy"
         },
         {
-            icon: <FiShield size={40} />,
-            title: "Automated Control",
-            desc: "Stop energy wastage before it happens with intelligent shut-offs."
+            icon: <FiShield size={32} />,
+            title: "Automated Circuit Relays",
+            desc: "Zero-touch safety control cuts power to vacant lecture halls and rogue electronics.",
+            tag: "Microcontroller Grid",
+            metric: "100% Autonomous"
         }
     ];
 
     return (
         <div className="landing-page" style={{
             minHeight: '100vh',
-            background: 'transparent',
+            background: '#02090c',
             color: 'var(--text)',
             overflowX: 'hidden',
             fontFamily: "'Inter', sans-serif"
         }}>
+            {/* Global Ambient Energy Particle Background */}
             <EnergyBackground />
+
             {/* Navbar */}
             <nav style={{
                 position: 'fixed',
@@ -89,46 +174,55 @@ const LandingPage = () => {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                padding: scrolled ? '0.75rem 6%' : '1.5rem 6%',
+                padding: scrolled ? '0.75rem 6%' : '1.25rem 6%',
                 zIndex: 1000,
-                background: scrolled ? 'rgba(2, 6, 23, 0.7)' : 'transparent',
-                backdropFilter: scrolled ? 'blur(20px) saturate(180%)' : 'none',
-                borderBottom: scrolled ? '1px solid rgba(0, 210, 106, 0.15)' : '1px solid transparent',
-                boxShadow: scrolled ? '0 10px 40px rgba(0, 0, 0, 0.3), inset 0 0 20px rgba(0, 210, 106, 0.05)' : 'none',
-                transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)'
+                background: scrolled ? 'rgba(2, 6, 23, 0.85)' : 'rgba(2, 6, 23, 0.4)',
+                backdropFilter: 'blur(20px) saturate(180%)',
+                borderBottom: scrolled ? '1px solid rgba(0, 245, 155, 0.2)' : '1px solid rgba(255, 255, 255, 0.05)',
+                boxShadow: scrolled ? '0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 245, 155, 0.05)' : 'none',
+                transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', transform: scrolled ? 'scale(0.9)' : 'scale(1)', transition: 'transform 0.5s ease' }}>
+                <div style={{ display: 'flex', alignItems: 'center', transform: scrolled ? 'scale(0.92)' : 'scale(1)', transition: 'transform 0.4s ease' }}>
                     <SmartLogo size={28} />
                 </div>
                 
-                {/* Navbar Links (Always Visible, Morphing on Scroll) */}
-                <div className="d-flex gap-4 align-items-center">
-                    {[
-                        { to: '/map', label: 'Campus Map' },
-                        { to: '/login', label: 'Sign In' }
-                    ].map(link => (
-                        <Link key={link.to} to={link.to} style={{ 
-                            color: scrolled ? 'rgba(255,255,255,0.9)' : 'var(--text-secondary)', 
-                            textDecoration: 'none', 
-                            fontWeight: '500', 
-                            fontSize: scrolled ? '0.8rem' : '0.9rem',
-                            transition: 'all 0.5s ease'
-                        }}>{link.label}</Link>
-                    ))}
-                    <Link to="/signup" className="btn btn-primary" style={{ 
-                        padding: scrolled ? '0.4rem 1rem' : '0.5rem 1.25rem', 
-                        borderRadius: '50px', 
+                <div className="landing-nav-links d-flex gap-4 align-items-center">
+                    <Link to="/map" className="landing-nav-link" style={{
+                        color: scrolled ? '#ffffff' : 'rgba(255,255,255,0.8)',
+                        textDecoration: 'none',
+                        fontWeight: '600',
+                        fontSize: '0.88rem',
+                        transition: 'all 0.3s ease'
+                    }}>
+                        Campus Map
+                    </Link>
+                    <Link to="/login" style={{
+                        color: scrolled ? '#ffffff' : 'rgba(255,255,255,0.8)', 
+                        textDecoration: 'none', 
                         fontWeight: '600', 
-                        fontSize: scrolled ? '0.75rem' : '0.9rem',
-                        background: scrolled ? 'linear-gradient(135deg, #00d26a 0%, #059669 100%)' : 'var(--primary)',
+                        fontSize: '0.88rem',
+                        transition: 'all 0.3s ease'
+                    }}>
+                        Sign In
+                    </Link>
+                    <Link to="/signup" className="btn btn-primary" style={{ 
+                        padding: '0.55rem 1.4rem', 
+                        borderRadius: '50px', 
+                        fontWeight: '700', 
+                        fontSize: '0.88rem',
+                        background: 'linear-gradient(135deg, #00f59b 0%, #059669 100%)',
+                        color: '#02090c',
                         border: 'none',
-                        transition: 'all 0.5s ease',
-                        boxShadow: scrolled ? '0 0 15px rgba(0, 210, 106, 0.3)' : 'none'
-                    }}>Get Started</Link>
+                        boxShadow: '0 0 20px rgba(0, 245, 155, 0.4)',
+                        textDecoration: 'none',
+                        transition: 'all 0.3s ease'
+                    }}>
+                        Get Started
+                    </Link>
                 </div>
             </nav>
 
-            {/* Floating Vertical Navigation (Appears on Scroll) */}
+            {/* Floating Vertical Navigation on Scroll */}
             <AnimatePresence>
                 {scrolled && (
                     <motion.div 
@@ -137,19 +231,19 @@ const LandingPage = () => {
                         exit={{ opacity: 0, x: 50 }}
                         style={{
                             position: 'fixed',
-                            right: '1rem', // Further to the right
+                            right: '1.25rem',
                             top: '50%',
                             transform: 'translateY(-50%)',
                             zIndex: 1000,
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '1.25rem',
-                            background: 'rgba(2, 6, 23, 0.4)',
+                            background: 'rgba(2, 9, 12, 0.8)',
                             backdropFilter: 'blur(20px)',
                             padding: '1.5rem 0.75rem',
                             borderRadius: '100px',
-                            border: '1px solid rgba(255, 255, 255, 0.05)',
-                            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.4)'
+                            border: '1px solid rgba(0, 245, 155, 0.25)',
+                            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 245, 155, 0.1)'
                         }}
                     >
                         {[
@@ -166,504 +260,787 @@ const LandingPage = () => {
                 )}
             </AnimatePresence>
 
-            {/* Part 1: Hero Section (Picture 1) */}
-            <header className="viewport-section" style={{
-                textAlign: 'center',
-                paddingTop: '12rem', // Shifted down for premium look
-                background: 'radial-gradient(circle at center, rgba(0, 210, 106, 0.1) 0%, transparent 60%)'
-            }}>
-                <QuantumAtomicBackground />
-                <div style={{ position: 'relative', zIndex: 2 }}>
-                    <motion.h1
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.1 }}
-                        style={{
-                            fontSize: 'clamp(3.5rem, 10vw, 5.5rem)',
-                            fontWeight: '900',
-                            maxWidth: '1000px',
-                            lineHeight: '1.0',
-                            letterSpacing: '-0.05em',
-                            color: 'var(--text)'
-                        }}
-                    >
-                        Stop Wasting Energy. <br />
-                        <span style={{
-                            background: 'var(--gradient-primary)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            display: 'inline-block'
-                        }}>Start Saving Future.</span>
-                    </motion.h1>
+            {/* Part 1: Hero Section (Matches heroVideo.mp4 with Cyber Grid & Lightning) */}
+            <HeroVideoSection />
 
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3, duration: 0.8 }}
-                        style={{
-                            marginTop: '2rem',
-                            fontSize: '1.25rem',
-                            maxWidth: '700px',
-                            color: 'var(--text-secondary)',
-                            lineHeight: '1.6'
-                        }}
-                    >
-                        Monitor, control, and optimize your energy footprint with the project SmartClass. Join the revolution of intelligent educational environments.
-                    </motion.p>
-
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.6 }}
-                        style={{ marginTop: '3.5rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', justifyContent: 'center' }}
-                    >
-                        <Link to="/signup" className="btn btn-primary btn-lg px-5" style={{ borderRadius: '50px', height: '56px', display: 'flex', alignItems: 'center' }}>
-                            Start Saving Now
-                        </Link>
-                        <button
-                            onClick={() => document.getElementById('live-simulation').scrollIntoView({ behavior: 'smooth' })}
-                            className="btn btn-secondary btn-lg px-5"
-                            style={{ borderRadius: '50px', height: '56px', display: 'flex', alignItems: 'center' }}
-                        >
-                            Live Demo
-                        </button>
-                    </motion.div>
-                </div>
-            </header>
-
-            {/* Part 2: Live Simulation & Video (Picture 2) */}
-            <section id="live-simulation" className="viewport-section" style={{
-                background: 'var(--bg-surface)',
-                padding: '0 10%'
+            {/* Part 2: Smarter Control Hub — Interactive Simulation (No 160MB video streaming lag!) */}
+            <section id="live-simulation" style={{
+                position: 'relative',
+                padding: '3.75rem 6%',
+                background: 'radial-gradient(ellipse at 50% 20%, rgba(0, 245, 155, 0.06) 0%, rgba(2, 9, 12, 0.98) 70%)',
+                borderTop: '1px solid rgba(0, 245, 155, 0.15)',
+                borderBottom: '1px solid rgba(0, 245, 155, 0.15)',
+                overflow: 'hidden'
             }}>
                 <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4rem',
-                    width: '100%',
-                    maxWidth: '1200px',
-                    flexWrap: 'wrap'
+                    maxWidth: '1360px',
+                    margin: '0 auto',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+                    gap: '3rem',
+                    alignItems: 'center'
                 }}>
-                    <div style={{ flex: '1', minWidth: '300px', textAlign: 'left' }}>
-                        <h2 style={{ fontSize: '3.5rem', fontWeight: '900', letterSpacing: '-0.04em', marginBottom: '1.5rem', color: 'var(--text)' }}>
-                            Smarter <br />
-                            <span style={{ color: 'var(--primary)' }}>Control Hub.</span>
-                        </h2>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem', lineHeight: '1.6', marginBottom: '2rem' }}>
-                            Watch our AI handle complex energy distribution patterns in real-time. A fully automated educational environment designed for the future.
-                        </p>
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                            <div style={{ width: '12px', height: '12px', background: 'var(--primary)', borderRadius: '50%', boxShadow: '0 0 10px var(--primary)' }}></div>
-                            <span style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Real-time Optimization</span>
-                        </div>
-                    </div>
-
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.8 }}
-                        style={{
-                            flex: '1.2',
-                            minWidth: '300px',
-                            position: 'relative'
-                        }}
-                    >
+                    {/* Left text column */}
+                    <div style={{ textAlign: 'left' }}>
                         <div style={{
-                            borderRadius: '24px',
-                            padding: '12px',
-                            background: 'rgba(255, 255, 255, 0.03)',
-                            border: '1px solid var(--border)',
-                            boxShadow: '0 40px 100px -20px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.6rem',
+                            padding: '0.35rem 0.9rem',
+                            background: 'rgba(0, 245, 155, 0.08)',
+                            border: '1px solid rgba(0, 245, 155, 0.25)',
+                            borderRadius: '50px',
+                            marginBottom: '1rem'
                         }}>
-                            {/* Glass Header Badge */}
-                            <div style={{
-                                position: 'absolute',
-                                top: '32px',
-                                right: '32px',
-                                background: 'rgba(5, 5, 5, 0.6)',
-                                backdropFilter: 'blur(12px)',
-                                border: '1px solid rgba(0, 210, 106, 0.3)',
-                                color: 'var(--primary)',
-                                padding: '0.65rem 1.25rem',
-                                borderRadius: '50px',
-                                fontSize: '0.8rem',
-                                fontWeight: '700',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '10px',
-                                zIndex: 10,
-                                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
-                            }}>
-                                <span className="pulse-green" style={{ width: '10px', height: '10px', background: 'var(--primary)', borderRadius: '50%', boxShadow: '0 0 12px var(--primary)' }}></span>
-                                LIVE PREVIEW
-                            </div>
-
-                            <div style={{
-                                borderRadius: '16px',
-                                overflow: 'hidden',
-                                position: 'relative',
-                                aspectRatio: '16 / 9',
-                                background: '#0a0a0a',
-                            }}>
-                                <video
-                                    ref={videoRef}
-                                    src="/assets/preview/FYP%20design.mp4"
-                                    poster="/assets/dashboard_preview.png"
-                                    muted
-                                    loop
-                                    playsInline
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
-                                />
-                            </div>
+                            <span style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                background: '#00f59b',
+                                boxShadow: '0 0 10px #00f59b'
+                            }} />
+                            <span style={{ fontSize: '0.78rem', fontWeight: '700', letterSpacing: '0.1em', color: '#34d399', textTransform: 'uppercase' }}>
+                                AUTONOMOUS CONTROL HUB
+                            </span>
                         </div>
-                    </motion.div>
-                </div>
-            </section>
 
-            {/* Part 3: Engineered for Efficiency (Picture 3) */}
-            <section className="viewport-section" style={{
-                padding: '8rem 5%',
-                background: 'rgba(255, 255, 255, 0.01)',
-                borderTop: '1px solid var(--border)',
-                borderBottom: '1px solid var(--border)'
-            }}>
-                <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
-                    <h2 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '1.25rem', letterSpacing: '-0.03em' }}>Engineered for Efficiency</h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto' }}>
-                        Watch how our system transforms raw classroom data into actionable energy savings.
-                    </p>
-                </div>
+                        <h2 style={{
+                            fontSize: 'clamp(2.2rem, 3.8vw, 3.2rem)',
+                            fontWeight: '900',
+                            letterSpacing: '-0.04em',
+                            lineHeight: 1.12,
+                            color: '#ffffff',
+                            marginBottom: '1rem'
+                        }}>
+                            Smarter Telemetry. <br />
+                            <span style={{
+                                background: 'linear-gradient(135deg, #00f59b 0%, #22e6b6 50%, #06b6d4 100%)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent'
+                            }}>Instant Optimization.</span>
+                        </h2>
 
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '2.5rem', flexWrap: 'wrap' }}>
-                    {features.map((feature, idx) => {
-                        const isActive = idx === activeFeature;
-                        return (
-                            <motion.div
-                                key={idx}
-                                animate={{
-                                    scale: isActive ? 1.02 : 1,
-                                    opacity: isActive ? 1 : 0.6,
-                                }}
-                                transition={{ duration: 0.4 }}
-                                style={{
-                                    background: 'var(--bg-card)',
-                                    padding: '3rem 2.5rem',
-                                    borderRadius: 'var(--radius-xl)',
-                                    border: isActive ? '1px solid rgba(0, 210, 106, 0.4)' : '1px solid var(--border)',
-                                    textAlign: 'left',
-                                    boxShadow: isActive ? 'var(--shadow-xl)' : 'var(--shadow-md)',
-                                    maxWidth: '380px',
-                                    cursor: 'pointer',
-                                    position: 'relative',
-                                    overflow: 'hidden',
-                                    transition: 'border-color 0.3s ease, box-shadow 0.3s ease'
-                                }}
-                                onClick={() => setActiveFeature(idx)}
-                            >
-                                <div className="icon-box mb-4" style={{
-                                    background: isActive ? 'var(--gradient-primary)' : 'rgba(255,255,255,0.05)',
-                                    color: isActive ? 'white' : 'var(--text-muted)',
-                                    width: '60px',
-                                    height: '60px',
-                                    fontSize: '1.75rem'
+                        <p style={{
+                            color: 'rgba(226, 232, 240, 0.8)',
+                            fontSize: '1.05rem',
+                            lineHeight: 1.6,
+                            marginBottom: '1.75rem',
+                            maxWidth: '500px'
+                        }}>
+                            Watch the intelligent AI orchestrator balance campus transformers, divert solar kilowatts, and eliminate phantom loads in real time.
+                        </p>
+
+                        {/* Interactive Metric Strip */}
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(3, 1fr)',
+                            gap: '0.75rem',
+                            marginBottom: '1.75rem'
+                        }}>
+                            {[
+                                { val: '28.4%', label: 'Weekly Energy Saved' },
+                                { val: '< 20ms', label: 'IoT Relay Latency' },
+                                { val: '99.9%', label: 'Grid Uptime' }
+                            ].map((m, i) => (
+                                <div key={i} style={{
+                                    background: 'rgba(5, 12, 30, 0.6)',
+                                    border: '1px solid rgba(0, 245, 155, 0.15)',
+                                    borderRadius: '14px',
+                                    padding: '0.75rem 0.5rem',
+                                    textAlign: 'center'
                                 }}>
-                                    {feature.icon}
+                                    <div style={{ fontSize: '1.35rem', fontWeight: '800', color: '#00f59b', marginBottom: '0.15rem' }}>
+                                        {m.val}
+                                    </div>
+                                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '500' }}>
+                                        {m.label}
+                                    </div>
                                 </div>
+                            ))}
+                        </div>
 
-                                <h3 style={{
-                                    fontSize: '1.5rem',
-                                    marginBottom: '1rem',
-                                    fontWeight: '700',
-                                    color: isActive ? 'var(--text)' : 'var(--text-secondary)'
-                                }}>
-                                    {feature.title}
-                                </h3>
-
-                                <p style={{
-                                    lineHeight: '1.7',
-                                    fontSize: '1rem',
-                                    color: 'var(--text-muted)',
-                                    marginBottom: isActive ? '2rem' : '0'
-                                }}>
-                                    {feature.desc}
-                                </p>
-
-                                {isActive && (
-                                    <motion.div
-                                        initial={{ width: '0%' }}
-                                        animate={{ width: '100%' }}
-                                        transition={{ duration: 4, ease: "linear" }}
-                                        style={{
-                                            position: 'absolute',
-                                            bottom: 0,
-                                            left: 0,
-                                            height: '4px',
-                                            background: 'var(--gradient-primary)',
-                                            boxShadow: '0 0 12px var(--primary)'
-                                        }}
-                                    />
-                                )}
-                            </motion.div>
-                        );
-                    })}
-                </div>
-            </section>
-
-            {/* Part 4: Intelligent Alerts (Picture 4) */}
-            <section className="viewport-section" style={{
-                background: 'radial-gradient(circle at bottom right, rgba(0, 210, 106, 0.03) 0%, transparent 50%)'
-            }}>
-                <div style={{ maxWidth: '800px', textAlign: 'center', marginBottom: '5rem' }}>
-                    <h2 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '1.5rem', letterSpacing: '-0.03em' }}>Experience Intelligent Alerts</h2>
-                    <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-                        Notifications appear only when you need them. They guide you to shut down unused devices and vanish when the job is done.
-                    </p>
-                </div>
-
-                <div style={{
-                    width: '100%',
-                    maxWidth: '1000px',
-                    height: '500px',
-                    background: 'url(/assets/dashboard_preview.png)',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    borderRadius: '24px',
-                    border: '1px solid var(--border)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: 'var(--shadow-xl)'
-                }}>
-                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(5, 5, 5, 0.8)', backdropFilter: 'blur(8px)' }}></div>
-
-                    <div style={{ position: 'relative', textAlign: 'center', zIndex: 1 }}>
-                        <small style={{
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.3em',
-                            color: 'var(--text-muted)',
-                            fontWeight: '600',
-                            fontSize: '0.75rem',
-                            display: 'block',
-                            marginBottom: '2rem'
-                        }}>Interactive System Response</small>
-
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={popups[0].id}
-                                initial={{ y: 20, opacity: 0, scale: 0.95 }}
-                                animate={{ y: 0, opacity: 1, scale: 1 }}
-                                exit={{ y: -20, opacity: 0, scale: 0.95 }}
-                                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                                style={{
-                                    background: 'var(--bg-card)',
-                                    padding: '1.5rem 2rem',
-                                    borderRadius: '16px',
-                                    border: '1px solid var(--border)',
-                                    borderLeft: `4px solid ${popups[0].type === 'alert' ? 'var(--accent-pink)' : 'var(--primary)'}`,
-                                    boxShadow: '0 24px 48px rgba(0,0,0,0.5)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '1.5rem',
-                                    maxWidth: '450px',
-                                    textAlign: 'left'
-                                }}
-                            >
-                                <div style={{
-                                    background: popups[0].type === 'alert' ? 'rgba(244, 63, 94, 0.1)' : 'rgba(0, 210, 106, 0.1)',
-                                    padding: '12px',
-                                    borderRadius: '12px',
-                                    color: popups[0].type === 'alert' ? 'var(--accent-pink)' : 'var(--primary)',
-                                    fontSize: '1.5rem',
-                                    display: 'flex'
-                                }}>
-                                    {popups[0].type === 'alert' ? <FiAlertCircle /> : <FiCheckCircle />}
-                                </div>
-                                <div>
-                                    <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.25rem' }}>
-                                        {popups[0].type === 'alert' ? 'Critical Alert' : 'Optimization Result'}
-                                    </h4>
-                                    <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', margin: 0 }}>
-                                        {popups[0].text}
-                                    </p>
-                                </div>
-                            </motion.div>
-                        </AnimatePresence>
+                        <Link to="/map" className="btn btn-primary" style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.65rem',
+                            padding: '0.8rem 1.85rem',
+                            borderRadius: '50px',
+                            background: 'linear-gradient(135deg, #00f59b 0%, #059669 100%)',
+                            color: '#02090c',
+                            fontWeight: '700',
+                            textDecoration: 'none',
+                            boxShadow: '0 0 20px rgba(0, 245, 155, 0.3)'
+                        }}>
+                            <span>Open Spatial Campus Map</span>
+                            <FiArrowRight size={18} />
+                        </Link>
                     </div>
-                </div>
-            </section>
 
-            {/* Part 5: Premium Footer (Picture 5) */}
-            {/* Part 5: Development Team & About Us */}
-            {/* Part 5: Development Team (3D Carousel Flip) */}
-            <section style={{ 
-                padding: '6rem 5% 4rem 5%', // Reduced padding
-                background: 'radial-gradient(circle at top, rgba(0, 210, 106, 0.05) 0%, #050505 100%)', 
-                borderTop: '1px solid rgba(0, 210, 106, 0.1)',
-                minHeight: 'auto', // Dynamic height
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center'
-            }}>
-                <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center', width: '100%' }}>
-                    <h2 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '4rem', letterSpacing: '-0.03em', color: 'var(--text)' }}>
-                        The <span style={{ color: 'var(--primary)' }}>Intelligence</span> Team
-                    </h2>
-                    
-                    <div style={{ 
-                        position: 'relative', 
-                        height: '260px', // Lowered height for better fit
-                        display: 'flex', 
-                        justifyContent: 'center', 
-                        alignItems: 'center'
+                    {/* Right interactive dashboard preview (Lightweight, zero lag) */}
+                    <div style={{
+                        position: 'relative',
+                        borderRadius: '20px',
+                        background: 'rgba(5, 12, 30, 0.75)',
+                        border: '1px solid rgba(0, 245, 155, 0.25)',
+                        boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 245, 155, 0.12)',
+                        padding: '1.25rem',
+                        backdropFilter: 'blur(16px)'
                     }}>
-                        {teamMembers.map((member, i) => {
-                            const isCenter = i === teamIndex;
-                            const isLeft = i === (teamIndex - 1 + teamMembers.length) % teamMembers.length;
-                            const isRight = i === (teamIndex + 1) % teamMembers.length;
-                            
-                            let position = 'center';
-                            if (isLeft) position = 'left';
-                            if (isRight) position = 'right';
-                            if (!isCenter && !isLeft && !isRight) return null;
+                        {/* Simulation Bar Header */}
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '0.85rem',
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                            paddingBottom: '0.75rem'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00f59b', boxShadow: '0 0 8px #00f59b' }} />
+                                <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#ffffff', letterSpacing: '0.06em' }}>
+                                    CAMPUS DIGITAL TWIN — ACTIVE NODES
+                                </span>
+                            </div>
+                            <span style={{ fontSize: '0.72rem', color: '#00f59b', background: 'rgba(0, 245, 155, 0.12)', padding: '0.2rem 0.55rem', borderRadius: '12px' }}>
+                                Interactive Relays
+                            </span>
+                        </div>
 
-                            return (
-                                <motion.div
-                                    key={i}
-                                    animate={{
-                                        x: position === 'left' ? -320 : position === 'right' ? 320 : 0,
-                                        scale: isCenter ? 1.1 : 0.8,
-                                        opacity: isCenter ? 1 : 0.3,
-                                        filter: isCenter ? 'blur(0px)' : 'blur(6px)',
-                                        zIndex: isCenter ? 10 : 5,
-                                        rotate: 45, // Diamond Shape
-                                    }}
-                                    transition={{ duration: 0.6, ease: "easeInOut" }}
+                        {/* Interactive Room Relays Grid (Compact & Sleek) */}
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(2, 1fr)',
+                            gap: '0.65rem',
+                            marginBottom: '0.9rem'
+                        }}>
+                            {Object.entries(simulatedRooms).map(([name, data]) => (
+                                <div
+                                    key={name}
+                                    onClick={() => toggleSimRoom(name)}
                                     style={{
-                                        position: 'absolute',
-                                        width: '220px',
-                                        height: '220px',
-                                        background: isCenter 
-                                            ? 'rgba(255, 255, 255, 0.05)' 
-                                            : 'rgba(255, 255, 255, 0.02)',
-                                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                                        borderRadius: '32px', // Rounded edges
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        boxShadow: isCenter ? '0 30px 60px rgba(0, 0, 0, 0.6)' : 'none',
-                                        backdropFilter: isCenter ? 'blur(20px)' : 'blur(5px)',
+                                        background: data.active ? 'rgba(0, 245, 155, 0.08)' : 'rgba(255, 255, 255, 0.02)',
+                                        border: data.active ? '1px solid rgba(0, 245, 155, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
+                                        borderRadius: '12px',
+                                        padding: '0.6rem 0.85rem',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease',
+                                        textAlign: 'left'
                                     }}
                                 >
-                                    <motion.div
-                                        animate={{ rotate: -45 }} // Keep text horizontal
-                                        style={{ textAlign: 'center' }}
-                                    >
-                                        {isCenter ? (
-                                            <motion.div
-                                                initial={{ opacity: 0, scale: 0.8 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                transition={{ delay: 0.3 }}
-                                            >
-                                                <div style={{ 
-                                                    width: '50px', 
-                                                    height: '50px', 
-                                                    background: 'var(--primary)', 
-                                                    borderRadius: '50%', 
-                                                    display: 'flex', 
-                                                    alignItems: 'center', 
-                                                    justifyContent: 'center',
-                                                    color: '#050505',
-                                                    fontSize: '1.25rem',
-                                                    marginBottom: '0.75rem',
-                                                    margin: '0 auto 0.75rem auto',
-                                                    fontWeight: '800'
-                                                }}>
-                                                    {member.name.charAt(0)}
-                                                </div>
-                                                <h4 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '0.2rem', color: 'var(--text)' }}>{member.name}</h4>
-                                                <p style={{ color: 'var(--primary)', fontWeight: '700', fontSize: '0.8rem', letterSpacing: '0.05em' }}>{member.roll}</p>
-                                            </motion.div>
-                                        ) : (
-                                            <div style={{ opacity: 0.1 }}>
-                                                <SmartLogo size={40} />
-                                            </div>
-                                        )}
-                                    </motion.div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                                        <span style={{ fontWeight: '700', fontSize: '0.85rem', color: data.active ? '#ffffff' : '#94a3b8' }}>
+                                            {name}
+                                        </span>
+                                        <span style={{
+                                            fontSize: '0.65rem',
+                                            fontWeight: '700',
+                                            padding: '0.1rem 0.45rem',
+                                            borderRadius: '8px',
+                                            background: data.active ? '#00f59b' : 'rgba(255,255,255,0.1)',
+                                            color: data.active ? '#020617' : '#94a3b8'
+                                        }}>
+                                            {data.active ? 'ONLINE' : 'SHUT OFF'}
+                                        </span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'rgba(255,255,255,0.7)' }}>
+                                        <span>Load: <strong style={{ color: '#00f59b' }}>{data.load}</strong></span>
+                                        <span>Temp: {data.temp}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Visual Preview Snapshot Card (Properly Sized & Constrained) */}
+                        <div style={{
+                            position: 'relative',
+                            borderRadius: '14px',
+                            overflow: 'hidden',
+                            border: '1px solid rgba(0, 245, 155, 0.25)',
+                            boxShadow: '0 15px 35px rgba(0,0,0,0.5)',
+                            maxHeight: '280px',
+                            background: '#02090c'
+                        }}>
+                            <img 
+                                src="/assets/dashboard_preview.png" 
+                                alt="Dashboard Preview" 
+                                style={{ 
+                                    width: '100%', 
+                                    height: '280px',
+                                    objectFit: 'cover',
+                                    objectPosition: 'center 20%',
+                                    display: 'block', 
+                                    opacity: 0.9 
+                                }} 
+                            />
+                            <div style={{
+                                position: 'absolute',
+                                inset: 0,
+                                background: 'linear-gradient(to top, rgba(2, 9, 12, 0.96) 0%, rgba(2, 6, 23, 0.2) 40%, transparent 70%)',
+                                display: 'flex',
+                                alignItems: 'flex-end',
+                                padding: '0.75rem 1rem'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', justifyContent: 'space-between' }}>
+                                    <span style={{ fontSize: '0.78rem', color: '#ffffff', fontWeight: '600' }}>
+                                        ⚡ Campus Power Graph: 11.6 kW Nominal
+                                    </span>
+                                    <Link to="/map" style={{
+                                        fontSize: '0.75rem',
+                                        color: '#00f59b',
+                                        textDecoration: 'none',
+                                        fontWeight: '700',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.3rem'
+                                    }}>
+                                        Inspect Map <FiChevronRight />
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Part 3: Engineered for Autonomous Efficiency (High-Tech 3-Column Glass Grid) */}
+            <section style={{
+                padding: '7rem 6%',
+                position: 'relative',
+                background: 'rgba(2, 9, 12, 0.96)',
+                borderBottom: '1px solid rgba(0, 245, 155, 0.15)'
+            }}>
+                <div style={{ maxWidth: '1360px', margin: '0 auto', textAlign: 'center' }}>
+                    <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.4rem 1rem',
+                        background: 'rgba(0, 245, 155, 0.08)',
+                        border: '1px solid rgba(0, 245, 155, 0.25)',
+                        borderRadius: '50px',
+                        marginBottom: '1.25rem'
+                    }}>
+                        <FiCpu color="#00f59b" size={14} />
+                        <span style={{ fontSize: '0.78rem', fontWeight: '700', letterSpacing: '0.1em', color: '#34d399', textTransform: 'uppercase' }}>
+                            NEXT-GEN CAPABILITIES
+                        </span>
+                    </div>
+
+                    <h2 style={{
+                        fontSize: 'clamp(2.4rem, 4vw, 3.4rem)',
+                        fontWeight: '900',
+                        marginBottom: '1.2rem',
+                        letterSpacing: '-0.03em',
+                        color: '#ffffff'
+                    }}>
+                        Engineered for Autonomous Efficiency
+                    </h2>
+                    <p style={{
+                        color: 'rgba(226, 232, 240, 0.75)',
+                        fontSize: '1.15rem',
+                        maxWidth: '650px',
+                        margin: '0 auto 4rem auto',
+                        lineHeight: 1.6
+                    }}>
+                        Transform raw classroom electrical signals into automated energy savings without relying on manual audits.
+                    </p>
+
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                        gap: '2rem',
+                        textAlign: 'left'
+                    }}>
+                        {features.map((feature, idx) => {
+                            const isActive = idx === activeFeature;
+                            return (
+                                <motion.div
+                                    key={idx}
+                                    whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                                    onClick={() => setActiveFeature(idx)}
+                                    style={{
+                                        background: isActive ? 'rgba(5, 15, 35, 0.85)' : 'rgba(5, 12, 30, 0.5)',
+                                        padding: '2.5rem',
+                                        borderRadius: '24px',
+                                        border: isActive ? '1px solid rgba(0, 245, 155, 0.5)' : '1px solid rgba(255, 255, 255, 0.08)',
+                                        boxShadow: isActive ? '0 25px 50px -10px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 245, 155, 0.15)' : '0 10px 30px rgba(0, 0, 0, 0.4)',
+                                        cursor: 'pointer',
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        backdropFilter: 'blur(16px)',
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem' }}>
+                                        <div style={{
+                                            width: '60px',
+                                            height: '60px',
+                                            borderRadius: '16px',
+                                            background: isActive ? 'linear-gradient(135deg, #00f59b 0%, #059669 100%)' : 'rgba(0, 245, 155, 0.1)',
+                                            color: isActive ? '#020617' : '#00f59b',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            boxShadow: isActive ? '0 0 20px rgba(0, 245, 155, 0.5)' : 'none',
+                                            transition: 'all 0.3s ease'
+                                        }}>
+                                            {feature.icon}
+                                        </div>
+
+                                        <span style={{
+                                            fontSize: '0.75rem',
+                                            fontWeight: '700',
+                                            color: '#00f59b',
+                                            background: 'rgba(0, 245, 155, 0.1)',
+                                            padding: '0.3rem 0.75rem',
+                                            borderRadius: '20px',
+                                            border: '1px solid rgba(0, 245, 155, 0.2)'
+                                        }}>
+                                            {feature.metric}
+                                        </span>
+                                    </div>
+
+                                    <div style={{
+                                        fontSize: '0.78rem',
+                                        fontWeight: '700',
+                                        color: 'rgba(148, 163, 184, 0.8)',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.08em',
+                                        marginBottom: '0.5rem'
+                                    }}>
+                                        {feature.tag}
+                                    </div>
+
+                                    <h3 style={{
+                                        fontSize: '1.45rem',
+                                        fontWeight: '800',
+                                        color: '#ffffff',
+                                        marginBottom: '0.85rem',
+                                        letterSpacing: '-0.02em'
+                                    }}>
+                                        {feature.title}
+                                    </h3>
+
+                                    <p style={{
+                                        fontSize: '0.98rem',
+                                        color: 'rgba(226, 232, 240, 0.75)',
+                                        lineHeight: 1.6,
+                                        margin: 0
+                                    }}>
+                                        {feature.desc}
+                                    </p>
+
+                                    {isActive && (
+                                        <motion.div
+                                            initial={{ width: '0%' }}
+                                            animate={{ width: '100%' }}
+                                            transition={{ duration: 5, ease: "linear" }}
+                                            style={{
+                                                position: 'absolute',
+                                                bottom: 0,
+                                                left: 0,
+                                                height: '3px',
+                                                background: 'linear-gradient(90deg, #00f59b, #22e6b6)',
+                                                boxShadow: '0 0 10px #00f59b'
+                                            }}
+                                        />
+                                    )}
                                 </motion.div>
                             );
                         })}
                     </div>
+                </div>
+            </section>
+
+            {/* Part 4: Experience Intelligent Anomaly Detection & Alerts */}
+            <section style={{
+                padding: '7rem 6%',
+                position: 'relative',
+                background: 'radial-gradient(circle at 80% 50%, rgba(0, 245, 155, 0.05) 0%, rgba(2, 9, 12, 0.98) 70%)',
+                borderBottom: '1px solid rgba(0, 245, 155, 0.15)'
+            }}>
+                <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
+                    <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.4rem 1rem',
+                        background: 'rgba(0, 245, 155, 0.08)',
+                        border: '1px solid rgba(0, 245, 155, 0.25)',
+                        borderRadius: '50px',
+                        marginBottom: '1.25rem'
+                    }}>
+                        <FiAlertCircle color="#00f59b" size={14} />
+                        <span style={{ fontSize: '0.78rem', fontWeight: '700', letterSpacing: '0.1em', color: '#34d399', textTransform: 'uppercase' }}>
+                            EVENT DRIVEN INCIDENT RESPONSE
+                        </span>
+                    </div>
+
+                    <h2 style={{
+                        fontSize: 'clamp(2.4rem, 4vw, 3.4rem)',
+                        fontWeight: '900',
+                        letterSpacing: '-0.03em',
+                        color: '#ffffff',
+                        marginBottom: '1.2rem'
+                    }}>
+                        Experience Intelligent Alerts
+                    </h2>
+                    <p style={{
+                        fontSize: '1.15rem',
+                        color: 'rgba(226, 232, 240, 0.75)',
+                        maxWidth: '640px',
+                        margin: '0 auto 3.5rem auto',
+                        lineHeight: 1.6
+                    }}>
+                        Click any simulated anomaly scenario below to experience how SmartClass intercepts waste automatically.
+                    </p>
+
+                    {/* Scenario Selector Chips */}
+                    <div style={{
+                        display: 'flex',
+                        gap: '1rem',
+                        justifyContent: 'center',
+                        flexWrap: 'wrap',
+                        marginBottom: '3rem'
+                    }}>
+                        {alertScenarios.map((sc, i) => (
+                            <button
+                                key={i}
+                                onClick={() => setActiveScenario(i)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.6rem',
+                                    padding: '0.75rem 1.4rem',
+                                    borderRadius: '50px',
+                                    fontSize: '0.92rem',
+                                    fontWeight: '700',
+                                    background: activeScenario === i ? 'rgba(0, 245, 155, 0.15)' : 'rgba(5, 12, 30, 0.6)',
+                                    color: activeScenario === i ? '#00f59b' : '#94a3b8',
+                                    border: activeScenario === i ? '1px solid #00f59b' : '1px solid rgba(255, 255, 255, 0.1)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    boxShadow: activeScenario === i ? '0 0 15px rgba(0, 245, 155, 0.2)' : 'none'
+                                }}
+                            >
+                                {sc.icon}
+                                <span>{sc.title}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Alert Interactive Simulator Display */}
+                    <div style={{
+                        maxWidth: '900px',
+                        margin: '0 auto',
+                        borderRadius: '24px',
+                        background: 'rgba(5, 12, 30, 0.8)',
+                        border: '1px solid rgba(0, 245, 155, 0.3)',
+                        boxShadow: '0 30px 70px rgba(0,0,0,0.6), 0 0 30px rgba(0, 245, 155, 0.1)',
+                        padding: '2.5rem',
+                        backdropFilter: 'blur(20px)',
+                        textAlign: 'left'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '1.25rem', marginBottom: '1.75rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00f59b', boxShadow: '0 0 8px #00f59b' }} />
+                                <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#e2e8f0' }}>
+                                    REAL-TIME EVENT ORCHESTRATOR
+                                </span>
+                            </div>
+                            <span style={{ fontSize: '0.82rem', color: '#00f59b', fontWeight: '700' }}>
+                                {alertScenarios[activeScenario].status}
+                            </span>
+                        </div>
+
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                            gap: '2rem',
+                            alignItems: 'center'
+                        }}>
+                            <div>
+                                <div style={{ fontSize: '0.82rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.4rem' }}>
+                                    Detected Target
+                                </div>
+                                <h3 style={{ fontSize: '1.6rem', fontWeight: '800', color: '#ffffff', marginBottom: '0.4rem' }}>
+                                    {alertScenarios[activeScenario].room}
+                                </h3>
+                                <div style={{ fontSize: '1.1rem', fontWeight: '700', color: '#00f59b', marginBottom: '1.25rem' }}>
+                                    {alertScenarios[activeScenario].metric}
+                                </div>
+                                <p style={{ color: 'rgba(226, 232, 240, 0.85)', fontSize: '0.98rem', lineHeight: 1.6, margin: 0 }}>
+                                    {alertScenarios[activeScenario].action}
+                                </p>
+                            </div>
+
+                            <div style={{
+                                background: 'rgba(2, 6, 23, 0.7)',
+                                border: '1px solid rgba(0, 245, 155, 0.2)',
+                                borderRadius: '16px',
+                                padding: '1.5rem',
+                                fontFamily: 'monospace',
+                                fontSize: '0.82rem',
+                                color: '#94a3b8',
+                                lineHeight: 1.7
+                            }}>
+                                <div style={{ color: '#00f59b', fontWeight: '700', marginBottom: '0.5rem' }}>
+                                    &gt; IoT Edge Broker Output
+                                </div>
+                                <div>[LOG] Anomaly detected: {alertScenarios[activeScenario].title}</div>
+                                <div>[METRIC] Delta load: {alertScenarios[activeScenario].metric}</div>
+                                <div>[EDGE] Dispatching MQTT command to micro-relays...</div>
+                                <div style={{ color: '#00f59b' }}>[SUCCESS] State transitioned to OPTIMAL (0ms timeout)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Part 5: The Engineering Intelligence Team */}
+            <section id="intelligence-team" style={{ 
+                padding: '7rem 6% 5rem 6%',
+                background: 'radial-gradient(circle at center top, rgba(0, 245, 155, 0.08) 0%, #020617 80%)', 
+                borderBottom: '1px solid rgba(0, 245, 155, 0.15)',
+                textAlign: 'center'
+            }}>
+                <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+                    <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.4rem 1rem',
+                        background: 'rgba(0, 245, 155, 0.08)',
+                        border: '1px solid rgba(0, 245, 155, 0.25)',
+                        borderRadius: '50px',
+                        marginBottom: '1.25rem'
+                    }}>
+                        <FiUser color="#00f59b" size={14} />
+                        <span style={{ fontSize: '0.78rem', fontWeight: '700', letterSpacing: '0.1em', color: '#34d399', textTransform: 'uppercase' }}>
+                            FINAL YEAR PROJECT RESEARCH TEAM
+                        </span>
+                    </div>
+
+                    <h2 style={{
+                        fontSize: 'clamp(2.4rem, 4vw, 3.4rem)',
+                        fontWeight: '900',
+                        marginBottom: '1.2rem',
+                        letterSpacing: '-0.03em',
+                        color: '#ffffff'
+                    }}>
+                        The <span style={{
+                            background: 'linear-gradient(135deg, #00f59b 0%, #22e6b6 50%, #06b6d4 100%)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent'
+                        }}>Intelligence</span> Team
+                    </h2>
+                    <p style={{
+                        color: 'rgba(226, 232, 240, 0.75)',
+                        fontSize: '1.15rem',
+                        maxWidth: '650px',
+                        margin: '0 auto 4rem auto',
+                        lineHeight: 1.6
+                    }}>
+                        Department of Computer Systems Engineering — Final Year Project (2026).
+                    </p>
                     
+                    {/* Team Members Grid */}
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                        gap: '2rem',
+                        marginBottom: '4.5rem'
+                    }}>
+                        {teamMembers.map((member, i) => (
+                            <motion.div
+                                key={i}
+                                whileHover={{ y: -8, transition: { duration: 0.25 } }}
+                                style={{
+                                    background: member.isLeader ? 'rgba(6, 18, 42, 0.85)' : 'rgba(5, 12, 30, 0.65)',
+                                    border: member.isLeader ? '1px solid rgba(0, 245, 155, 0.55)' : '1px solid rgba(0, 245, 155, 0.22)',
+                                    borderRadius: '24px',
+                                    padding: '2.5rem 2rem',
+                                    textAlign: 'center',
+                                    boxShadow: member.isLeader 
+                                        ? '0 25px 60px rgba(0, 0, 0, 0.6), 0 0 35px rgba(0, 245, 155, 0.2)' 
+                                        : '0 20px 50px rgba(0, 0, 0, 0.5), 0 0 25px rgba(0, 245, 155, 0.08)',
+                                    backdropFilter: 'blur(16px)',
+                                    position: 'relative',
+                                    overflow: 'hidden'
+                                }}
+                            >
+                                {member.isLeader && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '14px',
+                                        right: '16px',
+                                        background: 'rgba(0, 245, 155, 0.15)',
+                                        border: '1px solid rgba(0, 245, 155, 0.45)',
+                                        color: '#00f59b',
+                                        fontSize: '0.72rem',
+                                        fontWeight: '800',
+                                        padding: '0.2rem 0.65rem',
+                                        borderRadius: '20px',
+                                        letterSpacing: '0.06em',
+                                        textTransform: 'uppercase'
+                                    }}>
+                                        Group Leader
+                                    </div>
+                                )}
+                                <div style={{
+                                    width: '72px',
+                                    height: '72px',
+                                    borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, #00f59b 0%, #059669 100%)',
+                                    color: '#02090c',
+                                    fontSize: '1.75rem',
+                                    fontWeight: '900',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    margin: '0 auto 1.5rem auto',
+                                    boxShadow: '0 0 25px rgba(0, 245, 155, 0.5)'
+                                }}>
+                                    {member.name.charAt(0)}
+                                </div>
+
+                                <h3 style={{ fontSize: '1.35rem', fontWeight: '800', color: '#ffffff', marginBottom: '0.35rem' }}>
+                                    {member.name}
+                                </h3>
+
+                                <div style={{
+                                    display: 'inline-block',
+                                    fontSize: '0.85rem',
+                                    fontWeight: '700',
+                                    color: '#00f59b',
+                                    background: 'rgba(0, 245, 155, 0.1)',
+                                    padding: '0.25rem 0.8rem',
+                                    borderRadius: '50px',
+                                    marginBottom: '1rem',
+                                    border: '1px solid rgba(0, 245, 155, 0.2)'
+                                }}>
+                                    Roll No: {member.roll}
+                                </div>
+
+                                <div style={{
+                                    fontSize: '0.92rem',
+                                    fontWeight: '600',
+                                    color: '#e2e8f0',
+                                    marginBottom: '0.75rem'
+                                }}>
+                                    {member.role}
+                                </div>
+
+                                <p style={{
+                                    fontSize: '0.86rem',
+                                    color: '#94a3b8',
+                                    lineHeight: 1.55,
+                                    margin: 0
+                                }}>
+                                    {member.desc}
+                                </p>
+                            </motion.div>
+                        ))}
+                    </div>
+                    
+                    {/* Project Supervision Pill */}
                     <div style={{ 
-                        marginTop: '6rem', // Tightened spacing
                         display: 'inline-flex', 
                         alignItems: 'center', 
-                        gap: '1.25rem', 
-                        padding: '1rem 2rem', 
-                        background: 'rgba(0, 210, 106, 0.08)', 
-                        border: '1px solid rgba(0, 210, 106, 0.25)', 
+                        gap: '1.5rem', 
+                        padding: '1.1rem 2.5rem', 
+                        background: 'rgba(5, 12, 30, 0.8)', 
+                        border: '1px solid rgba(0, 245, 155, 0.35)', 
                         borderRadius: '100px',
-                        boxShadow: '0 0 30px rgba(0, 210, 106, 0.1)'
+                        boxShadow: '0 15px 40px rgba(0, 0, 0, 0.5), 0 0 25px rgba(0, 245, 155, 0.15)',
+                        backdropFilter: 'blur(16px)'
                     }}>
-                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Supervision</span>
-                        <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.1)' }}></div>
-                        <span style={{ fontSize: '1.1rem', color: 'var(--text)', fontWeight: '800' }}>Madam <span style={{ color: 'var(--primary)' }}>Anam Ali</span></span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00f59b', boxShadow: '0 0 10px #00f59b' }} />
+                            <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                                Project Supervision
+                            </span>
+                        </div>
+                        <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.15)' }}></div>
+                        <span style={{ fontSize: '1.2rem', color: '#ffffff', fontWeight: '800' }}>
+                            Madam <span style={{ color: '#00f59b' }}>Anam Ali</span>
+                        </span>
                     </div>
                 </div>
             </section>
 
             {/* Footer */}
             <footer style={{
-                padding: '6rem 5% 4rem 5%',
-                background: 'var(--bg-deep)',
-                borderTop: '1px solid var(--border)'
+                padding: '6rem 6% 3rem 6%',
+                background: '#02090c',
+                borderTop: '1px solid rgba(0, 245, 155, 0.15)'
             }}>
                 <div style={{
-                    maxWidth: '1200px',
+                    maxWidth: '1280px',
                     width: '100%',
                     margin: '0 auto',
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
                     gap: '4rem',
                     marginBottom: '4rem'
                 }}>
                     <div style={{ gridColumn: 'span 2' }}>
                         <SmartLogo size={36} className="mb-4" />
-                        <p style={{ color: 'var(--text-muted)', lineHeight: '1.7', maxWidth: '350px' }}>
-                            Building the next generation of energy-efficient educational environments through advanced AI and real-time automation.
+                        <p style={{ color: '#94a3b8', lineHeight: '1.7', maxWidth: '380px', fontSize: '0.95rem' }}>
+                            Building the next generation of energy-efficient educational environments through advanced AI edge computing and real-time autonomous load balancing.
                         </p>
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', alignItems: 'center' }}>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00f59b', boxShadow: '0 0 8px #00f59b' }} />
+                            <span style={{ fontSize: '0.82rem', color: '#00f59b', fontWeight: '600' }}>
+                                System Status: All Nodes Nominal
+                            </span>
+                        </div>
                     </div>
 
                     <div>
-                        <h5 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '1.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Platform</h5>
-                        <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            <li><Link to="/map" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Campus Map</Link></li>
-                            <li><Link to="/predictions" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>AI Insights</Link></li>
-                            <li><Link to="/ml-lab" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Research Lab</Link></li>
+                        <h5 style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '1.5rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#ffffff' }}>
+                            Platform
+                        </h5>
+                        <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                            <li><Link to="/map" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.92rem' }}>Spatial Campus Map</Link></li>
+                            <li><Link to="/predictions" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.92rem' }}>AI Insights & Predictions</Link></li>
+                            <li><Link to="/ml-lab" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.92rem' }}>Research Lab & Datasets</Link></li>
                         </ul>
                     </div>
 
                     <div>
-                        <h5 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '1.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Project</h5>
-                        <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            <li><a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Privacy Policy</a></li>
-                            <li><a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Terms of Use</a></li>
-                            <li><a href="#" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Documentation</a></li>
+                        <h5 style={{ fontSize: '0.95rem', fontWeight: '700', marginBottom: '1.5rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#ffffff' }}>
+                            FYP Project
+                        </h5>
+                        <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                            <li><Link to="/login" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.92rem' }}>Administrator Portal</Link></li>
+                            <li><Link to="/signup" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.92rem' }}>Create Account</Link></li>
+                            <li><a href="#live-simulation" style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.92rem' }}>Simulation Overview</a></li>
                         </ul>
                     </div>
                 </div>
 
                 <div style={{
-                    paddingTop: '3rem',
-                    borderTop: '1px solid var(--border)',
-                    textAlign: 'center'
+                    paddingTop: '2.5rem',
+                    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '1rem',
+                    maxWidth: '1280px',
+                    margin: '0 auto'
                 }}>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
-                        © {new Date().getFullYear()} SmartEnergy (FYP Prototype). All Rights Reserved.
+                    <p style={{ color: '#64748b', fontSize: '0.88rem', margin: 0 }}>
+                        © {new Date().getFullYear()} SmartEnergy (Final Year Project). Developed for Smart Campuses.
                     </p>
+                    <div style={{ display: 'flex', gap: '1.5rem' }}>
+                        <span style={{ fontSize: '0.82rem', color: '#64748b' }}>React 18 + Vite</span>
+                        <span style={{ fontSize: '0.82rem', color: '#64748b' }}>•</span>
+                        <span style={{ fontSize: '0.82rem', color: '#64748b' }}>Python Flask REST API</span>
+                        <span style={{ fontSize: '0.82rem', color: '#64748b' }}>•</span>
+                        <span style={{ fontSize: '0.82rem', color: '#64748b' }}>Edge Microgrid</span>
+                    </div>
                 </div>
             </footer>
         </div>

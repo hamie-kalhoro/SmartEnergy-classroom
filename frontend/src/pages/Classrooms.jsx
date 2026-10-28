@@ -127,7 +127,7 @@ function Classrooms({ user }) {
                     ))
                 ) : (
                     [
-                        { label: 'Total Nodes', val: classrooms.length, icon: <FiBox />, color: '#00d26a' },
+                        { label: 'Total Nodes', val: classrooms.length, icon: <FiBox />, color: '#00f59b' },
                         { label: 'Total Capacity', val: classrooms.reduce((a, c) => a + (c.capacity || 0), 0), icon: <FiUsers />, color: '#06b6d4' },
                         { label: 'Light Units', val: classrooms.reduce((a, c) => a + (c.lights || 0), 0), icon: <FiZap />, color: '#f59e0b' },
                         { label: 'AC Units', val: classrooms.reduce((a, c) => a + (c.acs || 0), 0), icon: <FiThermometer />, color: '#10b981' },
@@ -288,7 +288,7 @@ function Classrooms({ user }) {
                                     </div>
                                 </div>
                                 <div className="modal-footer">
-                                    <button type="submit" className="btn btn-gradient w-100 py-3" disabled={loading}>
+                                    <button type="submit" className="btn btn-lg btn-gradient w-100" disabled={loading}>
                                         {loading ? <DynamicLoader size={24} color="var(--bg-deep)" /> : 'Add to Network'}
                                     </button>
                                 </div>
@@ -337,7 +337,7 @@ function Classrooms({ user }) {
                                     </div>
                                 </div>
                                 <div className="modal-footer">
-                                    <button type="submit" className="btn btn-primary w-100 py-3" disabled={loading}>
+                                    <button type="submit" className="btn btn-lg btn-primary w-100" disabled={loading}>
                                         {loading ? <DynamicLoader size={24} color="var(--bg-deep)" /> : 'Update Node'}
                                     </button>
                                 </div>
@@ -369,7 +369,7 @@ function Classrooms({ user }) {
                                         <button type="button" className="btn btn-primary-dim w-100 mb-3" onClick={downloadTemplate}>
                                             <FiDownload className="me-2" /> Download Template
                                         </button>
-                                        <button type="submit" className="btn btn-gradient w-100 py-3" disabled={!importFile || importing}>
+                                        <button type="submit" className="btn btn-lg btn-gradient w-100" disabled={!importFile || importing}>
                                             {importing ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Upload & Import'}
                                         </button>
                                     </form>
