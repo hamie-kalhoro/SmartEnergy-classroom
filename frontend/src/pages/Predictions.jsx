@@ -80,7 +80,7 @@ function Predictions() {
                     <p className="text-muted small m-0">ML-driven occupancy forecasting & climate-aware energy optimization</p>
                 </div>
                 <button
-                    className="btn btn-gradient py-3 px-4"
+                    className="btn btn-lg btn-gradient"
                     onClick={runPredictions}
                     disabled={loading}
                 >
@@ -216,7 +216,7 @@ function Predictions() {
             {hasRun && (
                 <div className="row g-3 mb-5 fade-in">
                     {[
-                        { label: 'Classes Analyzed', val: stats.total, icon: <FiActivity />, color: '#00d26a' },
+                        { label: 'Classes Analyzed', val: stats.total, icon: <FiActivity />, color: '#00f59b' },
                         { label: 'Optimizable Slots', val: stats.optimized, icon: <FiTrendingUp />, color: '#06b6d4' },
                         { label: 'Est. Savings', val: `${stats.savingsEstimate.toFixed(1)} kWh`, icon: <FiZap />, color: '#10b981' }
                     ].map((s, i) => (
@@ -396,8 +396,8 @@ function Predictions() {
                         height: '80px',
                         margin: '0 auto 1.5rem',
                         borderRadius: '24px',
-                        background: 'rgba(0, 210, 106, 0.05)',
-                        border: '1px solid rgba(0, 210, 106, 0.1)',
+                        background: 'rgba(0, 245, 155, 0.05)',
+                        border: '1px solid rgba(0, 245, 155, 0.1)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
@@ -406,7 +406,7 @@ function Predictions() {
                     </div>
                     <h5 className="fw-bold mb-2">No Predictions Yet</h5>
                     <p className="text-muted mb-4">Click "Run Analysis" to generate AI predictions with climate-aware energy optimization</p>
-                    <button className="btn btn-gradient mx-auto py-3 px-5" onClick={runPredictions} disabled={loading}>
+                    <button className="btn btn-lg btn-gradient mx-auto" onClick={runPredictions} disabled={loading}>
                         {loading ? <DynamicLoader size={20} color="var(--bg-deep)" /> : <><FiPlay className="me-2" /> Run Analysis</>}
                     </button>
                 </div>

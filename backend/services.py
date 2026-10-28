@@ -113,12 +113,12 @@ class EnergyService:
 class ReportingService:
     @staticmethod
     def get_today_estimation():
-        from ml_engine import MLEngine
+        from ml_engine import get_ml_engine
         from sqlalchemy import func
         from models import Timetable
         now = datetime.now(timezone.utc) # Needs UTC+5 logic in production
         actual = db.session.query(func.sum(EnergyDecision.energy_saved_kwh)).filter(func.date(EnergyDecision.timestamp) == now.date()).scalar() or 0
-        ml = MLEngine(); future_slots = Timetable.query.all(); projected = 0
+        ml = get_ml_engine(); future_slots = Timetable.query.all(); projected = 0
         for slot in future_slots:
             try:
                 if int(slot.time_slot.split(':')[0]) > now.hour:

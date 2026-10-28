@@ -95,7 +95,7 @@ function NotificationPanel({ user }) {
             case 'admin_request': return <FiAlertCircle style={{ color: '#f59e0b' }} />;
             case 'user_deletion_alert': return <FiTrash2 style={{ color: '#ef4444' }} />;
             case 'admin_approved': return <FiCheckCircle style={{ color: '#10b981' }} />;
-            case 'energy_report': return <FiZap style={{ color: '#00d26a' }} />;
+            case 'energy_report': return <FiZap style={{ color: '#00f59b' }} />;
             default: return <FiActivity style={{ color: '#6366f1' }} />;
         }
     };
@@ -241,9 +241,9 @@ function NotificationPanel({ user }) {
                                             padding: '1rem',
                                             marginBottom: '0.5rem',
                                             borderRadius: '12px',
-                                            background: n.is_read ? 'transparent' : 'rgba(0, 210, 106, 0.05)',
+                                            background: n.is_read ? 'transparent' : 'rgba(0, 245, 155, 0.05)',
                                             border: '1px solid',
-                                            borderColor: n.is_read ? 'transparent' : 'rgba(0, 210, 106, 0.1)',
+                                            borderColor: n.is_read ? 'transparent' : 'rgba(0, 245, 155, 0.1)',
                                             cursor: n.is_read ? 'default' : 'pointer',
                                             transition: 'all 0.2s ease',
                                             display: 'flex',

@@ -116,7 +116,7 @@ function Dashboard() {
                 label: 'Actual Saved',
                 data: (charts?.weekly?.data || []).map(v => parseFloat(v) || 0),
                 backgroundColor: (charts?.weekly?.labels || []).map((l, i) => 
-                    i === (charts?.weekly?.labels || []).length - 1 ? '#00d26a' : 'rgba(0, 210, 106, 0.3)'
+                    i === (charts?.weekly?.labels || []).length - 1 ? '#00f59b' : 'rgba(0, 245, 155, 0.3)'
                 ),
                 borderRadius: 6,
                 borderSkipped: false,
@@ -127,7 +127,7 @@ function Dashboard() {
                 data: (charts?.weekly?.labels || []).map((l, i) => 
                     i === (charts?.weekly?.labels || []).length - 1 ? (parseFloat(charts?.weekly?.today_projection) || 0) : 0
                 ),
-                backgroundColor: 'rgba(0, 210, 106, 0.1)',
+                backgroundColor: 'rgba(0, 245, 155, 0.1)',
                 borderRadius: 6,
                 borderSkipped: false,
                 barThickness: activeRange === '1w' ? 28 : (window.innerWidth < 768 ? 6 : 12),
@@ -140,11 +140,11 @@ function Dashboard() {
         labels: charts?.hourly?.labels || [],
         datasets: [{
             data: (charts?.hourly?.data || []).map(v => parseFloat(v) || 0),
-            borderColor: '#00d26a',
-            backgroundColor: 'rgba(0, 210, 106, 0.08)',
+            borderColor: '#00f59b',
+            backgroundColor: 'rgba(0, 245, 155, 0.08)',
             fill: true,
             tension: 0.4,
-            pointBackgroundColor: '#00d26a',
+            pointBackgroundColor: '#00f59b',
             pointBorderColor: '#09090b',
             pointBorderWidth: 2,
             pointRadius: 4,
@@ -159,7 +159,7 @@ function Dashboard() {
                 parseFloat(stats.energy_saved) || 0, 
                 Math.max((parseFloat(stats.baseline_energy) || 3000) - (parseFloat(stats.energy_saved) || 0), 1)
             ],
-            backgroundColor: ['#00d26a', '#27272a'],
+            backgroundColor: ['#00f59b', '#27272a'],
             borderWidth: 0,
             cutout: '75%',
         }]
@@ -171,7 +171,7 @@ function Dashboard() {
             val: stats.energy_saved,
             unit: 'kWh',
             icon: <FiZap />,
-            gradient: 'linear-gradient(135deg, #00d26a 0%, #06b6d4 100%)',
+            gradient: 'linear-gradient(135deg, #00f59b 0%, #22e6b6 50%, #06b6d4 100%)',
             sub: stats.today_estimation !== undefined ? `${activeRange === '1d' ? 'Today' : activeRange === '1w' ? 'Weekly' : 'Monthly'} Projection: ${stats.today_estimation} kWh` : `Est. Period EOD: ${stats.energy_saved || 0} kWh`
         },
         stats.efficiency_growth !== undefined ? {
@@ -195,9 +195,9 @@ function Dashboard() {
                             Operational <span className="text-secondary-glow">Intelligence</span>
                         </h2>
                         <div className="d-flex align-items-center gap-2 px-3 py-1 rounded-pill" style={{ 
-                            background: 'rgba(0, 210, 106, 0.08)', 
-                            border: '1px solid rgba(0, 210, 106, 0.2)',
-                            boxShadow: '0 0 15px rgba(0, 210, 106, 0.05)'
+                            background: 'rgba(0, 245, 155, 0.08)', 
+                            border: '1px solid rgba(0, 245, 155, 0.2)',
+                            boxShadow: '0 0 15px rgba(0, 245, 155, 0.05)'
                         }}>
                             <div className="pulse-dot"></div>
                             <span className="fw-bold extra-small text-uppercase tracking-wider" style={{ color: 'var(--primary-light)', fontSize: '0.65rem' }}>
@@ -220,7 +220,7 @@ function Dashboard() {
                     <p className="text-muted small m-0">Live energy consumption & climate-aware forecasting</p>
                 </div>
                 <div className="d-flex gap-2">
-                    <span className="badge" style={{ background: 'rgba(0, 210, 106, 0.08)', color: 'var(--primary-light)', padding: '0.45rem 0.9rem', borderRadius: '6px', border: '1px solid rgba(0,210,106,0.15)' }}>
+                    <span className="badge" style={{ background: 'rgba(0, 245, 155, 0.08)', color: 'var(--primary-light)', padding: '0.45rem 0.9rem', borderRadius: '6px', border: '1px solid rgba(0,210,106,0.15)' }}>
                         <FiCpu className="me-2" /> {stats.total_decisions} Decisions
                     </span>
                 </div>
@@ -231,20 +231,20 @@ function Dashboard() {
                 {loading ? (
                     [1, 2, 3, 4].map(i => (
                         <div className="col-md-6 col-lg-3" key={i}>
-                            <div className="card h-100 border-0 skeleton" style={{ minHeight: '180px' }}></div>
+                            <div className="card h-100 border-0 skeleton" style={{ minHeight: '148px' }}></div>
                         </div>
                     ))
                 ) : (
                     statCards.map((s, i) => (
                         <div className="col-md-6 col-lg-3" key={i}>
                             <div className="card h-100 border-0 glow-border" style={{ background: 'var(--bg-card)' }}>
-                                <div className="d-flex justify-content-between align-items-start mb-4">
+                                <div className="d-flex justify-content-between align-items-start mb-3">
                                     <div className="icon-box" style={{ background: s.gradient }}>
                                         {s.icon}
                                     </div>
                                     <FiArrowUpRight className="text-muted" style={{ opacity: 0.4 }} />
                                 </div>
-                                <h3 className="fw-bold mb-1 stat-value" style={{ fontSize: '2rem', letterSpacing: '-0.03em' }}>
+                                <h3 className="fw-bold mb-1 stat-value" style={{ fontSize: '1.75rem', letterSpacing: '-0.03em' }}>
                                     {s.val}<span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>{s.unit}</span>
                                 </h3>
                                 <p className="text-muted small m-0 text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.1em' }}>{s.label}</p>
@@ -367,7 +367,7 @@ function Dashboard() {
                                         <p className="text-muted small text-center py-4">No actions yet</p>
                                     )}
                                 </div>
-                                <button onClick={() => navigate('/ml-lab')} className="btn btn-primary-dim w-100 mt-3 py-2 small">
+                                <button onClick={() => navigate('/ml-lab')} className="btn btn-sm btn-primary-dim w-100 mt-3">
                                     View All <FiChevronRight className="ms-1" />
                                 </button>
                             </>

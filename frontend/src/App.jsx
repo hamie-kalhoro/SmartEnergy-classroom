@@ -14,6 +14,7 @@ import Users from './pages/Users';
 import LandingPage from './pages/LandingPage';
 import NotificationPanel from './components/NotificationPanel';
 import CampusMap from './pages/CampusMap';
+import LuminousBackground from './components/LuminousBackground';
 
 import * as FiIcons from 'react-icons/fi';
 
@@ -130,24 +131,27 @@ function App() {
                     onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                 />}
                 <main className="main-content" style={!user ? { padding: 0 } : {}}>
-                    <Routes>
-                        <Route path="/login" element={!user ? <Login onLogin={handleLogin} theme={theme} toggleTheme={toggleTheme} /> : <Navigate to="/" />} />
-                        <Route path="/signup" element={!user ? <Signup /> : <Navigate to="/" />} />
-                        <Route path="/" element={
-                            user ? (
-                                <ErrorBoundary fallback={<div className="p-5 text-center"><h3>Something went wrong in Dashboard.</h3><button className="btn btn-primary mt-3" onClick={() => window.location.reload()}>Reload Hub</button></div>}>
-                                    <Dashboard />
-                                </ErrorBoundary>
-                            ) : <LandingPage />
-                        } />
-                        <Route path="/classrooms" element={user ? <Classrooms user={user} /> : <Navigate to="/login" />} />
-                        <Route path="/predictions" element={user ? <Predictions /> : <Navigate to="/login" />} />
-                        <Route path="/model-status" element={user ? <ModelStatus /> : <Navigate to="/login" />} />
-                        <Route path="/map" element={user ? <CampusMap user={user} /> : <Navigate to="/login" />} />
-                        <Route path="/timetable" element={user ? <Timetable user={user} /> : <Navigate to="/login" />} />
-                        <Route path="/ml-lab" element={user ? <MLDataset /> : <Navigate to="/login" />} />
-                        <Route path="/users" element={user ? <Users user={user} /> : <Navigate to="/login" />} />
-                    </Routes>
+                    {user && <LuminousBackground isCollapsed={isSidebarCollapsed} />}
+                    <div className="main-content-inner" style={{ position: 'relative', zIndex: 1, minHeight: '100%' }}>
+                        <Routes>
+                            <Route path="/login" element={!user ? <Login onLogin={handleLogin} theme={theme} toggleTheme={toggleTheme} /> : <Navigate to="/" />} />
+                            <Route path="/signup" element={!user ? <Signup /> : <Navigate to="/" />} />
+                            <Route path="/" element={
+                                user ? (
+                                    <ErrorBoundary fallback={<div className="p-5 text-center"><h3>Something went wrong in Dashboard.</h3><button className="btn btn-primary mt-3" onClick={() => window.location.reload()}>Reload Hub</button></div>}>
+                                        <Dashboard />
+                                    </ErrorBoundary>
+                                ) : <LandingPage />
+                            } />
+                            <Route path="/classrooms" element={user ? <Classrooms user={user} /> : <Navigate to="/login" />} />
+                            <Route path="/predictions" element={user ? <Predictions /> : <Navigate to="/login" />} />
+                            <Route path="/model-status" element={user ? <ModelStatus /> : <Navigate to="/login" />} />
+                            <Route path="/map" element={user ? <CampusMap user={user} /> : <Navigate to="/login" />} />
+                            <Route path="/timetable" element={user ? <Timetable user={user} /> : <Navigate to="/login" />} />
+                            <Route path="/ml-lab" element={user ? <MLDataset /> : <Navigate to="/login" />} />
+                            <Route path="/users" element={user ? <Users user={user} /> : <Navigate to="/login" />} />
+                        </Routes>
+                    </div>
                 </main>
             </div>
         </Router>

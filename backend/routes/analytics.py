@@ -59,8 +59,8 @@ def get_stats():
     }
 
     if user and user.role == 'admin':
-        from ml_engine import MLEngine
-        ml = MLEngine()
+        from ml_engine import get_ml_engine
+        ml = get_ml_engine()
         profile = ml.get_intelligence_profile()
         
         # Align today's metrics

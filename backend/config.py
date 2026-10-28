@@ -7,21 +7,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def is_backend_online(db_url):
-    """Reliably check if the Postgres DB is reachable before committing to the URI."""
-    if not db_url or 'localhost' in db_url:
+    """Reliably check if the Postgres DB is authenticated and reachable before committing to the URI."""
+    if not db_url or 'localhost' in db_url or 'sqlite' in db_url:
         return False
     try:
-        # Simple extraction of host and port
-        host_port = db_url.split('@')[1].split('/')[0]
-        if ':' in host_port:
-            host, port = host_port.split(':')
-            port = int(port)
-        else:
-            host = host_port
-            port = 5432
-        
-        # 2 second timeout for "premium" responsiveness
-        socket.create_connection((host, port), timeout=2)
+        from sqlalchemy import create_engine, text
+        test_engine = create_engine(db_url, connect_args={"connect_timeout": 3})
+        with test_engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        test_engine.dispose()
         return True
     except Exception:
         return False

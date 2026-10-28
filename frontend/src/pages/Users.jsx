@@ -191,7 +191,7 @@ function Users({ user }) {
             <div className="d-flex align-items-end justify-content-between mb-4">
                 <div>
                     <div className="d-flex align-items-center gap-2 mb-2">
-                        <span className="badge" style={{ background: 'rgba(0, 210, 106, 0.08)', color: 'var(--primary-light)', fontSize: '0.7rem', border: '1px solid rgba(0,210,106,0.2)', borderRadius: '6px', padding: '0.3rem 0.65rem' }}>
+                        <span className="badge" style={{ background: 'rgba(0, 245, 155, 0.08)', color: 'var(--primary-light)', fontSize: '0.7rem', border: '1px solid rgba(0,210,106,0.2)', borderRadius: '6px', padding: '0.3rem 0.65rem' }}>
                             <FiShield className="me-1" /> ADMIN ZONE
                         </span>
                     </div>
@@ -433,7 +433,7 @@ function Users({ user }) {
                     <div className="card d-flex flex-row overflow-hidden" style={{ minHeight: '280px' }}>
                         {/* Left Side - Visual */}
                         <div className="d-none d-md-flex flex-column justify-content-center align-items-center p-5 text-center"
-                            style={{ width: '35%', background: 'linear-gradient(135deg, #00d26a 0%, #06b6d4 100%)', color: 'white' }}>
+                            style={{ width: '35%', background: 'linear-gradient(135deg, #00f59b 0%, #22e6b6 50%, #06b6d4 100%)', color: 'white' }}>
                             <div className="mb-4 p-3 rounded-circle" style={{ background: 'rgba(255,255,255,0.2)' }}>
                                 <FiUsers size={36} />
                             </div>
@@ -568,7 +568,7 @@ function Users({ user }) {
                                 </div>
                                 <div className="modal-footer">
                                     <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
-                                    <button type="submit" className="btn btn-gradient flex-grow-1 py-3 fw-bold">Create User Account</button>
+                                    <button type="submit" className="btn btn-lg btn-gradient flex-grow-1 fw-bold">Create User Account</button>
                                 </div>
                             </form>
                         </div>

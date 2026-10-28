@@ -241,7 +241,7 @@ function Timetable({ user }) {
                                     </div>
                                 </div>
                                 <div className="modal-footer">
-                                    <button type="submit" className="btn btn-primary w-100">Add to Timetable</button>
+                                    <button type="submit" className="btn btn-lg btn-primary w-100">Add to Timetable</button>
                                 </div>
                             </form>
                         </div>
@@ -293,7 +293,7 @@ function Timetable({ user }) {
                                         <button type="button" className="btn btn-primary-dim w-100 mb-3" onClick={downloadTemplate}>
                                             <FiDownload className="me-2" /> Download Template
                                         </button>
-                                        <button type="submit" className="btn btn-primary w-100" disabled={!importFile || importing}>
+                                        <button type="submit" className="btn btn-lg btn-primary w-100" disabled={!importFile || importing}>
                                             {importing ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Upload & Import'}
                                         </button>
                                     </form>

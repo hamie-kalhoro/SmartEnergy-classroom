@@ -1,8 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    FiPlus, FiMinus, FiRotateCcw, FiX, FiCheckCircle, FiClock, 
-    FiUsers, FiCpu, FiWind, FiTv, FiZap, FiActivity 
+import {
+    FiActivity,
+    FiCheck,
+    FiCopy,
+    FiCpu,
+    FiEdit3,
+    FiLayers,
+    FiMinus,
+    FiNavigation,
+    FiPlus,
+    FiRotateCcw,
+    FiSearch,
+    FiThermometer,
+    FiTv,
+    FiUsers,
+    FiWind,
+    FiX,
+    FiZap
 } from 'react-icons/fi';
 import { Line } from 'react-chartjs-2';
 import {
@@ -11,463 +26,504 @@ import {
     LinearScale,
     PointElement,
     LineElement,
-    Title,
     Tooltip,
-    Legend,
     Filler
 } from 'chart.js';
 
-// Register ChartJS modules
-ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    Title,
-    Tooltip,
-    Legend,
-    Filler
-);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
-const ROOMS = [
-    // LEFT BLOCK (Top to Bottom)
-    { id: 'L-CS06', name: 'Lab CS-06', type: 'lab', dot: 'blue', coords: { x: 261, y: 129, w: 138, h: 152 }, capacity: '40 systems', labsPerDay: 4 },
-    { id: 'L-CS04', name: 'Lab CS-04', type: 'lab', dot: 'blue', coords: { x: 261, y: 281, w: 138, h: 137 }, capacity: '40 systems', labsPerDay: 5 },
-    { id: 'L-FARHAD', name: 'Dr. Farhad Office', type: 'office', dot: 'yellow', coords: { x: 261, y: 418, w: 138, h: 27 }, capacity: '1', faculty: 'Dr. Farhad' },
-    { id: 'L-RCS-REG', name: 'RCS Registry', type: 'office', dot: 'yellow', coords: { x: 261, y: 445, w: 138, h: 30 }, capacity: '3', faculty: 'Staff' },
-    { id: 'L-TOILET', name: 'Boys Toilet', type: 'utility', dot: 'gray', coords: { x: 261, y: 475, w: 138, h: 30 }, capacity: '-', faculty: '-' },
-    { id: 'L-FILE-RM', name: 'File Room', type: 'utility', dot: 'gray', coords: { x: 261, y: 505, w: 138, h: 31 }, capacity: '-', faculty: '-' },
-    { id: 'L-TEACHER-COMM', name: 'Teacher Common Room', type: 'office', dot: 'yellow', coords: { x: 261, y: 536, w: 138, h: 45 }, capacity: '10', faculty: 'Common' },
-    { id: 'L-WAQAS', name: 'Waqas Office', type: 'office', dot: 'yellow', coords: { x: 261, y: 581, w: 138, h: 31 }, capacity: '1', faculty: 'Mr. Waqas' },
-    { id: 'L-CS02', name: 'Lab CS-02', type: 'lab', dot: 'blue', coords: { x: 261, y: 612, w: 138, h: 195 }, capacity: '35 systems', labsPerDay: 4 },
-
-    // RIGHT BLOCK (Top to Bottom)
-    { id: 'R-CS05', name: 'Lab CS-05', type: 'lab', dot: 'blue', coords: { x: 462, y: 129, w: 137, h: 151 }, capacity: '40 systems', labsPerDay: 5 },
-    { id: 'R-BUSHRA', name: 'Dr. Bushra Office', type: 'office', dot: 'yellow', coords: { x: 462, y: 280, w: 137, h: 27 }, capacity: '1', faculty: 'Dr. Bushra' },
-    { id: 'R-CS03', name: 'Lab CS-03', type: 'lab', dot: 'blue', coords: { x: 462, y: 307, w: 137, h: 138 }, capacity: '40 systems', labsPerDay: 4 },
-    { id: 'R-STORE', name: 'Store', type: 'utility', dot: 'gray', coords: { x: 462, y: 445, w: 137, h: 46 }, capacity: '-', faculty: '-' },
-    { id: 'R-SEMINAR', name: 'Seminar Hall', type: 'seminar', dot: 'purple', coords: { x: 462, y: 491, w: 137, h: 122 }, capacity: '120', faculty: 'Common' },
-    { id: 'R-NOMAN-OFF', name: 'Noman Rizwan Office', type: 'office', dot: 'yellow', coords: { x: 462, y: 613, w: 137, h: 32 }, capacity: '2', faculty: 'Mr. Noman Rizwan' },
-    { id: 'R-CS01', name: 'Lab CS-01', type: 'lab', dot: 'blue', coords: { x: 462, y: 645, w: 137, h: 159 }, capacity: '35 systems', labsPerDay: 4 },
-
-    // LOWER AREA (Polygons / Bottom structures)
-    { id: 'B-REGION5', name: 'Region 5 (Classroom)', type: 'classroom', dot: 'green', coords: { x: 239, y: 992, w: 255, h: 69 }, capacity: '60', faculty: 'Common' },
-    { id: 'B-REGION4', name: 'Region 4 (Classroom)', type: 'classroom', dot: 'green', coords: { x: 163, y: 1054, w: 333, h: 194 }, capacity: '80', faculty: 'Common' },
-    { id: 'B-REGION3', name: 'Region 3 (Classroom)', type: 'classroom', dot: 'green', coords: { x: 628, y: 843, w: 72, h: 77 }, capacity: '50', faculty: 'Common' },
+const MAP_WIDTH = 1120;
+const MAP_HEIGHT = 1720;
+const BOUNDARY_STORAGE_KEY = 'campusMap.siteBoundaryPoints.v1';
+const DEFAULT_SITE_BOUNDARY_POINTS = [
+    [205, 58],
+    [828, 58],
+    [828, 1160],
+    [854, 1214],
+    [988, 1260],
+    [1042, 1296],
+    [1016, 1442],
+    [1044, 1488],
+    [958, 1650],
+    [710, 1656],
+    [520, 1632],
+    [96, 1538],
+    [60, 1402],
+    [355, 1228],
+    [355, 1160],
+    [205, 1160]
 ];
 
-const CampusMap = () => {
-    const [zoom, setZoom] = useState(0.8);
-    const [isDragging, setIsDragging] = useState(false);
-    const [selectedRoom, setSelectedRoom] = useState(null);
+const ROOM_TYPES = {
+    lab: { label: 'Lab', color: '#38bdf8', fill: 'rgba(56, 189, 248, 0.16)' },
+    office: { label: 'Office', color: '#fbbf24', fill: 'rgba(251, 191, 36, 0.14)' },
+    utility: { label: 'Utility', color: '#94a3b8', fill: 'rgba(148, 163, 184, 0.13)' },
+    hall: { label: 'Hall', color: '#a78bfa', fill: 'rgba(167, 139, 250, 0.16)' },
+    classroom: { label: 'Classroom', color: '#34d399', fill: 'rgba(52, 211, 153, 0.15)' },
+    circulation: { label: 'Route', color: '#22c55e', fill: 'rgba(34, 197, 94, 0.07)' }
+};
 
-    // Initial cybernetic status state for each room
+const ROOMS = [
+    { id: 'cs-06', name: 'Lab CS-06', short: 'Lab CS-06', type: 'lab', x: 240, y: 90, w: 230, h: 205, capacity: '40 systems', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 22 } },
+    { id: 'cs-04', name: 'Lab CS-04', short: 'Lab CS-04', type: 'lab', x: 240, y: 335, w: 230, h: 175, capacity: '40 systems', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 22 } },
+    { id: 'dr-fawad', name: 'Dr. Fawad Office', short: 'Dr. Fawad', type: 'office', x: 240, y: 510, w: 230, h: 38, capacity: '1 faculty', floor: 'Main block', devices: { lights: true, fans: true, acs: false, temp: 24 } },
+    { id: 'bscs-registrar', name: 'BSCS Registrar', short: 'BSCS Registrar', type: 'office', x: 240, y: 548, w: 230, h: 38, capacity: '3 staff', floor: 'Main block', devices: { lights: true, fans: true, acs: false, temp: 24 } },
+    { id: 'boys-toilet', name: 'Boys Toilet', short: 'Boys Toilet', type: 'utility', x: 240, y: 586, w: 230, h: 38, capacity: 'Utility', floor: 'Main block', devices: { lights: true, fans: false, acs: false, temp: 25 } },
+    { id: 'files-room', name: 'Files Room', short: 'Files Room', type: 'utility', x: 240, y: 624, w: 230, h: 52, capacity: 'Archive', floor: 'Main block', devices: { lights: true, fans: false, acs: false, temp: 25 } },
+    { id: 'teachers-common', name: "Teachers' Common Room", short: "Teachers' Common Room", type: 'office', x: 240, y: 676, w: 230, h: 72, capacity: '10 faculty', floor: 'Main block', devices: { lights: true, fans: true, acs: false, temp: 24 } },
+    { id: 'ai-lab', name: 'AI Lab', short: 'AI Lab', type: 'lab', x: 240, y: 748, w: 230, h: 165, capacity: '35 systems', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 21 } },
+    { id: 'cs-02', name: 'Lab CS-02', short: 'Lab CS-02', type: 'lab', x: 240, y: 950, w: 230, h: 205, capacity: '35 systems', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 22 } },
+
+    { id: 'cs-05', name: 'Lab CS-05', short: 'Lab CS-05', type: 'lab', x: 560, y: 90, w: 230, h: 205, capacity: '40 systems', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 22 } },
+    { id: 'dr-bushra', name: 'Dr. Bushra Office', short: 'Dr. Bushra', type: 'office', x: 560, y: 295, w: 230, h: 40, capacity: '1 faculty', floor: 'Main block', devices: { lights: true, fans: true, acs: false, temp: 24 } },
+    { id: 'cs-03', name: 'Lab CS-03', short: 'Lab CS-03', type: 'lab', x: 560, y: 335, w: 230, h: 175, capacity: '40 systems', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 22 } },
+    { id: 'store', name: 'Store', short: 'Store', type: 'utility', x: 560, y: 510, w: 230, h: 52, capacity: 'Storage', floor: 'Main block', devices: { lights: true, fans: false, acs: false, temp: 25 } },
+    { id: 'seminar-hall', name: 'Seminar Hall', short: 'Seminar Hall', type: 'hall', x: 560, y: 562, w: 230, h: 165, capacity: '120 seats', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 21 } },
+    { id: 'anam-lab', name: "Madam Anam's Lab", short: "Madam Anam's Lab", type: 'lab', x: 560, y: 727, w: 230, h: 185, capacity: 'Lab space', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 22 } },
+    { id: 'cs-01', name: 'Lab CS-01', short: 'Lab CS-01', type: 'lab', x: 560, y: 950, w: 230, h: 205, capacity: '35 systems', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 22 } },
+    { id: 'third-year-i', name: '3rd Year Section I', short: '3rd Year Section I', type: 'classroom', points: '520,1342 650,1342 650,1632 520,1632', capacity: 'Classroom', floor: 'Lower academic wing', devices: { lights: true, fans: true, acs: false, temp: 24 } },
+    { id: 'final-year-i', name: 'Final Year Section I', short: 'Final Year Section I', type: 'classroom', points: '924,1254 1042,1296 1016,1442 900,1390', capacity: 'Classroom', floor: 'Lower academic wing', devices: { lights: true, fans: true, acs: false, temp: 24 } },
+    { id: 'third-year-ii', name: '3rd Year Section II', short: '3rd Year Section II', type: 'classroom', points: '682,1510 834,1408 1044,1488 958,1650 710,1656', capacity: 'Classroom', floor: 'Lower academic wing', devices: { lights: true, fans: true, acs: false, temp: 24 } }
+];
+
+const ROUTES = [
+    { id: 'central-corridor', d: 'M515 90 L515 1155', label: 'Central corridor' },
+    { id: 'left-entry-drop', d: 'M355 1155 L355 1260', label: 'Main entry drop' },
+    { id: 'left-approach-out', d: 'M355 1260 L96 1412 L126 1518 L540 1298', label: 'Left approach' },
+    { id: 'right-academic-approach', d: 'M790 1155 L854 1214 L838 1260 L988 1260', label: 'Academic wing approach' },
+    { id: 'lower-academic-link', d: 'M838 1260 L760 1438 L682 1510', label: 'Lower academic link' }
+];
+
+function pointsToPath(points) {
+    if (!points.length) return '';
+    const [first, ...rest] = points;
+    return `M${first[0]} ${first[1]} ${rest.map(point => `L${point[0]} ${point[1]}`).join(' ')} Z`;
+}
+
+function loadStoredBoundaryPoints() {
+    try {
+        const stored = localStorage.getItem(BOUNDARY_STORAGE_KEY);
+        if (!stored) return DEFAULT_SITE_BOUNDARY_POINTS;
+        const parsed = JSON.parse(stored);
+        const isValid = Array.isArray(parsed) && parsed.every(point => (
+            Array.isArray(point) &&
+            point.length === 2 &&
+            point.every(value => Number.isFinite(value))
+        ));
+        return isValid ? parsed : DEFAULT_SITE_BOUNDARY_POINTS;
+    } catch (error) {
+        return DEFAULT_SITE_BOUNDARY_POINTS;
+    }
+}
+
+function roomCenter(room) {
+    if (room.points) {
+        const points = room.points.split(' ').map(point => point.split(',').map(Number));
+        return {
+            x: points.reduce((sum, point) => sum + point[0], 0) / points.length,
+            y: points.reduce((sum, point) => sum + point[1], 0) / points.length
+        };
+    }
+    return { x: room.x + room.w / 2, y: room.y + room.h / 2 };
+}
+
+function CampusMap() {
+    const [zoom, setZoom] = useState(0.72);
+    const [selectedRoom, setSelectedRoom] = useState(ROOMS[0]);
+    const [isDragging, setIsDragging] = useState(false);
+    const [isEditingBoundary, setIsEditingBoundary] = useState(false);
+    const [activeBoundaryPoint, setActiveBoundaryPoint] = useState(null);
+    const [boundaryPoints, setBoundaryPoints] = useState(loadStoredBoundaryPoints);
+    const [draftBoundaryPoints, setDraftBoundaryPoints] = useState(boundaryPoints);
+    const [query, setQuery] = useState('');
+    const svgRef = useRef(null);
     const [roomStates, setRoomStates] = useState(() => {
-        const states = {};
+        const state = {};
         ROOMS.forEach(room => {
-            const isOffice = room.type === 'office';
-            const isUtility = room.type === 'utility';
-            states[room.id] = {
-                lights: !isUtility,
-                fans: !isUtility && !isOffice,
-                acs: room.type === 'lab' || room.type === 'seminar',
-                temp: 22,
-                powerOverride: null
-            };
+            state[room.id] = room.devices;
         });
-        return states;
+        return state;
     });
 
-    const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.15, 2.5));
-    const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.15, 0.45));
-    const handleReset = () => { setZoom(0.8); setSelectedRoom(null); };
+    const visibleRooms = useMemo(() => {
+        const normalized = query.trim().toLowerCase();
+        if (!normalized) return ROOMS;
+        return ROOMS.filter(room => `${room.name} ${room.type} ${room.floor}`.toLowerCase().includes(normalized));
+    }, [query]);
 
-    const getDotColor = (type) => {
-        switch (type) {
-            case 'blue': return '#3b82f6';
-            case 'yellow': return '#eab308';
-            case 'green': return '#22c55e';
-            case 'purple': return '#a855f7';
-            case 'gray': return '#94a3b8';
-            default: return '#94a3b8';
-        }
-    };
+    const selectedState = selectedRoom ? roomStates[selectedRoom.id] : null;
+    const activeBoundaryPoints = isEditingBoundary ? draftBoundaryPoints : boundaryPoints;
+    const activeBoundaryPath = useMemo(() => pointsToPath(activeBoundaryPoints), [activeBoundaryPoints]);
 
-    // Live power consumption calculator (SCADA style)
     const calculatePower = (roomId) => {
         const state = roomStates[roomId];
         if (!state) return 0;
-        let base = 0.05; // background system overhead
-        if (state.lights) base += 0.15;
-        if (state.fans) base += 0.35;
-        if (state.acs) {
-            // Lower temperature draws more power
-            const tempDiff = Math.max(0, 30 - state.temp);
-            base += 1.2 + (tempDiff * 0.08);
-        }
-        return parseFloat(base.toFixed(2));
+        let total = 0.04;
+        if (state.lights) total += 0.18;
+        if (state.fans) total += 0.32;
+        if (state.acs) total += 1.15 + Math.max(0, 26 - state.temp) * 0.07;
+        return Number(total.toFixed(2));
     };
 
-    // Toggle specific device status
-    const toggleDevice = (roomId, device) => {
+    const toggleDevice = (device) => {
         setRoomStates(prev => ({
             ...prev,
-            [roomId]: {
-                ...prev[roomId],
-                [device]: !prev[roomId][device]
+            [selectedRoom.id]: {
+                ...prev[selectedRoom.id],
+                [device]: !prev[selectedRoom.id][device]
             }
         }));
     };
 
-    // Adjust temperature slider
-    const handleTempChange = (roomId, value) => {
+    const handleTempChange = (value) => {
         setRoomStates(prev => ({
             ...prev,
-            [roomId]: {
-                ...prev[roomId],
-                temp: parseInt(value)
+            [selectedRoom.id]: {
+                ...prev[selectedRoom.id],
+                temp: Number(value)
             }
         }));
     };
 
-    // Chart JS settings for live energy timeline
-    const buildChartData = (roomId) => {
-        const currentPower = calculatePower(roomId);
-        // Generate values around currentPower
-        const values = [
-            parseFloat((currentPower * 0.85).toFixed(2)),
-            parseFloat((currentPower * 0.95).toFixed(2)),
-            parseFloat((currentPower * 1.05).toFixed(2)),
-            parseFloat((currentPower * 0.9).toFixed(2)),
-            parseFloat((currentPower * 1.0).toFixed(2)),
-            parseFloat((currentPower * 1.1).toFixed(2)),
-            currentPower
-        ];
-
+    const chartData = useMemo(() => {
+        const power = selectedRoom ? calculatePower(selectedRoom.id) : 0;
         return {
-            labels: ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', 'Active'],
-            datasets: [
-                {
-                    label: 'Power (kW)',
-                    data: values,
-                    borderColor: '#00d26a',
-                    backgroundColor: 'rgba(0, 210, 106, 0.06)',
-                    borderWidth: 2,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#00d26a',
-                    fill: true,
-                    tension: 0.4
-                }
-            ]
+            labels: ['08:00', '10:00', '12:00', '14:00', '16:00', 'Now'],
+            datasets: [{
+                data: [0.7, 0.86, 1.08, 0.94, 1.12, 1].map((factor) => Number((power * factor).toFixed(2))),
+                borderColor: '#34d399',
+                backgroundColor: 'rgba(52, 211, 153, 0.08)',
+                pointBackgroundColor: '#34d399',
+                pointBorderWidth: 0,
+                pointRadius: 3,
+                borderWidth: 2,
+                tension: 0.45,
+                fill: true
+            }]
         };
-    };
+    }, [selectedRoom, roomStates]);
 
     const chartOptions = {
         responsive: true,
-        plugins: {
-            legend: { display: false },
-            tooltip: { enabled: true }
-        },
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: true } },
         scales: {
-            x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 9 } } },
-            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 9 } } }
+            x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.42)', font: { size: 10 } } },
+            y: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: 'rgba(255,255,255,0.42)', font: { size: 10 } } }
+        }
+    };
+
+    const resetView = () => {
+        setZoom(0.72);
+        setSelectedRoom(ROOMS[0]);
+        setQuery('');
+    };
+
+    const toggleBoundaryEditor = () => {
+        setDraftBoundaryPoints(boundaryPoints);
+        setActiveBoundaryPoint(null);
+        setIsEditingBoundary(prev => !prev);
+    };
+
+    const getSvgPoint = (event) => {
+        const rect = svgRef.current.getBoundingClientRect();
+        const x = Math.round(((event.clientX - rect.left) / rect.width) * MAP_WIDTH);
+        const y = Math.round(((event.clientY - rect.top) / rect.height) * MAP_HEIGHT);
+        return [
+            Math.max(0, Math.min(MAP_WIDTH, x)),
+            Math.max(0, Math.min(MAP_HEIGHT, y))
+        ];
+    };
+
+    const handleBoundaryPointerMove = (event) => {
+        if (!isEditingBoundary || activeBoundaryPoint === null || !svgRef.current) return;
+        const nextPoint = getSvgPoint(event);
+        setDraftBoundaryPoints(prev => prev.map((point, index) => (
+            index === activeBoundaryPoint ? nextPoint : point
+        )));
+    };
+
+    const confirmBoundary = () => {
+        setBoundaryPoints(draftBoundaryPoints);
+        localStorage.setItem(BOUNDARY_STORAGE_KEY, JSON.stringify(draftBoundaryPoints));
+        setIsEditingBoundary(false);
+        setActiveBoundaryPoint(null);
+    };
+
+    const resetBoundaryDraft = () => {
+        setDraftBoundaryPoints(DEFAULT_SITE_BOUNDARY_POINTS);
+        setActiveBoundaryPoint(null);
+    };
+
+    const copyBoundaryPath = async () => {
+        const path = pointsToPath(draftBoundaryPoints);
+        try {
+            await navigator.clipboard.writeText(path);
+        } catch (error) {
+            console.info('Boundary path:', path);
         }
     };
 
     return (
-        <div className="map-view-container">
-            <div className="mb-4 d-flex justify-content-between align-items-center">
-                <div>
-                    <h4 className="fw-bold m-0 text-gradient">Cybernetic Campus & SCADA Map</h4>
-                    <p className="text-muted small m-0">Live dynamic telemetry, telemetry state, and interactive controls</p>
+        <div className="campus-map-page fade-in">
+            <div className="campus-map-shell">
+                <div className="campus-map-toolbar">
+                    <div>
+                        <span className="campus-eyebrow"><FiLayers /> CS Department Digital Twin</span>
+                        <h2>Interactive Facility Map</h2>
+                    </div>
+                    <div className="campus-map-actions">
+                        <label className="campus-search">
+                            <FiSearch />
+                            <input
+                                value={query}
+                                onChange={(event) => setQuery(event.target.value)}
+                                placeholder="Search room"
+                            />
+                        </label>
+                        <span className="campus-live-pill"><FiActivity /> Live</span>
+                        <button
+                            type="button"
+                            className={`campus-map-action-btn ${isEditingBoundary ? 'active' : ''}`}
+                            onClick={toggleBoundaryEditor}
+                        >
+                            <FiEdit3 /> Outer Layer
+                        </button>
+                    </div>
                 </div>
-                <div className="d-flex align-items-center gap-3">
-                    <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill d-flex align-items-center gap-2">
-                        <FiActivity className="fan-spinning" /> Live Telemetry Synced
-                    </span>
-                </div>
-            </div>
 
-            <div 
-                className="map-canvas-wrapper overflow-hidden position-relative border border-secondary-subtle rounded-4" 
-                style={{ background: '#141414' }}
-            >
-                {/* Cyber Matrix Background */}
-                <div className={`matrix-grid-pattern ${isDragging ? 'dragging' : ''}`} />
+                <div className={`campus-map-workspace ${selectedRoom ? 'has-inspector' : ''}`}>
+                    <div className="campus-map-stage">
+                        <div className="campus-map-grid" />
+                        <motion.div
+                            className="campus-map-artboard"
+                            style={{
+                                width: MAP_WIDTH,
+                                height: MAP_HEIGHT,
+                                scale: zoom,
+                                transformOrigin: 'top left'
+                            }}
+                            drag={!isEditingBoundary}
+                            dragMomentum={false}
+                            dragConstraints={{ left: -650, right: 240, top: -820, bottom: 120 }}
+                            onDragStart={() => setIsDragging(true)}
+                            onDragEnd={() => setIsDragging(false)}
+                        >
+                            <svg
+                                ref={svgRef}
+                                viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
+                                width={MAP_WIDTH}
+                                height={MAP_HEIGHT}
+                                role="img"
+                                aria-label="CS department map"
+                                onPointerMove={handleBoundaryPointerMove}
+                                onPointerUp={() => setActiveBoundaryPoint(null)}
+                                onPointerLeave={() => setActiveBoundaryPoint(null)}
+                            >
+                                <defs>
+                                    <filter id="roomGlow" x="-20%" y="-20%" width="140%" height="140%">
+                                        <feDropShadow dx="0" dy="12" stdDeviation="10" floodColor="#000000" floodOpacity="0.35" />
+                                    </filter>
+                                    <linearGradient id="corridorFill" x1="0" x2="1">
+                                        <stop offset="0%" stopColor="rgba(52, 211, 153, 0.04)" />
+                                        <stop offset="100%" stopColor="rgba(56, 189, 248, 0.08)" />
+                                    </linearGradient>
+                                </defs>
 
-                <div
-                     className="map-viewport"
-                     style={{
-                         cursor: isDragging ? 'grabbing' : 'default',
-                         background: 'transparent',
-                         position: 'relative',
-                         width: '100%',
-                         height: '80vh'
-                     }}
-                >
-                    <motion.div
-                        className="map-content"
-                        style={{
-                            width: '1043px',
-                            height: '1341px',
-                            scale: zoom,
-                            transformOrigin: 'top left'
-                        }}
-                        drag
-                        dragConstraints={{ left: -1000, right: 1000, top: -1000, bottom: 1000 }}
-                        onDragStart={() => setIsDragging(true)}
-                        onDragEnd={() => setIsDragging(false)}
-                    >
-                        {/* Interactive SVG Neon Vector Outline Layer */}
-                        <svg width="1043" height="1341" viewBox="0 0 1043 1341" style={{ position: 'absolute', top: 0, left: 0, zIndex: 2, pointerEvents: 'auto' }}>
-                            {/* Main Left Block Outline */}
-                            <path fill="rgba(255, 255, 255, 0.02)" stroke="#00d26a" strokeWidth="4" filter="drop-shadow(0 0 8px rgba(0,210,106,0.3))" d="m257.251 125.46 111.842.142q12.187.028 24.374-.098c3.672-.06 8.4-1.633 10.344 1.317l.112.704c-.998 9.962-.729 20.207-.73 30.241l.019 42.975.002 136.883.055 340.184c-.012 54.083.915 111.095-.037 164.925-5.207-.034-29.293-.598-32.461.708l-2.121-.708c-1.147.262-1.86.136-2.141.938-1.484 4.255-.306 11.431-.617 15.851-1.092-1.526-.176-11.347-.748-15.042l-1.217-.803c-3.468-2.138-94.702-.928-106.683-.916z"/>
-                            {/* Main Right Block Outline */}
-                            <path fill="rgba(255, 255, 255, 0.02)" stroke="#00d26a" strokeWidth="4" filter="drop-shadow(0 0 8px rgba(0,210,106,0.3))" d="M456.364 127.239c1.213-1.27 1.471-2.232 3.219-2.168 23.44.858 46.968.587 70.426.56l49.44-.07c6.606-.011 16.645-.432 22.843-.12l-.006 466.329.01 155.93.052 50.085c.01 7.975.362 18.783-.111 26.546l.18.795c-.003 2.45.139 9.928-.234 11.96l.475 1.563-.368 3.456a49 49 0 0 1-5.185.681c-14.022.655-33.223.061-47.57.043l-92.515-.033c-.252-15.95.695-35.336.702-52.036l.082-438.306-.03-145.761c-.003-24.65.038-49.461-.054-74.117-.01-2.705.12-3.09-1.294-4.894z"/>
-                            
-                            {/* Rooms (Hidden bounding boxes for click interaction and hover styling) */}
-                            {ROOMS.map(room => (
-                                <g
-                                    key={room.id}
-                                    onClick={(e) => { e.stopPropagation(); setSelectedRoom(room); }}
-                                    className={`room-group ${selectedRoom?.id === room.id ? 'selected' : ''}`}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    <rect
-                                        x={room.coords.x}
-                                        y={room.coords.y}
-                                        width={room.coords.w}
-                                        height={room.coords.h}
-                                        className="scada-room-shape"
-                                        rx="6"
-                                    />
-                                </g>
-                            ))}
-                        </svg>
+                                <path className={`campus-site-boundary ${isEditingBoundary ? 'editing' : ''}`} d={activeBoundaryPath} />
+                                <rect className="campus-map-boundary" x="204" y="58" width="624" height="1128" rx="10" />
+                                <path className="campus-building-outline" d="M240 90 H470 V1155 H240 Z" />
+                                <path className="campus-building-outline" d="M560 90 H790 V1155 H560 Z" />
+                                <path className="campus-approach-outline" d="M92 1392 L355 1238 L548 1288 L126 1536 Z" />
+                                <path className="campus-academic-outline" d="M790 1155 L854 1214 L988 1260 L1042 1296 L1016 1442 L1044 1488 L958 1650 L710 1656 L682 1510 L760 1438 L838 1260 Z" />
+                                <path className="campus-building-outline" d="M520 1342 H650 V1632 H520 Z" />
+                                <path className="campus-building-outline" d="M924 1254 L1042 1296 L1016 1442 L900 1390 Z" />
+                                <path className="campus-building-outline" d="M682 1510 L834 1408 L1044 1488 L958 1650 L710 1656 Z" />
+                                <rect className="campus-corridor" x="470" y="90" width="90" height="1065" rx="4" />
 
-                        {/* Absolutely Positioned Dynamic Glassmorphic SCADA Badges */}
-                        <div style={{ position: 'absolute', top: 0, left: 0, width: '1043px', height: '1341px', pointerEvents: 'none', zIndex: 3 }}>
-                            {ROOMS.map(room => {
-                                const state = roomStates[room.id] || { lights: false, fans: false, acs: false, temp: 22 };
-                                const isSelected = selectedRoom?.id === room.id;
-                                const power = calculatePower(room.id);
-                                const isUtility = room.type === 'utility';
+                                {ROUTES.map(route => (
+                                    <g key={route.id}>
+                                        <path className="campus-route-shadow" d={route.d} />
+                                        <path className="campus-route" d={route.d} />
+                                    </g>
+                                ))}
 
-                                return (
-                                    <div
-                                        key={room.id}
-                                        className={`room-badge-overlay ${isSelected ? 'selected-badge' : ''}`}
-                                        style={{
-                                            left: `${room.coords.x + 6}px`,
-                                            top: `${room.coords.y + 6}px`,
-                                            width: `${room.coords.w - 12}px`,
-                                            height: `${room.coords.h - 12}px`,
-                                        }}
-                                        onClick={(e) => { e.stopPropagation(); setSelectedRoom(room); }}
-                                    >
-                                        {/* Room Name Header */}
-                                        <div className="d-flex justify-content-between align-items-start w-100">
-                                            <div className="d-flex flex-column">
-                                                <span className="fw-bold text-white small" style={{ fontSize: '10px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', maxWidth: '100px' }}>
-                                                    {room.name}
-                                                </span>
-                                                <span className="text-muted" style={{ fontSize: '8px', textTransform: 'uppercase' }}>
-                                                    {room.type}
-                                                </span>
-                                            </div>
-                                            <span className={`device-dot ${power > 0.1 ? 'active-glow' : 'inactive'}`} />
-                                        </div>
+                                <path className="campus-lower-route" d="M96 1412 L126 1518 L540 1298" />
+                                <path className="campus-lower-route" d="M854 1214 L838 1260 L988 1260" />
 
-                                        {/* Dynamic Indicators */}
-                                        {!isUtility && (
-                                            <div className="d-flex justify-content-between align-items-center w-100 mt-1">
-                                                {/* Mini quick-read device indicators */}
-                                                <div className="d-flex gap-2">
-                                                    <FiTv className={state.lights ? 'light-glowing' : 'opacity-25'} style={{ fontSize: '10px', transition: 'all 0.3s' }} />
-                                                    <FiWind className={state.fans ? 'fan-spinning text-info' : 'opacity-25'} style={{ fontSize: '10px', transition: 'all 0.3s' }} />
-                                                    <FiCpu className={state.acs ? 'ac-pulsing' : 'opacity-25'} style={{ fontSize: '10px', transition: 'all 0.3s' }} />
+                                {ROOMS.map(room => {
+                                    const isVisible = visibleRooms.some(item => item.id === room.id);
+                                    const isSelected = selectedRoom?.id === room.id;
+                                    const type = ROOM_TYPES[room.type];
+                                    const center = roomCenter(room);
+                                    const state = roomStates[room.id];
+                                    const active = state.lights || state.fans || state.acs;
+
+                                    return (
+                                        <g
+                                            key={room.id}
+                                            className={`campus-room ${isSelected ? 'selected' : ''} ${isVisible ? '' : 'muted'}`}
+                                            onClick={() => setSelectedRoom(room)}
+                                            style={{ '--room-color': type.color, '--room-fill': type.fill }}
+                                        >
+                                            {room.points ? (
+                                                <polygon points={room.points} className="campus-room-shape" />
+                                            ) : (
+                                                <rect x={room.x} y={room.y} width={room.w} height={room.h} rx="4" className="campus-room-shape" />
+                                            )}
+                                            <circle cx={center.x - 76} cy={center.y - 36} r="5" className={active ? 'campus-room-status active' : 'campus-room-status'} />
+                                            <text x={center.x} y={center.y - 8} className="campus-room-name">{room.short}</text>
+                                            <text x={center.x} y={center.y + 20} className="campus-room-meta">{type.label}</text>
+                                        </g>
+                                    );
+                                })}
+
+                                <text className="campus-compass-label" x="88" y="90">N</text>
+                                <text className="campus-wing-label" x="334" y="1230">Main Entry</text>
+                                <text className="campus-wing-label" x="940" y="1218">Academic Wing</text>
+                                <text className="campus-wing-label" x="822" y="1460">Lower Classrooms</text>
+
+                                {isEditingBoundary && activeBoundaryPoints.map((point, index) => (
+                                    <g key={`boundary-point-${index}`} className="campus-boundary-point">
+                                        <circle
+                                            cx={point[0]}
+                                            cy={point[1]}
+                                            r="13"
+                                            className={activeBoundaryPoint === index ? 'active' : ''}
+                                            onPointerDown={(event) => {
+                                                event.stopPropagation();
+                                                event.currentTarget.setPointerCapture(event.pointerId);
+                                                setActiveBoundaryPoint(index);
+                                            }}
+                                        />
+                                        <text x={point[0]} y={point[1] - 20}>{index + 1}</text>
+                                    </g>
+                                ))}
+                            </svg>
+                        </motion.div>
+
+                        <div className={`campus-drag-hint ${isDragging ? 'active' : ''}`}>
+                            <FiNavigation /> {isEditingBoundary ? 'Drag boundary points' : 'Drag map to pan'}
+                        </div>
+
+                        {isEditingBoundary && (
+                            <div className="campus-boundary-editor">
+                                <div>
+                                    <strong>Outer Layer Edit</strong>
+                                    <span>Drag handles, then confirm.</span>
+                                </div>
+                                <button type="button" onClick={confirmBoundary}><FiCheck /> Confirm</button>
+                                <button type="button" onClick={resetBoundaryDraft}><FiRotateCcw /> Reset</button>
+                                <button type="button" onClick={copyBoundaryPath}><FiCopy /> Copy Path</button>
+                            </div>
+                        )}
+
+                        <div className="map-zoom-controls campus-zoom-controls">
+                            <button onClick={() => setZoom(prev => Math.min(prev + 0.12, 1.55))} title="Zoom In"><FiPlus /></button>
+                            <button onClick={() => setZoom(prev => Math.max(prev - 0.12, 0.44))} title="Zoom Out"><FiMinus /></button>
+                            <button onClick={resetView} title="Reset View"><FiRotateCcw size={14} /></button>
+                        </div>
+                        <div className="zoom-badge campus-zoom-badge">{Math.round(zoom * 100)}%</div>
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                        {selectedRoom && (
+                            <motion.aside
+                                key={selectedRoom.id}
+                                className="campus-inspector"
+                                initial={{ opacity: 0, x: 24 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 24 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <div className="campus-inspector-header">
+                                    <span style={{ '--room-color': ROOM_TYPES[selectedRoom.type].color }}>
+                                        {ROOM_TYPES[selectedRoom.type].label}
+                                    </span>
+                                    <button onClick={() => setSelectedRoom(null)} title="Close panel"><FiX /></button>
+                                </div>
+
+                                <h3>{selectedRoom.name}</h3>
+                                <p>{selectedRoom.floor}</p>
+
+                                <div className="campus-inspector-stats">
+                                    <div>
+                                        <FiUsers />
+                                        <small>Capacity</small>
+                                        <strong>{selectedRoom.capacity}</strong>
+                                    </div>
+                                    <div>
+                                        <FiZap />
+                                        <small>Active Draw</small>
+                                        <strong>{calculatePower(selectedRoom.id)} kW</strong>
+                                    </div>
+                                </div>
+
+                                {selectedRoom.type !== 'utility' ? (
+                                    <div className="campus-control-panel">
+                                        <div className="campus-section-title">Device Controls</div>
+                                        {[
+                                            ['lights', 'Lighting', FiTv],
+                                            ['fans', 'Ventilation', FiWind],
+                                            ['acs', 'Cooling', FiCpu]
+                                        ].map(([key, label, Icon]) => (
+                                            <button
+                                                key={key}
+                                                className={selectedState?.[key] ? 'active' : ''}
+                                                onClick={() => toggleDevice(key)}
+                                            >
+                                                <Icon />
+                                                <span>{label}</span>
+                                                <strong>{selectedState?.[key] ? 'On' : 'Off'}</strong>
+                                            </button>
+                                        ))}
+                                        {selectedState?.acs && (
+                                            <div className="campus-temp-control">
+                                                <div>
+                                                    <span><FiThermometer /> AC Temperature</span>
+                                                    <strong>{selectedState.temp} deg C</strong>
                                                 </div>
-                                                <div className="d-flex flex-column text-end">
-                                                    <span className="fw-semibold text-success" style={{ fontSize: '9px' }}>
-                                                        {power} kW
-                                                    </span>
-                                                    {state.acs && (
-                                                        <span className="text-info" style={{ fontSize: '8px' }}>
-                                                            {state.temp}°C
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="16"
+                                                    max="28"
+                                                    value={selectedState.temp}
+                                                    onChange={(event) => handleTempChange(event.target.value)}
+                                                />
                                             </div>
                                         )}
                                     </div>
-                                );
-                            })}
-                        </div>
-                    </motion.div>
-
-                    {/* Cybernetic Room Info Panel — Stitch-aligned Liquid Glass */}
-                    <AnimatePresence>
-                        {selectedRoom && (
-                            <motion.div
-                                initial={{ x: '110%', opacity: 0, scale: 0.97 }}
-                                animate={{ x: 0, opacity: 1, scale: 1 }}
-                                exit={{ x: '110%', opacity: 0, scale: 0.97 }}
-                                transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-                                className="room-info-panel"
-                            >
-                                {/* Stitch top-edge shimmer line */}
-                                <div style={{
-                                    position: 'absolute',
-                                    top: 0, left: '10%', right: '10%', height: '1px',
-                                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)',
-                                    borderRadius: '100%',
-                                    pointerEvents: 'none',
-                                    zIndex: 0
-                                }} />
-
-                                <div className="p-4" style={{ position: 'relative', zIndex: 1 }}>
-                                    {/* Header row — type pill + close button */}
-                                    <div className="d-flex justify-content-between align-items-center mb-4">
-                                        <span className="type-pill">
-                                            <span className="dot" style={{ background: getDotColor(selectedRoom.dot) }} />
-                                            {selectedRoom.type}
-                                        </span>
-                                        <button className="btn-close-map" onClick={() => setSelectedRoom(null)}>
-                                            <FiX />
-                                        </button>
+                                ) : (
+                                    <div className="campus-utility-note">
+                                        Utility zone with limited automation. Lighting status is tracked for operational visibility.
                                     </div>
+                                )}
 
-                                    {/* Room name + node address */}
-                                    <h3>{selectedRoom.name}</h3>
-                                    <p className="node-address">Node Address: 0x{selectedRoom.id}</p>
-
-                                    {/* ── Device Controls ── */}
-                                    {selectedRoom.type !== 'utility' ? (
-                                        <div className="mb-4">
-                                            <span className="section-label">SCADA Device Overrides</span>
-                                            <div className="device-section">
-                                                {/* Lighting */}
-                                                <div className="device-row">
-                                                    <span className="device-row-label">Lighting Systems</span>
-                                                    <div className="form-check form-switch m-0">
-                                                        <input
-                                                            className="form-check-input"
-                                                            type="checkbox"
-                                                            checked={roomStates[selectedRoom.id]?.lights || false}
-                                                            onChange={() => toggleDevice(selectedRoom.id, 'lights')}
-                                                            style={{ cursor: 'pointer' }}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                {/* Fans */}
-                                                <div className="device-row">
-                                                    <span className="device-row-label">Ventilation Fans</span>
-                                                    <div className="form-check form-switch m-0">
-                                                        <input
-                                                            className="form-check-input"
-                                                            type="checkbox"
-                                                            checked={roomStates[selectedRoom.id]?.fans || false}
-                                                            onChange={() => toggleDevice(selectedRoom.id, 'fans')}
-                                                            style={{ cursor: 'pointer' }}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                {/* AC */}
-                                                <div className="device-row">
-                                                    <span className="device-row-label">Air Conditioning (HVAC)</span>
-                                                    <div className="form-check form-switch m-0">
-                                                        <input
-                                                            className="form-check-input"
-                                                            type="checkbox"
-                                                            checked={roomStates[selectedRoom.id]?.acs || false}
-                                                            onChange={() => toggleDevice(selectedRoom.id, 'acs')}
-                                                            style={{ cursor: 'pointer' }}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                {/* Temperature slider — only when AC is on */}
-                                                {roomStates[selectedRoom.id]?.acs && (
-                                                    <div className="temp-section">
-                                                        <div className="temp-label">
-                                                            <span>AC Temperature</span>
-                                                            <span>{roomStates[selectedRoom.id]?.temp}°C</span>
-                                                        </div>
-                                                        <input
-                                                            type="range"
-                                                            className="form-range w-100"
-                                                            min="16"
-                                                            max="28"
-                                                            value={roomStates[selectedRoom.id]?.temp || 22}
-                                                            onChange={(e) => handleTempChange(selectedRoom.id, e.target.value)}
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="mb-4 p-3 rounded-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                            <small className="section-label">Utility Area</small>
-                                            <p className="small m-0" style={{ color: 'rgba(255,255,255,0.4)' }}>No electronic overrides configured for this facility.</p>
-                                        </div>
-                                    )}
-
-                                    {/* ── Stat Cards ── */}
-                                    <div className="info-stats-grid mb-4">
-                                        <div className="stat-item">
-                                            <FiUsers style={{ color: '#38bdf8', fontSize: 20 }} />
-                                            <div>
-                                                <small>Capacity</small>
-                                                <span style={{ color: '#fff' }}>{selectedRoom.capacity || 'N/A'}</span>
-                                            </div>
-                                        </div>
-                                        <div className="stat-item">
-                                            <FiZap style={{ color: '#4ade80', fontSize: 20 }} />
-                                            <div>
-                                                <small>Active Draw</small>
-                                                <span style={{ color: '#4ade80' }}>{calculatePower(selectedRoom.id)} kW</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* ── Power Timeline Chart ── */}
-                                    {selectedRoom.type !== 'utility' && (
-                                        <div className="mb-4">
-                                            <span className="section-label">Power Timeline · 24h</span>
-                                            <div className="p-3 rounded-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                                <Line data={buildChartData(selectedRoom.id)} options={chartOptions} />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* ── ML Scheduling Note ── */}
-                                    <div className="p-3 rounded-3" style={{ background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.12)' }}>
-                                        <small className="section-label" style={{ color: '#4ade80' }}>Automated Scheduling</small>
-                                        <p className="small m-0" style={{ color: 'rgba(255,255,255,0.45)', lineHeight: 1.6 }}>
-                                            ML algorithms control this room's devices to optimise energy savings by up to 35%.
-                                        </p>
-                                    </div>
+                                <div className="campus-section-title">Power Trend</div>
+                                <div className="campus-chart-card">
+                                    <Line data={chartData} options={chartOptions} />
                                 </div>
-                            </motion.div>
+
+                                <div className="campus-room-list">
+                                    <div className="campus-section-title">Nearby Spaces</div>
+                                    {visibleRooms.slice(0, 6).map(room => (
+                                        <button
+                                            key={room.id}
+                                            className={room.id === selectedRoom.id ? 'active' : ''}
+                                            onClick={() => setSelectedRoom(room)}
+                                        >
+                                            <span style={{ background: ROOM_TYPES[room.type].color }} />
+                                            {room.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </motion.aside>
                         )}
                     </AnimatePresence>
-
-                    {/* Vertical Zoom Controls */}
-                    <div className="map-zoom-controls">
-                        <button onClick={handleZoomIn} title="Zoom In"><FiPlus /></button>
-                        <button onClick={handleZoomOut} title="Zoom Out"><FiMinus /></button>
-                        <button onClick={handleReset} title="Reset View"><FiRotateCcw size={14} /></button>
-                    </div>
-
-                    <div className="zoom-badge">
-                        {Math.round(zoom * 100)}%
-                    </div>
                 </div>
             </div>
         </div>
     );
-};
+}
 
 export default CampusMap;

@@ -70,7 +70,7 @@ function Login({ onLogin }) {
           width: "200%",
           height: "200%",
           background:
-            "radial-gradient(ellipse at 30% 20%, rgba(0, 210, 106, 0.07) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 50%)",
+            "radial-gradient(ellipse at 30% 20%, rgba(0, 245, 155, 0.07) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 50%)",
           pointerEvents: "none",
         }}
       />
@@ -109,10 +109,10 @@ function Login({ onLogin }) {
           <div
             className="d-inline-flex align-items-center justify-content-center mb-4"
             style={{
-              background: "linear-gradient(135deg, #00d26a 0%, #06b6d4 100%)",
+              background: "linear-gradient(135deg, #00f59b 0%, #22e6b6 50%, #06b6d4 100%)",
               borderRadius: "16px",
               padding: "18px",
-              boxShadow: "0 8px 32px rgba(0, 210, 106, 0.35)",
+              boxShadow: "0 8px 32px rgba(0, 245, 155, 0.35)",
             }}>
             <FiZap style={{ fontSize: "2rem", color: "white" }} />
           </div>
@@ -211,7 +211,7 @@ function Login({ onLogin }) {
 
             <button
               type="submit"
-              className="btn btn-gradient w-100 py-3 mb-4"
+              className="btn btn-lg btn-gradient w-100 mb-4"
               disabled={loading}
               style={{ fontSize: "1rem", fontWeight: "600" }}>
               {loading ? (

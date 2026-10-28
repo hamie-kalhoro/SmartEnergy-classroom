@@ -12,6 +12,8 @@ import {
   FiUsers,
   FiShield,
   FiBookOpen,
+  FiEye,
+  FiEyeOff,
 } from "react-icons/fi";
 import useTypewriter from "../hooks/useTypewriter";
 import DynamicLoader from "../components/DynamicLoader";
@@ -27,6 +29,7 @@ function Signup() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(true);
 
   // Dynamic Placeholders
   const txtName = "John Doe";
@@ -124,7 +127,7 @@ function Signup() {
               </>
             )}
           </p>
-          <Link to="/login" className="btn btn-gradient py-3 px-5">
+          <Link to="/login" className="btn btn-lg btn-gradient">
             Go to Login <FiArrowRight className="ms-2" />
           </Link>
         </div>
@@ -145,7 +148,7 @@ function Signup() {
           width: "200%",
           height: "200%",
           background:
-            "radial-gradient(ellipse at 70% 30%, rgba(0, 210, 106, 0.07) 0%, transparent 50%), radial-gradient(ellipse at 30% 70%, rgba(6, 182, 212, 0.05) 0%, transparent 50%)",
+            "radial-gradient(ellipse at 70% 30%, rgba(0, 245, 155, 0.07) 0%, transparent 50%), radial-gradient(ellipse at 30% 70%, rgba(6, 182, 212, 0.05) 0%, transparent 50%)",
           pointerEvents: "none",
         }}
       />
@@ -184,10 +187,10 @@ function Signup() {
           <div
             className="d-inline-flex align-items-center justify-content-center mb-4"
             style={{
-              background: "linear-gradient(135deg, #00d26a 0%, #06b6d4 100%)",
+              background: "linear-gradient(135deg, #00f59b 0%, #22e6b6 50%, #06b6d4 100%)",
               borderRadius: "16px",
               padding: "18px",
-              boxShadow: "0 8px 32px rgba(0, 210, 106, 0.35)",
+              boxShadow: "0 8px 32px rgba(0, 245, 155, 0.35)",
             }}>
             <FiZap style={{ fontSize: "2rem", color: "white" }} />
           </div>
@@ -242,7 +245,7 @@ function Signup() {
                     style={{
                       background:
                         formData.role === r.key
-                          ? "rgba(0, 210, 106, 0.12)"
+                          ? "rgba(0, 245, 155, 0.12)"
                           : "var(--bg-elevated)",
                       border: `2px solid ${formData.role === r.key ? "var(--primary)" : "transparent"}`,
                       transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -266,7 +269,7 @@ function Signup() {
                             ? "white"
                             : "var(--text-muted)",
                         fontSize: "1.25rem",
-                        boxShadow: formData.role === r.key ? '0 4px 15px rgba(0, 210, 106, 0.3)' : 'none'
+                        boxShadow: formData.role === r.key ? '0 4px 15px rgba(0, 245, 155, 0.3)' : 'none'
                       }}>
                       {r.icon}
                     </div>
@@ -308,7 +311,7 @@ function Signup() {
                 ))}
               </div>
               <button
-                className="btn btn-gradient w-100 py-3"
+                className="btn btn-lg btn-gradient w-100"
                 onClick={() => setStep(2)}>
                 Continue <FiArrowRight className="ms-2" />
               </button>
@@ -368,7 +371,26 @@ function Signup() {
               </div>
 
               <div className="mb-5">
-                <label className="form-label">Password</label>
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <label className="form-label m-0">Password</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="btn p-0 border-0 text-decoration-none"
+                    style={{
+                      fontSize: "0.8rem",
+                      color: showPassword ? "var(--primary-light)" : "var(--text-muted)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.35rem",
+                      background: "transparent",
+                      boxShadow: "none"
+                    }}
+                  >
+                    {showPassword ? <FiEye size={15} /> : <FiEyeOff size={15} />}
+                    <span>{showPassword ? "Visible" : "Hidden"}</span>
+                  </button>
+                </div>
                 <div style={{ position: "relative" }}>
                   <FiLock
                     style={{
@@ -380,29 +402,51 @@ function Signup() {
                     }}
                   />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     className="form-control"
                     placeholder={placeholderPass}
-                    style={{ paddingLeft: "2.75rem" }}
+                    style={{ paddingLeft: "2.75rem", paddingRight: "2.75rem" }}
                     required
                     minLength={6}
+                    value={formData.password}
                     onChange={(e) =>
                       setFormData({ ...formData, password: e.target.value })
                     }
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    title={showPassword ? "Hide password" : "Show password"}
+                    style={{
+                      position: "absolute",
+                      right: "1rem",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "transparent",
+                      border: "none",
+                      color: showPassword ? "var(--primary-light)" : "var(--text-muted)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 0
+                    }}
+                  >
+                    {showPassword ? <FiEye size={18} /> : <FiEyeOff size={18} />}
+                  </button>
                 </div>
               </div>
 
               <div className="d-flex gap-3">
                 <button
                   type="button"
-                  className="btn btn-primary-dim flex-grow-1 py-3"
+                  className="btn btn-lg btn-primary-dim flex-grow-1"
                   onClick={() => setStep(1)}>
                   Back
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-gradient flex-grow-1 py-3"
+                  className="btn btn-lg btn-gradient flex-grow-1"
                   disabled={loading}>
                   {loading ? (
                     <DynamicLoader size={24} color="var(--bg-deep)" />
