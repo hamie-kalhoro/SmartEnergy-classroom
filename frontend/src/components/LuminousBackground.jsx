@@ -7,9 +7,11 @@ import React, { useMemo } from 'react';
  * 2. Sparking light particles (twinkling 4-point starbursts and floating glints)
  * 3. Volumetric glowing aura blooms behind the cards
  *
- * Excludes the left navigation panel by respecting sidebar width.
+ * Covers the full viewport behind the (opaque) sidebar. It deliberately does not track
+ * the sidebar width: animating its size repainted the blurred layers on every frame
+ * and made the sidebar collapse/expand stutter.
  */
-const LuminousBackground = ({ isCollapsed = false, className = '' }) => {
+const LuminousBackground = ({ className = '' }) => {
     // Generate deterministic sparkle points so there is no layout jump
     const sparks = useMemo(() => [
         { id: 1, top: '12%', left: '18%', size: 16, delay: '0s', dur: '3.4s', color: '#00f59b' },
@@ -26,8 +28,6 @@ const LuminousBackground = ({ isCollapsed = false, className = '' }) => {
         { id: 12, top: '88%', left: '36%', size: 18, delay: '1.7s', dur: '4.6s', color: '#00f59b' }
     ], []);
 
-    const leftOffset = isCollapsed ? 'var(--sidebar-collapsed-w, 78px)' : 'var(--sidebar-w, 260px)';
-
     return (
         <div
             className={`luminous-bg-root ${className}`}
@@ -36,11 +36,10 @@ const LuminousBackground = ({ isCollapsed = false, className = '' }) => {
                 top: 0,
                 right: 0,
                 bottom: 0,
-                left: leftOffset,
+                left: 0,
                 zIndex: 0,
                 pointerEvents: 'none',
                 overflow: 'hidden',
-                transition: 'left 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                 background: 'radial-gradient(ellipse at 50% 0%, #0a1322 0%, #050811 55%, #020408 100%)'
             }}
             aria-hidden="true"

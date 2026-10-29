@@ -79,6 +79,7 @@ function Dashboard() {
     const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
+        resizeDelay: 250, // redraw once after the sidebar finishes animating, not every frame
         scales: {
             y: {
                 beginAtZero: true,
@@ -307,7 +308,7 @@ function Dashboard() {
                                 <p className="text-muted small mb-4">Energy saved vs baseline</p>
                                 <div className="d-flex justify-content-center align-items-center" style={{ height: '200px' }}>
                                     <div style={{ position: 'relative', width: '180px', height: '180px' }}>
-                                        <Doughnut data={doughnutData} options={{ plugins: { legend: { display: false } }, cutout: '75%' }} />
+                                        <Doughnut data={doughnutData} options={{ plugins: { legend: { display: false } }, cutout: '75%', resizeDelay: 250 }} />
                                         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
                                             <h3 className="fw-bold text-gradient mb-0">{parseFloat(stats.baseline_energy) > 0 ? Math.round((parseFloat(stats.energy_saved) / parseFloat(stats.baseline_energy)) * 100) : 0}%</h3>
                                             <small className="text-muted" style={{ fontSize: '0.7rem' }}>Efficiency</small>

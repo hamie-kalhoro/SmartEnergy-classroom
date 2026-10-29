@@ -1,286 +1,224 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiGrid, FiBox, FiTrendingUp, FiCalendar, FiLogOut, FiZap, FiUsers, FiChevronDown, FiChevronUp, FiCpu, FiChevronLeft, FiMap, FiGlobe, FiDatabase, FiWifi, FiActivity } from 'react-icons/fi';
+import { FiGrid, FiBox, FiTrendingUp, FiCalendar, FiLogOut, FiUsers, FiChevronDown, FiCpu, FiChevronLeft, FiMap, FiActivity, FiCloud, FiHardDrive, FiWifi } from 'react-icons/fi';
 import api from '../api';
 import ConfirmModal from './ConfirmModal';
-import SmartLogo from './SmartLogo';
+import BrandMark from './BrandMark';
 
-const SyncStatus = ({ isCollapsed }) => {
+const NAV_GROUPS = [
+    {
+        id: 'main',
+        label: 'Main Menu',
+        items: [
+            { to: '/', label: 'Dashboard', icon: FiGrid },
+            { to: '/map', label: 'Map', icon: FiMap },
+            { to: '/classrooms', label: 'Classrooms', icon: FiBox },
+            { to: '/predictions', label: 'Predictions', icon: FiTrendingUp },
+            { to: '/timetable', label: 'Timetable', icon: FiCalendar },
+        ]
+    },
+    {
+        id: 'intelligence',
+        label: 'Intelligence',
+        items: [
+            { to: '/ml-lab', label: 'ML Laboratory', icon: FiCpu },
+            { to: '/model-status', label: 'Intelligence Profile', icon: FiActivity },
+        ]
+    },
+    {
+        id: 'management',
+        label: 'Management',
+        adminOnly: true,
+        items: [
+            { to: '/users', label: 'Faculty Users', icon: FiUsers },
+        ]
+    }
+];
+
+const GROUPS_STORAGE_KEY = 'sidebarGroups';
+
+const readOpenGroups = () => {
+    try {
+        return JSON.parse(localStorage.getItem(GROUPS_STORAGE_KEY)) || {};
+    } catch {
+        return {};
+    }
+};
+
+const useMediaQuery = (query) => {
+    const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
+    useEffect(() => {
+        const mql = window.matchMedia(query);
+        const onChange = (e) => setMatches(e.matches);
+        mql.addEventListener('change', onChange);
+        return () => mql.removeEventListener('change', onChange);
+    }, [query]);
+    return matches;
+};
+
+const useSyncStatus = () => {
     const [status, setStatus] = useState({ active_db: 'local_sqlite', is_cloud_available: false, latency_ms: 0 });
-    const [loading, setLoading] = useState(true);
 
-    const checkStatus = async () => {
-        try {
-            const res = await api.get('/api/system/db-status');
-            setStatus(res.data);
-        } catch (err) {
-            setStatus({ active_db: 'local_sqlite', is_cloud_available: false, latency_ms: 0 });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    React.useEffect(() => {
+    useEffect(() => {
+        const checkStatus = async () => {
+            try {
+                const res = await api.get('/api/system/db-status');
+                setStatus(res.data);
+            } catch (err) {
+                setStatus({ active_db: 'local_sqlite', is_cloud_available: false, latency_ms: 0 });
+            }
+        };
         checkStatus();
         const interval = setInterval(checkStatus, 30000); // Check every 30s
         return () => clearInterval(interval);
     }, []);
 
-    const getSignalColor = () => {
-        if (!status.is_cloud_available) return '#f43f5e'; // Rose/Offline
-        if (status.latency_ms > 500) return '#f59e0b';   // Amber/Lagging
-        return '#10b981';                               // Emerald/Excellent
-    };
-
-    const getBars = () => {
-        if (!status.is_cloud_available) return 1;
-        if (status.latency_ms > 500) return 2;
-        if (status.latency_ms > 200) return 3;
-        return 4;
-    };
-
-    if (isCollapsed) return (
-        <div className="d-flex flex-column align-items-center gap-2 mt-2" style={{ opacity: 0.8, position: 'relative', zIndex: 1 }} title={status.is_cloud_available ? 'Supabase Cloud Synced' : 'Local Mode'}>
-            <div className={`rounded-circle ${status.is_cloud_available ? 'pulse-green' : 'pulse-red'}`} style={{ width: '6px', height: '6px', background: getSignalColor() }} />
-            <FiWifi size={14} style={{ color: getSignalColor() }} />
-        </div>
-    );
-
-    return (
-        <div style={{ marginTop: '0.4rem', position: 'relative', zIndex: 1 }}>
-            <div className="p-2 rounded-3" style={{
-                background: 'rgba(255,255,255,0.01)',
-                border: '1px solid rgba(255,255,255,0.03)',
-                backdropFilter: 'blur(10px)'
-            }}>
-                <div className="d-flex align-items-center justify-content-between mb-1">
-                    <div className="d-flex align-items-center gap-2">
-                        <FiGlobe className={status.is_cloud_available ? 'text-success' : 'text-muted'} size={12} />
-                        <span className="fw-bold" style={{ fontSize: '0.6rem', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
-                            {status.active_db === 'supabase_cloud' ? 'SUPABASE CLOUD' : 'LOCAL CACHE'}
-                        </span>
-                    </div>
-                    <div className="d-flex align-items-end gap-1" style={{ height: '12px' }}>
-                        {[1, 2, 3, 4].map(b => (
-                            <div key={b} style={{
-                                width: '3px',
-                                height: `${b * 25}%`,
-                                background: b <= getBars() ? getSignalColor() : 'rgba(255,255,255,0.1)',
-                                borderRadius: '1px',
-                                transition: 'all 0.3s ease'
-                            }} />
-                        ))}
-                    </div>
-                </div>
-
-                <div className="d-flex align-items-center justify-content-between">
-                    <div className="small text-muted d-flex align-items-center gap-1" style={{ fontSize: '0.6rem' }}>
-                        <FiWifi size={10} /> {status.is_cloud_available ? `${status.latency_ms}ms ping` : 'Disconnected'}
-                    </div>
-                    <div className="d-flex align-items-center gap-1">
-                        <div className={`rounded-circle ${status.is_cloud_available ? 'pulse-green' : 'pulse-red'}`}
-                            style={{ width: '5px', height: '5px', background: getSignalColor() }} />
-                        <span style={{ fontSize: '0.6rem', fontWeight: 'bold', color: getSignalColor(), textTransform: 'uppercase' }}>
-                            {status.is_cloud_available ? 'Synced' : 'Local'}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+    const online = status.is_cloud_available;
+    const color = !online ? '#f43f5e' : status.latency_ms > 500 ? '#f59e0b' : '#10b981';
+    const bars = !online ? 1 : status.latency_ms > 500 ? 2 : status.latency_ms > 200 ? 3 : 4;
+    return { status, online, color, bars };
 };
 
-function Sidebar({ user, theme, toggleTheme, logout, isCollapsed, onToggle }) {
-    const [showMainMenu, setShowMainMenu] = useState(true);
-    const [showIntelligence, setShowIntelligence] = useState(false);
-    const [showManagement, setShowManagement] = useState(false);
+function Sidebar({ user, logout, isCollapsed, onToggle }) {
+    const [openGroups, setOpenGroups] = useState(readOpenGroups);
     const [showLogout, setShowLogout] = useState(false);
+    const isNarrow = useMediaQuery('(max-width: 991px)');
+    const collapsed = isCollapsed || isNarrow;
+    const sync = useSyncStatus();
 
-    const sectionVariants = {
-        open: { height: 'auto', opacity: 1, transition: { duration: 0.3, ease: 'easeOut' } },
-        closed: { height: 0, opacity: 0, transition: { duration: 0.3, ease: 'easeIn' } }
+    const isOpen = (id) => openGroups[id] !== false;
+    const toggleGroup = (id) => {
+        const next = { ...openGroups, [id]: !isOpen(id) };
+        setOpenGroups(next);
+        try { localStorage.setItem(GROUPS_STORAGE_KEY, JSON.stringify(next)); } catch { /* storage unavailable */ }
     };
 
+    const initial = (user?.username || 'U').charAt(0).toUpperCase();
+    const syncTitle = sync.status.active_db === 'supabase_cloud' ? 'Supabase Cloud' : 'Local Cache';
+    const syncTooltip = `${syncTitle} · ${sync.online ? `Synced (${sync.status.latency_ms}ms)` : 'Offline'}`;
+
     return (
-        <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`} style={{ position: 'relative' }}>
-            {/* Collapse Toggle Button */}
-            <button
-                className="sidebar-toggle-btn"
-                onClick={onToggle}
-                title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-                style={{ position: 'absolute', zIndex: 2 }}
-            >
-                <FiChevronLeft />
-            </button>
-            {/* Logo Section - Fixed at top */}
-            <div className={isCollapsed ? "mb-4 mt-2" : "mb-4 mt-1"} style={{ position: 'relative', zIndex: 1 }}>
-                <div className={`d-flex align-items-center ${isCollapsed ? 'justify-content-center' : 'px-3'}`}>
-                    <SmartLogo size={isCollapsed ? 24 : 32} useVideo={true} hideText={isCollapsed} className={isCollapsed ? "" : "w-100"} />
-                </div>
-            </div>
-
-            {/* Scrollable Navigation Area */}
-            <div className="sidebar-nav-container" style={{ position: 'relative', zIndex: 1 }}>
-                <nav className="sidebar-nav-inner">
-                    {/* Main Menu Section */}
-                    <div>
-                        {!isCollapsed && (
-                            <div
-                                className="d-flex align-items-center justify-content-between px-1 mb-1"
-                                onClick={() => setShowMainMenu(!showMainMenu)}
-                                style={{ cursor: 'pointer', userSelect: 'none' }}
-                            >
-                                <small className="text-muted" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', opacity: 0.6 }}>Main Menu</small>
-                                {showMainMenu ? <FiChevronUp className="text-muted" size={10} /> : <FiChevronDown className="text-muted" size={10} />}
-                            </div>
-                        )}
-
-                        <AnimatePresence>
-                            {(showMainMenu || isCollapsed) && (
-                                <motion.div
-                                    initial={isCollapsed ? "open" : "closed"}
-                                    animate="open"
-                                    exit="closed"
-                                    variants={sectionVariants}
-                                    style={{ overflow: 'hidden' }}
-                                >
-                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <NavLink to="/" className="nav-link">
-                                            <FiGrid /> <span>Dashboard</span>
-                                        </NavLink>
-                                        <NavLink to="/map" className="nav-link">
-                                            <FiMap /> <span>Map</span>
-                                        </NavLink>
-                                        <NavLink to="/classrooms" className="nav-link">
-                                            <FiBox /> <span>Classrooms</span>
-                                        </NavLink>
-                                        <NavLink to="/predictions" className="nav-link">
-                                            <FiTrendingUp /> <span>Predictions</span>
-                                        </NavLink>
-                                        <NavLink to="/timetable" className="nav-link">
-                                            <FiCalendar /> <span>Timetable</span>
-                                        </NavLink>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-
-                    {/* Intelligence Section */}
-                    <div style={{ marginTop: isCollapsed ? '0.25rem' : '0.5rem' }}>
-                        {!isCollapsed && (
-                            <div
-                                className="d-flex align-items-center justify-content-between px-1 mb-1"
-                                onClick={() => setShowIntelligence(!showIntelligence)}
-                                style={{ cursor: 'pointer', userSelect: 'none' }}
-                            >
-                                <small className="text-muted" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', opacity: 0.6 }}>Intelligence</small>
-                                {showIntelligence ? <FiChevronUp className="text-muted" size={10} /> : <FiChevronDown className="text-muted" size={10} />}
-                            </div>
-                        )}
-
-                        <AnimatePresence>
-                            {(showIntelligence || isCollapsed) && (
-                                <motion.div
-                                    initial={isCollapsed ? "open" : "closed"}
-                                    animate="open"
-                                    exit="closed"
-                                    variants={sectionVariants}
-                                    style={{ overflow: 'hidden' }}
-                                >
-                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <NavLink to="/ml-lab" className="nav-link">
-                                            <FiCpu /> <span>ML Laboratory</span>
-                                        </NavLink>
-                                        <NavLink to="/model-status" className="nav-link">
-                                            <FiActivity className="pulse-slow" /> <span>Intelligence Profile</span>
-                                        </NavLink>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-
-                    {/* Management Section (Admin Only) */}
-                    {user.role === 'admin' && (
-                        <div style={{ marginTop: isCollapsed ? '0.25rem' : '0.5rem' }}>
-                            {!isCollapsed && (
-                                <div
-                                    className="d-flex align-items-center justify-content-between px-1 mb-1"
-                                    onClick={() => setShowManagement(!showManagement)}
-                                    style={{ cursor: 'pointer', userSelect: 'none' }}
-                                >
-                                    <small className="text-muted" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 'bold', opacity: 0.6 }}>Management</small>
-                                    {showManagement ? <FiChevronUp className="text-muted" size={10} /> : <FiChevronDown className="text-muted" size={10} />}
-                                </div>
-                            )}
-
-                            <AnimatePresence>
-                                {(showManagement || isCollapsed) && (
-                                    <motion.div
-                                        initial={isCollapsed ? "open" : "closed"}
-                                        animate="open"
-                                        exit="closed"
-                                        variants={sectionVariants}
-                                        style={{ overflow: 'hidden' }}
-                                    >
-                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <NavLink to="/users" className="nav-link">
-                                                <FiUsers /> <span>Faculty Users</span>
-                                            </NavLink>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    )}
-                </nav>
-            </div>
-
-            {/* User Section - Docked at bottom */}
-            <div className="sidebar-user-section" style={{ position: 'relative', zIndex: 1 }}>
-                <div
-                    className={`d-flex align-items-center ${isCollapsed ? 'justify-content-center' : 'gap-2'} p-2 rounded-3 user-card-hover cursor-pointer`}
-                    style={{ background: 'rgba(255,255,255,0.02)' }}
-                    onClick={() => setShowLogout(true)}
-                    title="Sign Out"
+        <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+            {!isNarrow && (
+                <button
+                    className="sidebar-toggle-btn"
+                    onClick={onToggle}
+                    title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                    aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                 >
-                    {/* Avatar */}
-                    <div style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '6px',
-                        background: 'var(--gradient-primary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontWeight: '700',
-                        fontSize: '0.75rem',
-                        flexShrink: 0,
-                        boxShadow: isCollapsed ? '0 4px 12px rgba(0, 245, 155, 0.3)' : 'none'
-                    }}>
-                        {(user?.username || 'U').charAt(0).toUpperCase()}
-                    </div>
+                    <FiChevronLeft size={14} />
+                </button>
+            )}
 
-                    {/* Info - Hidden in collapsed */}
-                    {!isCollapsed && (
-                        <>
-                            <div className="overflow-hidden flex-grow-1" style={{ lineHeight: 1 }}>
-                                <p className="small fw-bold mb-0 text-truncate" style={{ fontSize: '0.75rem', color: 'var(--text)' }}>{user.username}</p>
-                                <span className="text-muted fw-bold" style={{ fontSize: '0.6rem', textTransform: 'uppercase', opacity: 0.6 }}>{user.role}</span>
-                            </div>
-                            <FiLogOut className="ms-auto" size={14} style={{ color: '#f43f5e' }} />
-                        </>
-                    )}
+            {/* Every element keeps the same position in both states; collapsing only
+                narrows the clipping box and fades the text, so nothing jumps or re-wraps. */}
+            <div className="sb-inner">
+                {/* Brand */}
+                <div className="sb-brand">
+                    <BrandMark size={36} />
+                    <div className="sb-brand-text sb-fade">
+                        <span className="sb-brand-name">Smart<em>Energy</em></span>
+                        <span className="sb-brand-sub">Energy Management</span>
+                    </div>
                 </div>
 
-                {/* ─── Premium Database & Sync Status ─── */}
-                <SyncStatus isCollapsed={isCollapsed} />
+                {/* Navigation */}
+                <nav className="sb-nav" aria-label="Main navigation">
+                    {NAV_GROUPS.filter(g => !g.adminOnly || user?.role === 'admin').map(group => {
+                        const open = collapsed || isOpen(group.id);
+                        return (
+                            <div className="sb-group" key={group.id}>
+                                <button
+                                    type="button"
+                                    className="sb-group-header"
+                                    onClick={() => toggleGroup(group.id)}
+                                    aria-expanded={open}
+                                    disabled={collapsed}
+                                >
+                                    <span className="sb-fade">{group.label}</span>
+                                    <FiChevronDown className="sb-group-chevron sb-fade" size={14} />
+                                </button>
+
+                                <div className={`sb-group-body ${open ? '' : 'closed'}`}>
+                                    <div className="sb-links">
+                                        {group.items.map(({ to, label, icon: Icon }) => (
+                                            <NavLink
+                                                key={to}
+                                                to={to}
+                                                end={to === '/'}
+                                                className="sb-link"
+                                                title={collapsed ? label : undefined}
+                                            >
+                                                <span className="sb-link-icon"><Icon /></span>
+                                                <span className="sb-link-label sb-fade">{label}</span>
+                                            </NavLink>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </nav>
+
+                {/* Account + Database status card */}
+                <div className="sb-footer">
+                    <div className="sb-account" style={{ '--sb-status': sync.color }}>
+                        <div className="sb-account-user">
+                            <button
+                                type="button"
+                                className="sb-avatar"
+                                onClick={collapsed ? () => setShowLogout(true) : undefined}
+                                tabIndex={collapsed ? 0 : -1}
+                                title={collapsed ? `${user?.username} · Sign out
+${syncTooltip}` : undefined}
+                                aria-label={collapsed ? 'Sign out' : undefined}
+                            >
+                                {initial}
+                                <span className="sb-avatar-status" />
+                            </button>
+                            <div className="sb-account-details sb-fade">
+                                <div className="sb-account-name">{user?.username}</div>
+                                <div className="sb-account-role">{user?.role}</div>
+                            </div>
+                            <button
+                                type="button"
+                                className="sb-icon-btn sb-fade"
+                                onClick={() => setShowLogout(true)}
+                                title="Sign out"
+                                aria-label="Sign out"
+                            >
+                                <FiLogOut size={16} />
+                            </button>
+                        </div>
+
+                        <div className="sb-sync-wrap">
+                            <div className="sb-sync sb-fade" title={syncTooltip}>
+                                <span className="sb-sync-icon">
+                                    {sync.status.active_db === 'supabase_cloud' ? <FiCloud /> : <FiHardDrive />}
+                                </span>
+                                <div className="sb-sync-text">
+                                    <div className="sb-sync-title">{syncTitle}</div>
+                                    <div className="sb-sync-meta">
+                                        <FiWifi size={11} /> {sync.online ? `${sync.status.latency_ms}ms ping` : 'Disconnected'}
+                                    </div>
+                                </div>
+                                <div className="sb-sync-status">
+                                    <div className="sb-bars" aria-hidden="true">
+                                        {[1, 2, 3, 4].map(b => (
+                                            <span key={b} className={b <= sync.bars ? 'on' : ''} style={{ height: `${b * 25}%` }} />
+                                        ))}
+                                    </div>
+                                    <span className="sb-status-label">
+                                        <span className="sb-dot" />
+                                        {sync.online ? 'Synced' : 'Local'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* Logout Confirmation Modal */}
             <ConfirmModal
                 show={showLogout}
                 type="warning"

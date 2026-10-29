@@ -131,7 +131,7 @@ function App() {
                     onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                 />}
                 <main className="main-content" style={!user ? { padding: 0 } : {}}>
-                    {user && <LuminousBackground isCollapsed={isSidebarCollapsed} />}
+                    {user && <LuminousBackground />}
                     <div className="main-content-inner" style={{ position: 'relative', zIndex: 1, minHeight: '100%' }}>
                         <Routes>
                             <Route path="/login" element={!user ? <Login onLogin={handleLogin} theme={theme} toggleTheme={toggleTheme} /> : <Navigate to="/" />} />
