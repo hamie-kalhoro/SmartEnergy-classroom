@@ -221,13 +221,28 @@ ${syncTooltip}` : undefined}
 
             <ConfirmModal
                 show={showLogout}
-                type="warning"
-                title="Exit Portal?"
-                message="You will be signed out of your SmartEnergy session."
-                confirmText="Sign Out"
+                type="confirm"
+                icon={<FiLogOut />}
+                title="Sign out of SmartEnergy?"
+                message="You'll need to sign in again to access the dashboard."
+                confirmText="Sign out"
+                tone="danger"
                 onConfirm={() => { setShowLogout(false); logout(); }}
                 onCancel={() => setShowLogout(false)}
-            />
+            >
+                <div className="cmodal-account" style={{ '--sb-status': sync.color }}>
+                    <span className="cmodal-account-avatar">{initial}</span>
+                    <div className="cmodal-account-text">
+                        <strong>{user?.username}</strong>
+                        <span>{user?.email || user?.role}</span>
+                    </div>
+                    <span className="cmodal-account-role">{user?.role}</span>
+                </div>
+                <div className="cmodal-session">
+                    <span className="cmodal-session-dot" />
+                    {syncTitle} · {sync.online ? 'Synced' : 'Offline'}
+                </div>
+            </ConfirmModal>
         </aside>
     );
 }

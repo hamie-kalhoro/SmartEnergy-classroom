@@ -311,6 +311,7 @@ function Timetable({ user }) {
                 title="Remove Schedule Entry?"
                 message="This entry will be permanently deleted from the timetable."
                 confirmText="Remove"
+                tone="danger"
                 onConfirm={confirmDelete}
                 onCancel={() => setDeleteTarget(null)}
             />

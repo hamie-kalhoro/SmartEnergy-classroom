@@ -387,6 +387,7 @@ function Classrooms({ user }) {
                 title="Deactivate Classroom?"
                 message="This classroom node will be removed from the energy network."
                 confirmText="Deactivate"
+                tone="danger"
                 onConfirm={confirmDelete}
                 onCancel={() => setDeleteTarget(null)}
             />

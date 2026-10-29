@@ -11,6 +11,10 @@
     --primary-glow: rgba(0, 245, 155, 0.4);
 
     /* Accents */
+    /* Academic sky: fills/glows/charts in both themes, text & icons in dark theme */
+    --accent-sky: #1BC0EC;
+    /* Sky for text & icons: same hue, deepened in light theme for 4.5:1 contrast */
+    --accent-sky-text: #1BC0EC;
     --accent: #2563eb;
     /* Deep Royal Blue for depth */
     --accent-pink: #f43f5e;
@@ -102,6 +106,7 @@
 
     --gradient-glow: radial-gradient(ellipse at 50% 0%, rgba(0, 245, 155, 0.05) 0%, transparent 60%);
     --close-filter: none;
+    --accent-sky-text: #0A7EA4;
 }
 
 /* Global Reset */
@@ -885,16 +890,27 @@ body,
 }
 
 .sb-dot {
+    position: relative;
     width: 6px;
     height: 6px;
     border-radius: 50%;
     background: var(--sb-status);
-    animation: sb-pulse 2s ease-out infinite;
 }
 
-@keyframes sb-pulse {
-    0% { box-shadow: 0 0 0 0 var(--sb-status); }
-    70%, 100% { box-shadow: 0 0 0 5px transparent; }
+/* Ping ring: transform + opacity only, so it never forces a repaint */
+.sb-dot::after,
+.campus-live-dot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: inherit;
+    animation: status-ping 2s ease-out infinite;
+}
+
+@keyframes status-ping {
+    0% { transform: scale(1); opacity: 0.6; }
+    70%, 100% { transform: scale(2.6); opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2349,7 +2365,7 @@ tbody tr:hover {
 /* ========== CAMPUS MAP ========== */
 .campus-map-shell {
     --cm-accent: #34d399;
-    --cm-info: #38bdf8;
+    --cm-info: var(--accent-sky-text);
     --cm-surface: var(--bg-surface);
     --cm-raised: rgba(255, 255, 255, 0.03);
     --cm-raised-hover: rgba(255, 255, 255, 0.06);
@@ -2365,7 +2381,7 @@ tbody tr:hover {
 
 [data-theme='light'] .campus-map-shell {
     --cm-accent: #059669;
-    --cm-info: #0284c7;
+    --cm-info: var(--accent-sky-text);
     --cm-surface: #ffffff;
     --cm-raised: #f8fafc;
     --cm-raised-hover: #f1f5f9;
@@ -2497,16 +2513,11 @@ tbody tr:hover {
 }
 
 .campus-live-dot {
+    position: relative;
     width: 6px;
     height: 6px;
     border-radius: 50%;
     background: currentColor;
-    animation: campus-pulse 2s ease-out infinite;
-}
-
-@keyframes campus-pulse {
-    0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 60%, transparent); }
-    70%, 100% { box-shadow: 0 0 0 6px transparent; }
 }
 
 .campus-map-action-btn {
@@ -3355,7 +3366,7 @@ tbody tr:hover {
 }
 
 .nslider.tone-info {
-    --tone: #38bdf8;
+    --tone: var(--accent-sky);
 }
 
 [data-theme='light'] .nslider {
@@ -3364,7 +3375,7 @@ tbody tr:hover {
 }
 
 [data-theme='light'] .nslider.tone-info {
-    --tone: #0284c7;
+    --tone: var(--accent-sky-text);
 }
 
 .nslider-track {
@@ -3466,4 +3477,310 @@ tbody tr:hover {
 .nslider.disabled .nslider-track,
 .nslider.disabled .nslider-scale button {
     cursor: not-allowed;
+}
+
+/* ========== DIALOG (ConfirmModal) ========== */
+.cmodal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(2, 6, 10, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+[data-theme='light'] .cmodal-backdrop {
+    background: rgba(15, 23, 42, 0.35);
+}
+
+.cmodal {
+    --cmodal-line: var(--border);
+    width: 100%;
+    max-width: 440px;
+    overflow: hidden;
+    border: 1px solid var(--cmodal-line);
+    border-radius: var(--radius-xl);
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-xl);
+    font-family: var(--font-body);
+}
+
+[data-theme='light'] .cmodal {
+    --cmodal-line: #e2e8f0;
+}
+
+.cmodal-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    padding: 1.375rem 1.375rem 1rem;
+}
+
+.cmodal-icon {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-lg);
+    color: var(--cmodal-accent);
+    background: color-mix(in srgb, var(--cmodal-accent) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--cmodal-accent) 22%, transparent);
+    font-size: 1.125rem;
+}
+
+.cmodal-text {
+    min-width: 0;
+    padding-top: 2px;
+}
+
+.cmodal-text h2 {
+    margin: 0 0 0.3rem;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    line-height: 1.4;
+}
+
+.cmodal-text p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    line-height: 1.55;
+}
+
+.cmodal-extra {
+    padding: 0 1.375rem 1.125rem;
+}
+
+.cmodal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.875rem 1.375rem;
+    border-top: 1px solid var(--cmodal-line);
+    background: color-mix(in srgb, var(--text) 2.5%, transparent);
+}
+
+.cmodal-btn {
+    height: 36px;
+    min-width: 88px;
+    padding: 0 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cmodal-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cmodal-btn-ring, #10b981) 35%, transparent);
+}
+
+.cmodal-btn.secondary {
+    --cmodal-btn-ring: #94a3b8;
+    border: 1px solid var(--cmodal-line);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+}
+
+.cmodal-btn.secondary:hover {
+    color: var(--text);
+    background: color-mix(in srgb, var(--text) 5%, var(--bg-surface));
+}
+
+.cmodal-btn.primary {
+    --cmodal-btn-ring: #10b981;
+    border: 1px solid #059669;
+    background: #059669;
+    color: #fff;
+}
+
+.cmodal-btn.primary:hover {
+    background: #047857;
+    border-color: #047857;
+}
+
+.cmodal-btn.danger {
+    --cmodal-btn-ring: #ef4444;
+    border: 1px solid #dc2626;
+    background: #dc2626;
+    color: #fff;
+}
+
+.cmodal-btn.danger:hover {
+    background: #b91c1c;
+    border-color: #b91c1c;
+}
+
+/* Sign-out dialog: who is being signed out, and from which data source */
+.cmodal-account {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--cmodal-line);
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--text) 2.5%, transparent);
+}
+
+.cmodal-account-avatar {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--gradient-emerald);
+    color: #fff;
+    font-family: var(--font-heading);
+    font-weight: 700;
+}
+
+.cmodal-account-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+}
+
+.cmodal-account-text strong {
+    color: var(--text);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.cmodal-account-text span {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cmodal-account-role {
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    color: var(--text-secondary);
+    background: color-mix(in srgb, var(--text) 7%, transparent);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.cmodal-session {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.625rem;
+    padding: 0 0.25rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+.cmodal-session-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--sb-status, #10b981);
+}
+
+/* ========== AMBIENT BACKGROUND (LuminousBackground) ========== */
+/* Only transform/opacity animate → GPU-composited, no per-frame repaint. */
+.lbg-root {
+    --lbg-base: radial-gradient(ellipse at 50% 0%, #0a1620 0%, #050b10 55%, #020508 100%);
+    --lbg-glow-a: rgba(16, 185, 129, 0.16);
+    --lbg-glow-b: rgba(27, 192, 236, 0.14);
+    --lbg-grid: rgba(148, 163, 184, 0.05);
+    --lbg-glint: rgba(27, 192, 236, 0.9);
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    contain: strict;
+    background: var(--lbg-base);
+}
+
+[data-theme='light'] .lbg-root {
+    --lbg-base: linear-gradient(180deg, #f6f9fa 0%, #eef3f5 100%);
+    --lbg-glow-a: rgba(16, 185, 129, 0.10);
+    --lbg-glow-b: rgba(27, 192, 236, 0.10);
+    --lbg-grid: rgba(15, 23, 42, 0.045);
+    --lbg-glint: rgba(10, 126, 164, 0.55);
+}
+
+.lbg-glow {
+    position: absolute;
+    width: 70vmax;
+    height: 70vmax;
+    border-radius: 50%;
+    will-change: transform;
+}
+
+.lbg-glow-a {
+    top: -35vmax;
+    left: -10vmax;
+    background: radial-gradient(circle, var(--lbg-glow-a) 0%, transparent 62%);
+    animation: lbg-drift-a 38s ease-in-out infinite alternate;
+}
+
+.lbg-glow-b {
+    bottom: -40vmax;
+    right: -20vmax;
+    background: radial-gradient(circle, var(--lbg-glow-b) 0%, transparent 62%);
+    animation: lbg-drift-b 46s ease-in-out infinite alternate;
+}
+
+.lbg-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(var(--lbg-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--lbg-grid) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse at 50% 30%, #000 20%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 20%, transparent 75%);
+}
+
+.lbg-glint {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--lbg-glint);
+    box-shadow: 0 0 8px 2px color-mix(in srgb, var(--lbg-glint) 50%, transparent);
+    opacity: 0;
+    will-change: opacity;
+    animation: lbg-glint 10s ease-in-out infinite;
+}
+
+@keyframes lbg-drift-a {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(12vmax, 8vmax, 0); }
+}
+
+@keyframes lbg-drift-b {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(-14vmax, -6vmax, 0); }
+}
+
+@keyframes lbg-glint {
+    0%, 70%, 100% { opacity: 0; }
+    80% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lbg-glow,
+    .lbg-glint {
+        animation: none;
+    }
 }

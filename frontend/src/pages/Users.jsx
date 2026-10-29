@@ -735,6 +735,7 @@ function Users({ user }) {
                 title={`Delete ${deleteTarget?.username || 'User'}?`}
                 message="This action cannot be undone. The user's account and data will be permanently removed."
                 confirmText="Delete"
+                tone="danger"
                 onConfirm={confirmDelete}
                 onCancel={() => setDeleteTarget(null)}
             />
