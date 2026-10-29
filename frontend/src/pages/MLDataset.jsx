@@ -122,7 +122,8 @@ function MLDataset() {
                                 onChange={(e) => setFile(e.target.files[0])}
                             />
                             <small className="text-muted d-block mb-4">
-                                Required columns: <code>day, hour, type, attendance</code>
+                                Required columns: <code>day, hour, type, attendance</code><br />
+                                Optional: <code>semester, week, batch, section, subject</code> (rows in date order)
                             </small>
                             <button type="submit" className="btn btn-lg btn-primary w-100" disabled={!file || loading}>
                                 {loading ? (
@@ -178,6 +179,22 @@ function MLDataset() {
                                         ))}
                                     </div>
 
+                                    <div className="row g-3 mb-4">
+                                        {[
+                                            { label: 'Baseline: recent average', val: `${result?.report?.baseline_history ?? 0}%` },
+                                            { label: 'Baseline: most common level', val: `${result?.report?.baseline_majority ?? 0}%` },
+                                            { label: 'Cross-validation', val: `${result?.report?.cv_accuracy ?? 0}% ± ${result?.report?.cv_std ?? 0}` },
+                                            { label: 'Training accuracy', val: `${result?.report?.train_accuracy ?? 0}%` }
+                                        ].map((s, i) => (
+                                            <div className="col-md" key={i}>
+                                                <div className="p-3 rounded-4 h-100 bg-surface border">
+                                                    <div className="h6 fw-bold mb-1" style={{ color: 'var(--text)' }}>{s.val}</div>
+                                                    <small className="text-secondary fw-medium">{s.label}</small>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
                                     {/* AI Insight Section */}
                                     <div className={`p-3 rounded-4 mb-4 border ${result?.report?.status === 'warning' ? 'border-danger bg-danger bg-opacity-5' : 'border-success bg-success bg-opacity-5'}`}>
                                         <div className="d-flex justify-content-between align-items-start">
@@ -201,7 +218,7 @@ function MLDataset() {
                                                     <div className="d-flex align-items-center gap-2">
                                                         <span className="text-capitalize small fw-bold text-secondary">{key.replace('_', ' ')}</span>
                                                         <span className="extra-small opacity-50" title={key} style={{ color: 'var(--text)' }}>
-                                                            {key === 'attendance' ? '(Count)' : key === 'type' ? '(Lab/Lec)' : key === 'hour' ? '(Time)' : '(Context)'}
+                                                            {key === 'hist_attendance' ? '(Recent avg)' : key === 'prev_attendance' ? '(Last class)' : key === 'type' ? '(Lab/Lec)' : key === 'hour' ? '(Time)' : key === 'week' ? '(Semester week)' : '(Context)'}
                                                         </span>
                                                     </div>
                                                     <span className="small fw-bold text-primary">{Math.round((val || 0) * 100)}%</span>
@@ -216,8 +233,8 @@ function MLDataset() {
                                     <div className="mt-4 p-3 rounded-3 bg-white bg-opacity-5 border border-white border-opacity-5">
                                         <h6 className="fw-bold small mb-2"><FiAlertCircle className="me-2" /> Understanding Importance</h6>
                                         <p className="extra-small text-muted m-0 lh-sm"> 
-                                            <strong>Attendance:</strong> Direct driver of occupancy levels. <br/>
-                                            <strong>Why are some 0%?</strong> Features like "Is Weekend" or "Time Bin" are currently redundant because the model already learned these patterns from the raw "Day" and "Hour" data.
+                                            <strong>Hist / Prev attendance:</strong> how full this class was in previous weeks. The attendance of the class being predicted is never used as an input. <br/>
+                                            <strong>Why not ~100%?</strong> Accuracy is measured on the most recent weeks the model never saw. Cancellations, holidays and day-to-day absence cannot be known in advance, so a useful model is one that beats the baselines above.
                                         </p>
                                     </div>
                                 </div>

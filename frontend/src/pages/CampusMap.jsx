@@ -1,24 +1,25 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence, animate, useMotionValue } from 'framer-motion';
 import {
     FiActivity,
     FiCheck,
     FiCopy,
-    FiCpu,
     FiEdit3,
     FiLayers,
+    FiMaximize,
     FiMinus,
     FiNavigation,
     FiPlus,
     FiRotateCcw,
     FiSearch,
+    FiSun,
     FiThermometer,
-    FiTv,
     FiUsers,
     FiWind,
     FiX,
     FiZap
 } from 'react-icons/fi';
+import { TbAirConditioning } from 'react-icons/tb';
 import { Line } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -29,12 +30,18 @@ import {
     Tooltip,
     Filler
 } from 'chart.js';
+import NumberedSlider from '../components/NumberedSlider';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
 const MAP_WIDTH = 1120;
 const MAP_HEIGHT = 1720;
+// Bounding box of everything drawn on the map, used to fit it into the viewport
+const MAP_CONTENT = { x: 50, y: 50, w: 1010, h: 1620 };
+const MIN_ZOOM = 0.3;
+const MAX_ZOOM = 1.8;
 const BOUNDARY_STORAGE_KEY = 'campusMap.siteBoundaryPoints.v1';
+const ROOM_STATE_STORAGE_KEY = 'campusMap.roomStates.v2';
 const DEFAULT_SITE_BOUNDARY_POINTS = [
     [205, 58],
     [828, 58],
@@ -63,27 +70,40 @@ const ROOM_TYPES = {
     circulation: { label: 'Route', color: '#22c55e', fill: 'rgba(34, 197, 94, 0.07)' }
 };
 
-const ROOMS = [
-    { id: 'cs-06', name: 'Lab CS-06', short: 'Lab CS-06', type: 'lab', x: 240, y: 90, w: 230, h: 205, capacity: '40 systems', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 22 } },
-    { id: 'cs-04', name: 'Lab CS-04', short: 'Lab CS-04', type: 'lab', x: 240, y: 335, w: 230, h: 175, capacity: '40 systems', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 22 } },
-    { id: 'dr-fawad', name: 'Dr. Fawad Office', short: 'Dr. Fawad', type: 'office', x: 240, y: 510, w: 230, h: 38, capacity: '1 faculty', floor: 'Main block', devices: { lights: true, fans: true, acs: false, temp: 24 } },
-    { id: 'bscs-registrar', name: 'BSCS Registrar', short: 'BSCS Registrar', type: 'office', x: 240, y: 548, w: 230, h: 38, capacity: '3 staff', floor: 'Main block', devices: { lights: true, fans: true, acs: false, temp: 24 } },
-    { id: 'boys-toilet', name: 'Boys Toilet', short: 'Boys Toilet', type: 'utility', x: 240, y: 586, w: 230, h: 38, capacity: 'Utility', floor: 'Main block', devices: { lights: true, fans: false, acs: false, temp: 25 } },
-    { id: 'files-room', name: 'Files Room', short: 'Files Room', type: 'utility', x: 240, y: 624, w: 230, h: 52, capacity: 'Archive', floor: 'Main block', devices: { lights: true, fans: false, acs: false, temp: 25 } },
-    { id: 'teachers-common', name: "Teachers' Common Room", short: "Teachers' Common Room", type: 'office', x: 240, y: 676, w: 230, h: 72, capacity: '10 faculty', floor: 'Main block', devices: { lights: true, fans: true, acs: false, temp: 24 } },
-    { id: 'ai-lab', name: 'AI Lab', short: 'AI Lab', type: 'lab', x: 240, y: 748, w: 230, h: 165, capacity: '35 systems', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 21 } },
-    { id: 'cs-02', name: 'Lab CS-02', short: 'Lab CS-02', type: 'lab', x: 240, y: 950, w: 230, h: 205, capacity: '35 systems', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 22 } },
+// Installed devices per room type: labs 4 ACs / 6 fans, classrooms 8 fans / no AC,
+// offices 1 AC / 1 fan. Light counts and the seminar hall are site estimates.
+const DEVICE_SPECS = {
+    lab: { lights: 12, fans: 6, acs: 4 },
+    classroom: { lights: 10, fans: 8, acs: 0 },
+    office: { lights: 2, fans: 1, acs: 1 },
+    hall: { lights: 16, fans: 8, acs: 4 },
+    utility: { lights: 2, fans: 0, acs: 0 }
+};
 
-    { id: 'cs-05', name: 'Lab CS-05', short: 'Lab CS-05', type: 'lab', x: 560, y: 90, w: 230, h: 205, capacity: '40 systems', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 22 } },
-    { id: 'dr-bushra', name: 'Dr. Bushra Office', short: 'Dr. Bushra', type: 'office', x: 560, y: 295, w: 230, h: 40, capacity: '1 faculty', floor: 'Main block', devices: { lights: true, fans: true, acs: false, temp: 24 } },
-    { id: 'cs-03', name: 'Lab CS-03', short: 'Lab CS-03', type: 'lab', x: 560, y: 335, w: 230, h: 175, capacity: '40 systems', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 22 } },
-    { id: 'store', name: 'Store', short: 'Store', type: 'utility', x: 560, y: 510, w: 230, h: 52, capacity: 'Storage', floor: 'Main block', devices: { lights: true, fans: false, acs: false, temp: 25 } },
-    { id: 'seminar-hall', name: 'Seminar Hall', short: 'Seminar Hall', type: 'hall', x: 560, y: 562, w: 230, h: 165, capacity: '120 seats', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 21 } },
-    { id: 'anam-lab', name: "Madam Anam's Lab", short: "Madam Anam's Lab", type: 'lab', x: 560, y: 727, w: 230, h: 185, capacity: 'Lab space', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 22 } },
-    { id: 'cs-01', name: 'Lab CS-01', short: 'Lab CS-01', type: 'lab', x: 560, y: 950, w: 230, h: 205, capacity: '35 systems', floor: 'Main block', devices: { lights: true, fans: true, acs: true, temp: 22 } },
-    { id: 'third-year-i', name: '3rd Year Section I', short: '3rd Year Section I', type: 'classroom', points: '520,1342 650,1342 650,1632 520,1632', capacity: 'Classroom', floor: 'Lower academic wing', devices: { lights: true, fans: true, acs: false, temp: 24 } },
-    { id: 'final-year-i', name: 'Final Year Section I', short: 'Final Year Section I', type: 'classroom', points: '924,1254 1042,1296 1016,1442 900,1390', capacity: 'Classroom', floor: 'Lower academic wing', devices: { lights: true, fans: true, acs: false, temp: 24 } },
-    { id: 'third-year-ii', name: '3rd Year Section II', short: '3rd Year Section II', type: 'classroom', points: '682,1510 834,1408 1044,1488 958,1650 710,1656', capacity: 'Classroom', floor: 'Lower academic wing', devices: { lights: true, fans: true, acs: false, temp: 24 } }
+// Rated power per unit (kW): LED tube, ceiling fan, 1.5-ton split AC (1-ton in offices)
+const UNIT_KW = { light: 0.02, fan: 0.075, ac: 1.5, officeAc: 1.1, standby: 0.04 };
+
+const ROOMS = [
+    { id: 'cs-06', name: 'Lab CS-06', type: 'lab', x: 240, y: 90, w: 230, h: 205, seats: 40, present: 34, floor: 'Main block' },
+    { id: 'cs-04', name: 'Lab CS-04', type: 'lab', x: 240, y: 335, w: 230, h: 175, seats: 40, present: 22, floor: 'Main block' },
+    { id: 'dr-fawad', name: 'Dr. Fawad Office', short: 'Dr. Fawad', type: 'office', x: 240, y: 510, w: 230, h: 38, seats: 1, present: 1, floor: 'Main block' },
+    { id: 'bscs-registrar', name: 'BSCS Registrar', type: 'office', x: 240, y: 548, w: 230, h: 38, seats: 3, present: 2, floor: 'Main block' },
+    { id: 'boys-toilet', name: 'Boys Toilet', type: 'utility', x: 240, y: 586, w: 230, h: 38, seats: 0, present: 0, floor: 'Main block' },
+    { id: 'files-room', name: 'Files Room', type: 'utility', x: 240, y: 624, w: 230, h: 52, seats: 0, present: 0, floor: 'Main block' },
+    { id: 'teachers-common', name: "Teachers' Common Room", short: "Teachers' Room", type: 'office', x: 240, y: 676, w: 230, h: 72, seats: 10, present: 4, floor: 'Main block' },
+    { id: 'ai-lab', name: 'AI Lab', type: 'lab', x: 240, y: 748, w: 230, h: 165, seats: 35, present: 12, floor: 'Main block' },
+    { id: 'cs-02', name: 'Lab CS-02', type: 'lab', x: 240, y: 950, w: 230, h: 205, seats: 35, present: 0, floor: 'Main block' },
+
+    { id: 'cs-05', name: 'Lab CS-05', type: 'lab', x: 560, y: 90, w: 230, h: 205, seats: 40, present: 38, floor: 'Main block' },
+    { id: 'dr-bushra', name: 'Dr. Bushra Office', short: 'Dr. Bushra', type: 'office', x: 560, y: 295, w: 230, h: 40, seats: 1, present: 0, floor: 'Main block' },
+    { id: 'cs-03', name: 'Lab CS-03', type: 'lab', x: 560, y: 335, w: 230, h: 175, seats: 40, present: 27, floor: 'Main block' },
+    { id: 'store', name: 'Store', type: 'utility', x: 560, y: 510, w: 230, h: 52, seats: 0, present: 0, floor: 'Main block' },
+    { id: 'seminar-hall', name: 'Seminar Hall', type: 'hall', x: 560, y: 562, w: 230, h: 165, seats: 120, present: 0, floor: 'Main block' },
+    { id: 'anam-lab', name: "Madam Anam's Lab", type: 'lab', x: 560, y: 727, w: 230, h: 185, seats: 30, present: 9, floor: 'Main block' },
+    { id: 'cs-01', name: 'Lab CS-01', type: 'lab', x: 560, y: 950, w: 230, h: 205, seats: 35, present: 18, floor: 'Main block' },
+    { id: 'third-year-i', name: '3rd Year Section I', type: 'classroom', points: '520,1342 650,1342 650,1632 520,1632', seats: 50, present: 41, floor: 'Lower academic wing' },
+    { id: 'final-year-i', name: 'Final Year Section I', type: 'classroom', points: '924,1254 1042,1296 1016,1442 900,1390', seats: 42, present: 29, floor: 'Lower academic wing' },
+    { id: 'third-year-ii', name: '3rd Year Section II', type: 'classroom', points: '682,1510 834,1408 1044,1488 958,1650 710,1656', seats: 48, present: 36, floor: 'Lower academic wing' }
 ];
 
 const ROUTES = [
@@ -93,6 +113,67 @@ const ROUTES = [
     { id: 'right-academic-approach', d: 'M790 1155 L854 1214 L838 1260 L988 1260', label: 'Academic wing approach' },
     { id: 'lower-academic-link', d: 'M838 1260 L760 1438 L682 1510', label: 'Lower academic link' }
 ];
+
+// Same thresholds as the backend occupancy model (ml_engine.level_for)
+const OCCUPANCY_LEVELS = [
+    { max: 5, label: 'Empty', tone: 'muted' },
+    { max: 25, label: 'Trace', tone: 'info' },
+    { max: 50, label: 'Light', tone: 'info' },
+    { max: 75, label: 'Balanced', tone: 'good' },
+    { max: 100, label: 'Maximum', tone: 'warn' }
+];
+
+function occupancyLevel(present, seats) {
+    if (!seats) return null;
+    const pct = Math.round((present / seats) * 100);
+    return { pct, ...OCCUPANCY_LEVELS.find(level => pct <= level.max) };
+}
+
+/** Device counts the system recommends for a given headcount. */
+function recommendDevices(room, present) {
+    const spec = DEVICE_SPECS[room.type];
+    if (room.type === 'utility') return { lights: spec.lights, fans: 0, acs: 0, temp: 24 };
+    if (!present) return { lights: 0, fans: 0, acs: 0, temp: 24 };
+    const ratio = Math.min(1, present / room.seats);
+    const scaled = (count, floor = 0) => (count ? Math.min(count, Math.max(1, Math.ceil(count * (floor + (1 - floor) * ratio)))) : 0);
+    return {
+        lights: scaled(spec.lights, 0.3),   // keep the occupied zones lit, not the whole room
+        fans: scaled(spec.fans),
+        acs: scaled(spec.acs),
+        temp: 24
+    };
+}
+
+function initialRoomState(room) {
+    return { mode: 'auto', present: room.present, ...recommendDevices(room, room.present) };
+}
+
+function loadRoomStates() {
+    const defaults = Object.fromEntries(ROOMS.map(room => [room.id, initialRoomState(room)]));
+    try {
+        const stored = JSON.parse(localStorage.getItem(ROOM_STATE_STORAGE_KEY));
+        if (!stored || typeof stored !== 'object') return defaults;
+        return Object.fromEntries(ROOMS.map(room => [room.id, { ...defaults[room.id], ...stored[room.id] }]));
+    } catch (error) {
+        return defaults;
+    }
+}
+
+/** Effective device state: in Auto mode counts always follow the headcount. */
+function resolveState(room, state) {
+    return state.mode === 'auto' ? { ...state, ...recommendDevices(room, state.present), temp: state.temp } : state;
+}
+
+function roomPower(room, state) {
+    const acKw = room.type === 'office' ? UNIT_KW.officeAc : UNIT_KW.ac;
+    // Inverter ACs draw ~6% more per degree the set-point is below 26 °C
+    const acFactor = 1 + Math.max(0, 26 - state.temp) * 0.06;
+    const total = UNIT_KW.standby
+        + state.lights * UNIT_KW.light
+        + state.fans * UNIT_KW.fan
+        + state.acs * acKw * acFactor;
+    return Number(total.toFixed(2));
+}
 
 function pointsToPath(points) {
     if (!points.length) return '';
@@ -116,19 +197,112 @@ function loadStoredBoundaryPoints() {
     }
 }
 
-function roomCenter(room) {
+function roomBox(room) {
     if (room.points) {
         const points = room.points.split(' ').map(point => point.split(',').map(Number));
+        const xs = points.map(p => p[0]);
+        const ys = points.map(p => p[1]);
         return {
-            x: points.reduce((sum, point) => sum + point[0], 0) / points.length,
-            y: points.reduce((sum, point) => sum + point[1], 0) / points.length
+            cx: xs.reduce((a, b) => a + b, 0) / xs.length,
+            cy: ys.reduce((a, b) => a + b, 0) / ys.length,
+            w: Math.max(...xs) - Math.min(...xs),
+            h: Math.max(...ys) - Math.min(...ys)
         };
     }
-    return { x: room.x + room.w / 2, y: room.y + room.h / 2 };
+    return { cx: room.x + room.w / 2, cy: room.y + room.h / 2, w: room.w, h: room.h };
+}
+
+// Split a room name into at most two lines that fit the room width
+function labelLines(text, maxWidth, fontSize) {
+    const fits = s => s.length * fontSize * 0.56 <= maxWidth;
+    if (fits(text)) return [text];
+    const words = text.split(' ');
+    let best = [text];
+    let bestWidth = Infinity;
+    for (let i = 1; i < words.length; i++) {
+        const lines = [words.slice(0, i).join(' '), words.slice(i).join(' ')];
+        const width = Math.max(...lines.map(l => l.length));
+        if (width < bestWidth) { best = lines; bestWidth = width; }
+    }
+    return best;
+}
+
+function RoomLabel({ room, state }) {
+    const { cx, cy, w, h } = roomBox(room);
+    const compact = h < 80;
+    const level = occupancyLevel(state.present, room.seats);
+    const on = state.lights + state.fans + state.acs > 0;
+    const usableWidth = (room.points ? w * 0.8 : w) - 24;
+
+    if (compact) {
+        const name = room.short || room.name;
+        return (
+            <>
+                <circle cx={room.x + 18} cy={cy} r="5" className={`campus-room-status ${on ? 'active' : ''}`} />
+                <text x={cx} y={cy} className="campus-room-name compact" dominantBaseline="central">{name}</text>
+            </>
+        );
+    }
+
+    const fontSize = 24;
+    const lineHeight = 28;
+    const lines = labelLines(room.name, usableWidth, fontSize);
+    const blockHeight = lines.length * lineHeight + 24;
+    const top = cy - blockHeight / 2 + 20;
+    const meta = level ? `${state.present}/${room.seats}` : ROOM_TYPES[room.type].label;
+
+    return (
+        <>
+            <circle
+                cx={room.points ? cx : room.x + 18}
+                cy={room.points ? top - 30 : room.y + 18}
+                r="6"
+                className={`campus-room-status ${on ? 'active' : ''}`}
+            />
+            <text x={cx} y={top} className="campus-room-name">
+                {lines.map((line, i) => <tspan key={i} x={cx} dy={i === 0 ? 0 : lineHeight}>{line}</tspan>)}
+            </text>
+            <text x={cx} y={top + (lines.length - 1) * lineHeight + 26} className="campus-room-meta">{meta}</text>
+        </>
+    );
+}
+
+function DeviceControl({ icon: Icon, title, units, count, installed, kw, onChange, note }) {
+    if (!installed) {
+        return (
+            <div className="campus-device not-installed">
+                <div className="campus-device-head">
+                    <span className="campus-device-icon"><Icon /></span>
+                    <div className="campus-device-text">
+                        <strong>{title}</strong>
+                        <small>{note}</small>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    return (
+        <div className={`campus-device ${count ? 'on' : ''}`}>
+            <div className="campus-device-head">
+                <span className="campus-device-icon"><Icon /></span>
+                <div className="campus-device-text">
+                    <strong>{title}</strong>
+                    <small>{count} of {installed} {installed === 1 ? units[0] : units[1]} on</small>
+                </div>
+                <span className="campus-device-kw">{kw.toFixed(2)} kW</span>
+            </div>
+            <NumberedSlider value={count} max={installed} onChange={onChange} label={`${title} units on`} />
+        </div>
+    );
 }
 
 function CampusMap() {
-    const [zoom, setZoom] = useState(0.72);
+    const stageRef = useRef(null);
+    const svgRef = useRef(null);
+    const zoomRef = useRef(1);
+    const panX = useMotionValue(0);
+    const panY = useMotionValue(0);
+    const [zoom, setZoomState] = useState(1);
     const [selectedRoom, setSelectedRoom] = useState(ROOMS[0]);
     const [isDragging, setIsDragging] = useState(false);
     const [isEditingBoundary, setIsEditingBoundary] = useState(false);
@@ -136,14 +310,11 @@ function CampusMap() {
     const [boundaryPoints, setBoundaryPoints] = useState(loadStoredBoundaryPoints);
     const [draftBoundaryPoints, setDraftBoundaryPoints] = useState(boundaryPoints);
     const [query, setQuery] = useState('');
-    const svgRef = useRef(null);
-    const [roomStates, setRoomStates] = useState(() => {
-        const state = {};
-        ROOMS.forEach(room => {
-            state[room.id] = room.devices;
-        });
-        return state;
-    });
+    const [roomStates, setRoomStates] = useState(loadRoomStates);
+
+    useEffect(() => {
+        try { localStorage.setItem(ROOM_STATE_STORAGE_KEY, JSON.stringify(roomStates)); } catch { /* storage unavailable */ }
+    }, [roomStates]);
 
     const visibleRooms = useMemo(() => {
         const normalized = query.trim().toLowerCase();
@@ -151,74 +322,147 @@ function CampusMap() {
         return ROOMS.filter(room => `${room.name} ${room.type} ${room.floor}`.toLowerCase().includes(normalized));
     }, [query]);
 
-    const selectedState = selectedRoom ? roomStates[selectedRoom.id] : null;
+    const effective = useMemo(() => Object.fromEntries(
+        ROOMS.map(room => [room.id, resolveState(room, roomStates[room.id])])
+    ), [roomStates]);
+
+    const selectedState = selectedRoom ? effective[selectedRoom.id] : null;
     const activeBoundaryPoints = isEditingBoundary ? draftBoundaryPoints : boundaryPoints;
     const activeBoundaryPath = useMemo(() => pointsToPath(activeBoundaryPoints), [activeBoundaryPoints]);
+    const buildingLoad = useMemo(() => ROOMS.reduce((sum, room) => sum + roomPower(room, effective[room.id]), 0), [effective]);
 
-    const calculatePower = (roomId) => {
-        const state = roomStates[roomId];
-        if (!state) return 0;
-        let total = 0.04;
-        if (state.lights) total += 0.18;
-        if (state.fans) total += 0.32;
-        if (state.acs) total += 1.15 + Math.max(0, 26 - state.temp) * 0.07;
-        return Number(total.toFixed(2));
+    // ---------------------------------------------------------------- viewport
+    const setZoom = (value) => {
+        zoomRef.current = value;
+        setZoomState(value);
     };
 
-    const toggleDevice = (device) => {
+    const zoomAt = useCallback((nextZoom, originX, originY, smooth = true) => {
+        const current = zoomRef.current;
+        const clamped = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZoom));
+        const ratio = clamped / current;
+        const nx = originX - (originX - panX.get()) * ratio;
+        const ny = originY - (originY - panY.get()) * ratio;
+        zoomRef.current = clamped;
+        setZoomState(clamped);
+        if (smooth) {
+            animate(panX, nx, { duration: 0.25, ease: 'easeOut' });
+            animate(panY, ny, { duration: 0.25, ease: 'easeOut' });
+        } else {
+            panX.set(nx);
+            panY.set(ny);
+        }
+    }, [panX, panY]);
+
+    const fitToView = useCallback((smooth = true) => {
+        const stage = stageRef.current;
+        if (!stage) return;
+        const { width, height } = stage.getBoundingClientRect();
+        // Keep clear of the legend (top) and the zoom / hint bars (bottom)
+        const pad = { x: 32, top: 64, bottom: 64 };
+        const availH = height - pad.top - pad.bottom;
+        const z = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.min((width - pad.x * 2) / MAP_CONTENT.w, availH / MAP_CONTENT.h)));
+        const x = (width - MAP_CONTENT.w * z) / 2 - MAP_CONTENT.x * z;
+        const y = pad.top + (availH - MAP_CONTENT.h * z) / 2 - MAP_CONTENT.y * z;
+        setZoom(z);
+        if (smooth) {
+            animate(panX, x, { duration: 0.35, ease: 'easeOut' });
+            animate(panY, y, { duration: 0.35, ease: 'easeOut' });
+        } else {
+            panX.set(x);
+            panY.set(y);
+        }
+    }, [panX, panY]);
+
+    const focusRoom = useCallback((room) => {
+        setSelectedRoom(room);
+        const stage = stageRef.current;
+        if (!stage) return;
+        const { width, height } = stage.getBoundingClientRect();
+        const { cx, cy } = roomBox(room);
+        const z = Math.max(zoomRef.current, 0.7);
+        setZoom(z);
+        animate(panX, width / 2 - cx * z, { duration: 0.4, ease: 'easeOut' });
+        animate(panY, height / 2 - cy * z, { duration: 0.4, ease: 'easeOut' });
+    }, [panX, panY]);
+
+    // Fit once on load (after the inspector column has taken its width)
+    useEffect(() => {
+        const id = requestAnimationFrame(() => fitToView(false));
+        return () => cancelAnimationFrame(id);
+    }, [fitToView]);
+
+    // Mouse-wheel zoom around the cursor; needs a non-passive listener to stop page scroll
+    useEffect(() => {
+        const stage = stageRef.current;
+        if (!stage) return undefined;
+        const onWheel = (event) => {
+            event.preventDefault();
+            const rect = stage.getBoundingClientRect();
+            const factor = Math.exp(-event.deltaY * 0.0015);
+            zoomAt(zoomRef.current * factor, event.clientX - rect.left, event.clientY - rect.top, false);
+        };
+        stage.addEventListener('wheel', onWheel, { passive: false });
+        return () => stage.removeEventListener('wheel', onWheel);
+    }, [zoomAt]);
+
+    const zoomFromCenter = (delta) => {
+        const rect = stageRef.current.getBoundingClientRect();
+        zoomAt(zoomRef.current * delta, rect.width / 2, rect.height / 2);
+    };
+
+    // ---------------------------------------------------------------- room state
+    const updateRoom = (patch) => {
+        setRoomStates(prev => ({ ...prev, [selectedRoom.id]: { ...prev[selectedRoom.id], ...patch } }));
+    };
+
+    // Touching a device switches the room to Manual, starting from the current values
+    const setDevice = (device, value) => {
         setRoomStates(prev => ({
             ...prev,
-            [selectedRoom.id]: {
-                ...prev[selectedRoom.id],
-                [device]: !prev[selectedRoom.id][device]
-            }
+            [selectedRoom.id]: { ...resolveState(selectedRoom, prev[selectedRoom.id]), mode: 'manual', [device]: value }
         }));
     };
 
-    const handleTempChange = (value) => {
+    const setMode = (mode) => {
         setRoomStates(prev => ({
             ...prev,
-            [selectedRoom.id]: {
-                ...prev[selectedRoom.id],
-                temp: Number(value)
-            }
+            [selectedRoom.id]: mode === 'auto'
+                ? { ...prev[selectedRoom.id], mode: 'auto' }
+                : { ...resolveState(selectedRoom, prev[selectedRoom.id]), mode: 'manual' }
         }));
     };
 
     const chartData = useMemo(() => {
-        const power = selectedRoom ? calculatePower(selectedRoom.id) : 0;
+        const power = selectedRoom ? roomPower(selectedRoom, selectedState) : 0;
         return {
             labels: ['08:00', '10:00', '12:00', '14:00', '16:00', 'Now'],
             datasets: [{
                 data: [0.7, 0.86, 1.08, 0.94, 1.12, 1].map((factor) => Number((power * factor).toFixed(2))),
-                borderColor: '#34d399',
-                backgroundColor: 'rgba(52, 211, 153, 0.08)',
-                pointBackgroundColor: '#34d399',
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                pointBackgroundColor: '#10b981',
                 pointBorderWidth: 0,
                 pointRadius: 3,
                 borderWidth: 2,
-                tension: 0.45,
+                tension: 0.4,
                 fill: true
             }]
         };
-    }, [selectedRoom, roomStates]);
+    }, [selectedRoom, selectedState]);
 
     const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
+        resizeDelay: 250, // redraw once after the sidebar finishes animating, not every frame
         plugins: { legend: { display: false }, tooltip: { enabled: true } },
         scales: {
-            x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.42)', font: { size: 10 } } },
-            y: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: 'rgba(255,255,255,0.42)', font: { size: 10 } } }
+            x: { grid: { display: false }, ticks: { color: 'rgba(148, 163, 184, 0.9)', font: { size: 10 } } },
+            y: { grid: { color: 'rgba(148, 163, 184, 0.15)' }, ticks: { color: 'rgba(148, 163, 184, 0.9)', font: { size: 10 } } }
         }
     };
 
-    const resetView = () => {
-        setZoom(0.72);
-        setSelectedRoom(ROOMS[0]);
-        setQuery('');
-    };
-
+    // ---------------------------------------------------------------- boundary editor
     const toggleBoundaryEditor = () => {
         setDraftBoundaryPoints(boundaryPoints);
         setActiveBoundaryPoint(null);
@@ -264,6 +508,11 @@ function CampusMap() {
         }
     };
 
+    const spec = selectedRoom ? DEVICE_SPECS[selectedRoom.type] : null;
+    const level = selectedRoom ? occupancyLevel(selectedState.present, selectedRoom.seats) : null;
+    const acKw = selectedRoom?.type === 'office' ? UNIT_KW.officeAc : UNIT_KW.ac;
+    const acFactor = selectedState ? 1 + Math.max(0, 26 - selectedState.temp) * 0.06 : 1;
+
     return (
         <div className="campus-map-page fade-in">
             <div className="campus-map-shell">
@@ -273,15 +522,22 @@ function CampusMap() {
                         <h2>Interactive Facility Map</h2>
                     </div>
                     <div className="campus-map-actions">
+                        <div className="campus-kpi" title="Sum of all rooms' current device load">
+                            <FiZap />
+                            <span>Building load</span>
+                            <strong>{buildingLoad.toFixed(1)} kW</strong>
+                        </div>
                         <label className="campus-search">
                             <FiSearch />
                             <input
                                 value={query}
                                 onChange={(event) => setQuery(event.target.value)}
-                                placeholder="Search room"
+                                onKeyDown={(event) => { if (event.key === 'Enter' && visibleRooms[0]) focusRoom(visibleRooms[0]); }}
+                                placeholder="Search rooms"
+                                aria-label="Search rooms"
                             />
                         </label>
-                        <span className="campus-live-pill"><FiActivity /> Live</span>
+                        <span className="campus-live-pill"><span className="campus-live-dot" /> Live</span>
                         <button
                             type="button"
                             className={`campus-map-action-btn ${isEditingBoundary ? 'active' : ''}`}
@@ -293,19 +549,20 @@ function CampusMap() {
                 </div>
 
                 <div className={`campus-map-workspace ${selectedRoom ? 'has-inspector' : ''}`}>
-                    <div className="campus-map-stage">
+                    <div className="campus-map-stage" ref={stageRef}>
                         <div className="campus-map-grid" />
                         <motion.div
                             className="campus-map-artboard"
                             style={{
                                 width: MAP_WIDTH,
                                 height: MAP_HEIGHT,
+                                x: panX,
+                                y: panY,
                                 scale: zoom,
-                                transformOrigin: 'top left'
+                                transformOrigin: '0 0'
                             }}
                             drag={!isEditingBoundary}
                             dragMomentum={false}
-                            dragConstraints={{ left: -650, right: 240, top: -820, bottom: 120 }}
                             onDragStart={() => setIsDragging(true)}
                             onDragEnd={() => setIsDragging(false)}
                         >
@@ -321,9 +578,6 @@ function CampusMap() {
                                 onPointerLeave={() => setActiveBoundaryPoint(null)}
                             >
                                 <defs>
-                                    <filter id="roomGlow" x="-20%" y="-20%" width="140%" height="140%">
-                                        <feDropShadow dx="0" dy="12" stdDeviation="10" floodColor="#000000" floodOpacity="0.35" />
-                                    </filter>
                                     <linearGradient id="corridorFill" x1="0" x2="1">
                                         <stop offset="0%" stopColor="rgba(52, 211, 153, 0.04)" />
                                         <stop offset="100%" stopColor="rgba(56, 189, 248, 0.08)" />
@@ -355,9 +609,6 @@ function CampusMap() {
                                     const isVisible = visibleRooms.some(item => item.id === room.id);
                                     const isSelected = selectedRoom?.id === room.id;
                                     const type = ROOM_TYPES[room.type];
-                                    const center = roomCenter(room);
-                                    const state = roomStates[room.id];
-                                    const active = state.lights || state.fans || state.acs;
 
                                     return (
                                         <g
@@ -366,14 +617,13 @@ function CampusMap() {
                                             onClick={() => setSelectedRoom(room)}
                                             style={{ '--room-color': type.color, '--room-fill': type.fill }}
                                         >
+                                            <title>{room.name}</title>
                                             {room.points ? (
                                                 <polygon points={room.points} className="campus-room-shape" />
                                             ) : (
                                                 <rect x={room.x} y={room.y} width={room.w} height={room.h} rx="4" className="campus-room-shape" />
                                             )}
-                                            <circle cx={center.x - 76} cy={center.y - 36} r="5" className={active ? 'campus-room-status active' : 'campus-room-status'} />
-                                            <text x={center.x} y={center.y - 8} className="campus-room-name">{room.short}</text>
-                                            <text x={center.x} y={center.y + 20} className="campus-room-meta">{type.label}</text>
+                                            <RoomLabel room={room} state={effective[room.id]} />
                                         </g>
                                     );
                                 })}
@@ -402,8 +652,15 @@ function CampusMap() {
                             </svg>
                         </motion.div>
 
+                        <div className="campus-legend" aria-label="Legend">
+                            {['lab', 'classroom', 'office', 'hall', 'utility'].map(key => (
+                                <span key={key}><i style={{ background: ROOM_TYPES[key].color }} />{ROOM_TYPES[key].label}</span>
+                            ))}
+                            <span><i className="campus-legend-status" />Devices on</span>
+                        </div>
+
                         <div className={`campus-drag-hint ${isDragging ? 'active' : ''}`}>
-                            <FiNavigation /> {isEditingBoundary ? 'Drag boundary points' : 'Drag map to pan'}
+                            <FiNavigation /> {isEditingBoundary ? 'Drag boundary points' : 'Drag to pan · scroll to zoom'}
                         </div>
 
                         {isEditingBoundary && (
@@ -418,12 +675,13 @@ function CampusMap() {
                             </div>
                         )}
 
-                        <div className="map-zoom-controls campus-zoom-controls">
-                            <button onClick={() => setZoom(prev => Math.min(prev + 0.12, 1.55))} title="Zoom In"><FiPlus /></button>
-                            <button onClick={() => setZoom(prev => Math.max(prev - 0.12, 0.44))} title="Zoom Out"><FiMinus /></button>
-                            <button onClick={resetView} title="Reset View"><FiRotateCcw size={14} /></button>
+                        <div className="campus-zoom">
+                            <button type="button" onClick={() => zoomFromCenter(1.2)} title="Zoom in" aria-label="Zoom in"><FiPlus /></button>
+                            <span className="campus-zoom-value">{Math.round(zoom * 100)}%</span>
+                            <button type="button" onClick={() => zoomFromCenter(1 / 1.2)} title="Zoom out" aria-label="Zoom out"><FiMinus /></button>
+                            <span className="campus-zoom-sep" />
+                            <button type="button" onClick={() => fitToView()} title="Fit map to view" aria-label="Fit map to view"><FiMaximize size={14} /></button>
                         </div>
-                        <div className="zoom-badge campus-zoom-badge">{Math.round(zoom * 100)}%</div>
                     </div>
 
                     <AnimatePresence mode="wait">
@@ -431,92 +689,176 @@ function CampusMap() {
                             <motion.aside
                                 key={selectedRoom.id}
                                 className="campus-inspector"
-                                initial={{ opacity: 0, x: 24 }}
+                                initial={{ opacity: 0, x: 16 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 24 }}
-                                transition={{ duration: 0.2 }}
+                                exit={{ opacity: 0, x: 16 }}
+                                transition={{ duration: 0.18 }}
                             >
                                 <div className="campus-inspector-header">
-                                    <span style={{ '--room-color': ROOM_TYPES[selectedRoom.type].color }}>
+                                    <span className="campus-type-badge" style={{ '--room-color': ROOM_TYPES[selectedRoom.type].color }}>
                                         {ROOM_TYPES[selectedRoom.type].label}
                                     </span>
-                                    <button onClick={() => setSelectedRoom(null)} title="Close panel"><FiX /></button>
+                                    <button type="button" onClick={() => setSelectedRoom(null)} title="Close panel" aria-label="Close panel"><FiX /></button>
                                 </div>
 
                                 <h3>{selectedRoom.name}</h3>
-                                <p>{selectedRoom.floor}</p>
+                                <p className="campus-inspector-sub">
+                                    {selectedRoom.floor}{selectedRoom.seats ? ` · ${selectedRoom.seats} seats` : ''}
+                                </p>
 
-                                <div className="campus-inspector-stats">
+                                <div className="campus-kpis">
                                     <div>
-                                        <FiUsers />
-                                        <small>Capacity</small>
-                                        <strong>{selectedRoom.capacity}</strong>
+                                        <small><FiUsers /> Occupancy</small>
+                                        <strong>{level ? `${selectedState.present}/${selectedRoom.seats}` : '—'}</strong>
+                                        {level && <span className={`campus-level tone-${level.tone}`}>{level.label} · {level.pct}%</span>}
                                     </div>
                                     <div>
-                                        <FiZap />
-                                        <small>Active Draw</small>
-                                        <strong>{calculatePower(selectedRoom.id)} kW</strong>
+                                        <small><FiZap /> Live load</small>
+                                        <strong>{roomPower(selectedRoom, selectedState).toFixed(2)} kW</strong>
+                                        <span className="campus-kpi-note">{selectedState.mode === 'auto' ? 'Auto-optimised' : 'Manual override'}</span>
                                     </div>
                                 </div>
 
-                                {selectedRoom.type !== 'utility' ? (
-                                    <div className="campus-control-panel">
-                                        <div className="campus-section-title">Device Controls</div>
-                                        {[
-                                            ['lights', 'Lighting', FiTv],
-                                            ['fans', 'Ventilation', FiWind],
-                                            ['acs', 'Cooling', FiCpu]
-                                        ].map(([key, label, Icon]) => (
-                                            <button
-                                                key={key}
-                                                className={selectedState?.[key] ? 'active' : ''}
-                                                onClick={() => toggleDevice(key)}
-                                            >
-                                                <Icon />
-                                                <span>{label}</span>
-                                                <strong>{selectedState?.[key] ? 'On' : 'Off'}</strong>
-                                            </button>
-                                        ))}
-                                        {selectedState?.acs && (
-                                            <div className="campus-temp-control">
-                                                <div>
-                                                    <span><FiThermometer /> AC Temperature</span>
-                                                    <strong>{selectedState.temp} deg C</strong>
-                                                </div>
-                                                <input
-                                                    type="range"
-                                                    min="16"
-                                                    max="28"
-                                                    value={selectedState.temp}
-                                                    onChange={(event) => handleTempChange(event.target.value)}
-                                                />
+                                {selectedRoom.seats > 0 && (
+                                    <section className="campus-panel">
+                                        <div className="campus-panel-head">
+                                            <span className="campus-section-title">Occupancy</span>
+                                            <span className="campus-panel-value">{selectedState.present} students</span>
+                                        </div>
+                                        <NumberedSlider
+                                            value={selectedState.present}
+                                            max={selectedRoom.seats}
+                                            onChange={(value) => updateRoom({ present: value })}
+                                            label="Students present"
+                                            tone="info"
+                                        />
+                                    </section>
+                                )}
+
+                                <section className="campus-panel">
+                                    <div className="campus-panel-head">
+                                        <span className="campus-section-title">Device control</span>
+                                        {selectedRoom.type !== 'utility' && (
+                                            <div className="campus-segmented" role="group" aria-label="Control mode">
+                                                {['auto', 'manual'].map(mode => (
+                                                    <button
+                                                        key={mode}
+                                                        type="button"
+                                                        className={selectedState.mode === mode ? 'active' : ''}
+                                                        aria-pressed={selectedState.mode === mode}
+                                                        onClick={() => setMode(mode)}
+                                                    >
+                                                        {mode === 'auto' ? 'Auto' : 'Manual'}
+                                                    </button>
+                                                ))}
                                             </div>
                                         )}
                                     </div>
-                                ) : (
-                                    <div className="campus-utility-note">
-                                        Utility zone with limited automation. Lighting status is tracked for operational visibility.
+                                    {selectedRoom.type !== 'utility' && (
+                                        <p className="campus-panel-hint">
+                                            {selectedState.mode === 'auto'
+                                                ? 'Devices follow occupancy. Drag any control to override.'
+                                                : 'Manual override is active. Switch to Auto to follow occupancy again.'}
+                                        </p>
+                                    )}
+
+                                    <DeviceControl
+                                        icon={FiSun}
+                                        title="Lighting"
+                                        units={['light', 'lights']}
+                                        count={selectedState.lights}
+                                        installed={spec.lights}
+                                        kw={selectedState.lights * UNIT_KW.light}
+                                        onChange={(value) => setDevice('lights', value)}
+                                    />
+                                    {selectedRoom.type !== 'utility' && (
+                                        <>
+                                            <DeviceControl
+                                                icon={FiWind}
+                                                title="Ventilation"
+                                                units={['fan', 'fans']}
+                                                count={selectedState.fans}
+                                                installed={spec.fans}
+                                                kw={selectedState.fans * UNIT_KW.fan}
+                                                onChange={(value) => setDevice('fans', value)}
+                                            />
+                                            <DeviceControl
+                                                icon={TbAirConditioning}
+                                                title="Cooling"
+                                                units={['AC', 'ACs']}
+                                                count={selectedState.acs}
+                                                installed={spec.acs}
+                                                kw={selectedState.acs * acKw * acFactor}
+                                                onChange={(value) => setDevice('acs', value)}
+                                                note="No air conditioning installed in classrooms"
+                                            />
+                                        </>
+                                    )}
+
+                                    {selectedState.acs > 0 && (
+                                        <div className="campus-device campus-temp">
+                                            <div className="campus-device-head">
+                                                <span className="campus-device-icon"><FiThermometer /></span>
+                                                <div className="campus-device-text">
+                                                    <strong>AC set-point</strong>
+                                                    <small>Each degree lower adds ~6% cooling load</small>
+                                                </div>
+                                                <span className="campus-device-kw">{selectedState.temp} °C</span>
+                                            </div>
+                                            <NumberedSlider
+                                                value={selectedState.temp}
+                                                min={16}
+                                                max={30}
+                                                labelEvery={2}
+                                                onChange={(value) => updateRoom({ temp: value })}
+                                                label="AC temperature"
+                                                unit=" °C"
+                                                tone="info"
+                                            />
+                                        </div>
+                                    )}
+
+                                    {selectedRoom.type === 'utility' && (
+                                        <div className="campus-utility-note">
+                                            Utility zone with lighting only. Status is tracked for operational visibility.
+                                        </div>
+                                    )}
+                                </section>
+
+                                <section className="campus-panel">
+                                    <div className="campus-panel-head">
+                                        <span className="campus-section-title">Estimated load profile</span>
+                                        <span className="campus-panel-value"><FiActivity /> kW</span>
                                     </div>
-                                )}
+                                    <div className="campus-chart-card">
+                                        <Line data={chartData} options={chartOptions} />
+                                    </div>
+                                </section>
 
-                                <div className="campus-section-title">Power Trend</div>
-                                <div className="campus-chart-card">
-                                    <Line data={chartData} options={chartOptions} />
-                                </div>
-
-                                <div className="campus-room-list">
-                                    <div className="campus-section-title">Nearby Spaces</div>
-                                    {visibleRooms.slice(0, 6).map(room => (
-                                        <button
-                                            key={room.id}
-                                            className={room.id === selectedRoom.id ? 'active' : ''}
-                                            onClick={() => setSelectedRoom(room)}
-                                        >
-                                            <span style={{ background: ROOM_TYPES[room.type].color }} />
-                                            {room.name}
-                                        </button>
-                                    ))}
-                                </div>
+                                <section className="campus-panel campus-room-list">
+                                    <div className="campus-panel-head">
+                                        <span className="campus-section-title">{query ? 'Matching spaces' : 'All spaces'}</span>
+                                        <span className="campus-panel-value">{visibleRooms.length}</span>
+                                    </div>
+                                    {visibleRooms.map(room => {
+                                        const state = effective[room.id];
+                                        const roomLevel = occupancyLevel(state.present, room.seats);
+                                        return (
+                                            <button
+                                                key={room.id}
+                                                type="button"
+                                                className={room.id === selectedRoom.id ? 'active' : ''}
+                                                onClick={() => focusRoom(room)}
+                                            >
+                                                <span className="campus-room-dot" style={{ background: ROOM_TYPES[room.type].color }} />
+                                                <span className="campus-room-list-name">{room.name}</span>
+                                                <span className="campus-room-list-meta">
+                                                    {roomLevel ? `${roomLevel.pct}%` : '—'} · {roomPower(room, state).toFixed(1)} kW
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </section>
                             </motion.aside>
                         )}
                     </AnimatePresence>

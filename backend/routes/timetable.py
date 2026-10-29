@@ -147,22 +147,7 @@ def record_attendance():
     if not entry:
         return jsonify({'success': False, 'message': 'Schedule entry not found'}), 404
         
-    from models import AttendanceHistory
-    from ml_engine import MLEngine
-    ml = MLEngine()
-    
-    # Sophisticated hour parsing to handle AM/PM correctly for AI
-    def parse_hour(x):
-        try:
-            s = str(x).strip().upper()
-            h_str = s.replace('AM', '').replace('PM', '').strip()
-            h = int(h_str.split(':')[0]) if ':' in h_str else int(float(h_str))
-            if 'PM' in s and h != 12:
-                h += 12
-            elif 'AM' in s and h == 12:
-                h = 0
-            return h
-        except: return 8
+    from ml_engine import get_ml_engine, parse_hour
 
     # Create Ground Truth record (Feedback Loop)
     history = AttendanceHistory(
@@ -175,16 +160,13 @@ def record_attendance():
     )
     db.session.add(history)
     db.session.commit()
-    
-    # 🧠 Trigger Self-Learning: Immediate digestion of this real-world feedback
-    ml = MLEngine()
-    ml.digest_and_train(pd.DataFrame([{
-        'day': history.day_of_week,
-        'hour': history.hour,
-        'type': history.subject_type,
-        'attendance': history.actual_attendance
-    }]))
-    
+
+    # Self-learning: store the real outcome; the model retrains every N new records
+    get_ml_engine().add_to_history(
+        history.day_of_week, history.hour, history.subject_type,
+        history.actual_attendance, subject=entry.subject
+    )
+
     return jsonify({
         'success': True, 
         'message': 'Attendance recorded and integrated into system intelligence.'

@@ -1,162 +1,83 @@
 [
     {
-        "timestamp": "2026-04-16T20:08:12.273875",
-        "total_records": 10000,
-        "training_records": 8500,
-        "test_records": 1500,
-        "accuracy": 96.53,
-        "precision": 96.53,
-        "recall": 96.53,
-        "f1_score": 96.53,
+        "timestamp": "2026-10-29T10:33:23.211953+00:00",
+        "total_records": 4416,
+        "training_records": 3532,
+        "test_records": 884,
+        "split": "chronological (most recent 20% held out)",
+        "accuracy": 71.72,
+        "precision": 67.65,
+        "recall": 71.72,
+        "f1_score": 69.62,
+        "train_accuracy": 74.83,
+        "cv_accuracy": 68.45,
+        "cv_std": 3.48,
+        "baseline_majority": 49.77,
+        "baseline_history": 67.31,
+        "confusion_matrix": {
+            "labels": [
+                "Empty",
+                "Trace",
+                "Light",
+                "Balanced",
+                "Maximum"
+            ],
+            "matrix": [
+                [
+                    0,
+                    0,
+                    0,
+                    12,
+                    13
+                ],
+                [
+                    0,
+                    0,
+                    0,
+                    1,
+                    3
+                ],
+                [
+                    0,
+                    0,
+                    0,
+                    21,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0,
+                    287,
+                    107
+                ],
+                [
+                    0,
+                    0,
+                    0,
+                    93,
+                    347
+                ]
+            ]
+        },
+        "class_distribution": {
+            "Empty": 206,
+            "Trace": 40,
+            "Light": 115,
+            "Balanced": 1952,
+            "Maximum": 2103
+        },
         "feature_importance": {
-            "day": 0.0393,
-            "hour": 0.0379,
-            "type": 0.0754,
-            "attendance": 0.8405,
-            "is_weekend": 0.0003,
-            "time_bin": 0.0066
+            "day": 0.0676,
+            "hour": 0.1433,
+            "type": 0.026,
+            "batch": 0.1223,
+            "section": 0.0245,
+            "week": 0.132,
+            "hist_attendance": 0.2811,
+            "prev_attendance": 0.2032
         },
         "status": "success",
-        "analysis": "Model knowledge successfully expanded."
-    },
-    {
-        "timestamp": "2026-04-16T20:10:38.045725",
-        "total_records": 10000,
-        "training_records": 8500,
-        "test_records": 1500,
-        "accuracy": 96.87,
-        "precision": 96.87,
-        "recall": 96.87,
-        "f1_score": 96.87,
-        "feature_importance": {
-            "day": 0.0446,
-            "hour": 0.0409,
-            "type": 0.0564,
-            "attendance": 0.8492,
-            "is_weekend": 0.0003,
-            "time_bin": 0.0086
-        },
-        "status": "success",
-        "analysis": "Model knowledge successfully expanded."
-    },
-    {
-        "timestamp": "2026-04-21T06:12:46.598481",
-        "total_records": 10000,
-        "training_records": 8500,
-        "test_records": 1500,
-        "accuracy": 97.87,
-        "precision": 97.87,
-        "recall": 97.87,
-        "f1_score": 97.87,
-        "feature_importance": {
-            "day": 0.0481,
-            "hour": 0.0386,
-            "type": 0.0422,
-            "attendance": 0.8622,
-            "is_weekend": 0.0003,
-            "time_bin": 0.0087
-        },
-        "status": "success",
-        "analysis": "Model knowledge successfully expanded."
-    },
-    {
-        "timestamp": "2026-04-21T06:23:20.119221",
-        "total_records": 10000,
-        "training_records": 8500,
-        "test_records": 1500,
-        "accuracy": 100.0,
-        "precision": 100.0,
-        "recall": 100.0,
-        "f1_score": 100.0,
-        "feature_importance": {
-            "day": 0.0474,
-            "hour": 0.026,
-            "type": 0.0129,
-            "attendance": 0.9051,
-            "is_weekend": 0.0003,
-            "time_bin": 0.0083
-        },
-        "status": "success",
-        "analysis": "Model knowledge successfully expanded."
-    },
-    {
-        "timestamp": "2026-04-23T12:57:00.295551",
-        "total_records": 10000,
-        "training_records": 8500,
-        "test_records": 1500,
-        "accuracy": 100.0,
-        "precision": 100.0,
-        "recall": 100.0,
-        "f1_score": 100.0,
-        "feature_importance": {
-            "day": 0.0442,
-            "hour": 0.0237,
-            "type": 0.0132,
-            "attendance": 0.9116,
-            "is_weekend": 0.0004,
-            "time_bin": 0.0068
-        },
-        "status": "success",
-        "analysis": "Model knowledge successfully expanded."
-    },
-    {
-        "timestamp": "2026-04-23T18:25:17.832736",
-        "total_records": 10000,
-        "training_records": 8500,
-        "test_records": 1500,
-        "accuracy": 99.93,
-        "precision": 99.93,
-        "recall": 99.93,
-        "f1_score": 99.93,
-        "feature_importance": {
-            "day": 0.0112,
-            "hour": 0.0099,
-            "type": 0.0025,
-            "attendance": 0.9747,
-            "is_weekend": 0.0,
-            "time_bin": 0.0017
-        },
-        "status": "success",
-        "analysis": "Model knowledge successfully expanded."
-    },
-    {
-        "timestamp": "2026-04-23T18:25:45.997978",
-        "total_records": 10000,
-        "training_records": 8500,
-        "test_records": 1500,
-        "accuracy": 100.0,
-        "precision": 100.0,
-        "recall": 100.0,
-        "f1_score": 100.0,
-        "feature_importance": {
-            "day": 0.0105,
-            "hour": 0.01,
-            "type": 0.003,
-            "attendance": 0.9746,
-            "is_weekend": 0.0002,
-            "time_bin": 0.0017
-        },
-        "status": "success",
-        "analysis": "Model knowledge successfully expanded."
-    },
-    {
-        "timestamp": "2026-05-09T19:04:41.600717",
-        "total_records": 10000,
-        "training_records": 8500,
-        "test_records": 1500,
-        "accuracy": 100.0,
-        "precision": 100.0,
-        "recall": 100.0,
-        "f1_score": 100.0,
-        "feature_importance": {
-            "day": 0.0087,
-            "hour": 0.028,
-            "type": 0.0132,
-            "attendance": 0.9473,
-            "is_weekend": 0.0,
-            "time_bin": 0.0028
-        },
-        "status": "success",
-        "analysis": "Model knowledge successfully expanded with 5-Level granularity."
+        "analysis": "Tested on the 884 most recent classes it never saw: 71.72% correct, vs 67.31% for 'reuse recent average attendance' and 49.77% for always guessing the most common level (+4.4 pts). Accuracy below 100% is expected: cancellations, holidays and day-to-day absence cannot be known before a class starts."
     }
 ]
