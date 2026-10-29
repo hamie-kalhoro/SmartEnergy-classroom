@@ -20,6 +20,8 @@ class User(UserMixin, db.Model):
 class Classroom(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
+    room_type = db.Column(db.String(20), default='classroom')  # lab / classroom / hall / office / utility
+    map_id = db.Column(db.String(40))  # shape on the campus map (room_catalog.MAP_ROOMS)
     building = db.Column(db.String(50))
     capacity = db.Column(db.Integer, nullable=False)
     num_lights = db.Column(db.Integer, default=8)

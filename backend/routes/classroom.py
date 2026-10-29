@@ -1,15 +1,19 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, Classroom, Notification, User
+from room_catalog import DEVICE_SPECS
 import pandas as pd
 
 classroom_bp = Blueprint('classroom', __name__)
+
+def valid_type(value):
+    return value if value in DEVICE_SPECS else 'classroom'
 
 @classroom_bp.route('/api/classrooms', methods=['GET'])
 def get_classrooms():
     classes = Classroom.query.filter_by(is_active=True).all()
     return jsonify([{
-        'id': c.id, 'name': c.name, 'building': c.building, 
+        'id': c.id, 'name': c.name, 'type': c.room_type or 'classroom', 'map_id': c.map_id, 'building': c.building, 
         'capacity': c.capacity, 'lights': c.num_lights, 
         'acs': c.num_acs, 'fans': c.num_fans
     } for c in classes])
@@ -19,7 +23,7 @@ def get_classrooms():
 def add_classroom():
     data = request.json
     new_room = Classroom(
-        name=data['name'], building=data['building'], 
+        name=data['name'], room_type=valid_type(data.get('type')), building=data['building'], 
         capacity=data['capacity'], num_lights=data.get('lights', 8),
         num_acs=data.get('acs', 2), num_fans=data.get('fans', 4)
     )
@@ -68,6 +72,7 @@ def update_classroom(id):
         
     data = request.json
     room.name = data.get('name', room.name)
+    room.room_type = valid_type(data.get('type', room.room_type))
     room.building = data.get('building', room.building)
     room.capacity = data.get('capacity', room.capacity)
     room.num_lights = data.get('lights', room.num_lights)
@@ -117,6 +122,7 @@ def bulk_import_classrooms():
             
             room = Classroom(
                 name=str(row['name']),
+                room_type=valid_type(row.get('type')),
                 building=str(row['building']),
                 capacity=int(row['capacity']),
                 num_lights=int(row.get('lights', 8)),

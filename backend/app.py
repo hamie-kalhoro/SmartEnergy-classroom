@@ -126,14 +126,12 @@ def seed_database(app):
             
             # Seed classrooms
             if Classroom.query.count() == 0:
-                c1 = Classroom(name='Room 101', building='A', capacity=50, num_lights=8, num_acs=2, num_fans=4)
-                c2 = Classroom(name='Lab 202', building='B', capacity=30, num_lights=12, num_acs=3, num_fans=6)
-                c3 = Classroom(name='Room 102', building='A', capacity=50, num_lights=8, num_acs=2, num_fans=4)
-                c4 = Classroom(name='Lab 301 (AI Lab)', building='C', capacity=40, num_lights=15, num_acs=4, num_fans=8)
-                c5 = Classroom(name='Seminar Hall', building='D', capacity=150, num_lights=30, num_acs=8, num_fans=12)
-                
-                db.session.add_all([c1, c2, c3, c4, c5])
+                from room_catalog import MAP_ROOMS, room_fields
+                rooms = {entry[1]: Classroom(**room_fields(*entry)) for entry in MAP_ROOMS}
+                db.session.add_all(rooms.values())
                 db.session.commit()
+                c1, c2, c3 = rooms['3rd Year Section I'], rooms["Madam Anam's Lab"], rooms['3rd Year Section II']
+                c4, c5 = rooms['AI Lab'], rooms['Seminar Hall']
                 
                 # Monday
                 db.session.add(Timetable(

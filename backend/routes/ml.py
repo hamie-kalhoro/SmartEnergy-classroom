@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required
 from werkzeug.utils import secure_filename
 import os
 import pandas as pd
-from models import Timetable, Classroom
+from models import db, Timetable, Classroom
 from services import EnergyService
 from ml_engine import get_ml_engine
 from climate_service import get_climate_context
@@ -52,12 +52,16 @@ def get_recommendations():
             classroom.id, level_name, 
             'ON' if lights_action != 'OFF' else 'OFF', 
             'ON' if ac_action not in ('OFF',) else 'OFF', 
-            round(energy_saved, 2)
+            round(energy_saved, 2),
+            commit=False  # one commit for the whole batch below; per-row commits to Supabase are slow
         )
         
         results.append({
+            'id': entry.id,
             'classroom': classroom.name,
             'subject': entry.subject,
+            'type': entry.subject_type,
+            'day': entry.day_of_week,
             'time': entry.time_slot,
             'occupancy': level_name,
             'confidence': confidence,
@@ -75,6 +79,8 @@ def get_recommendations():
             'season': climate_rec['season']
         })
     
+    db.session.commit()
+
     return jsonify({
         'predictions': results,
         'climate': {

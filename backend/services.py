@@ -98,9 +98,10 @@ class AuthService:
 
 class EnergyService:
     @staticmethod
-    def log_decision(room_id, occupancy, lights, ac, saved):
+    def log_decision(room_id, occupancy, lights, ac, saved, commit=True):
         db.session.add(EnergyDecision(classroom_id=room_id, predicted_occupancy=occupancy, lights_action=lights, ac_action=ac, energy_saved_kwh=saved))
-        db.session.commit()
+        if commit:
+            db.session.commit()
 
     @staticmethod
     def get_daily_summary():

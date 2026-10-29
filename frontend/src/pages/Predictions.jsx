@@ -1,415 +1,339 @@
-import React, { useState } from 'react';
-import api from '../api';
-import { FiCpu, FiPlay, FiTrendingUp, FiActivity, FiZap, FiSun, FiWind, FiCheckCircle, FiArrowUpRight, FiDroplet, FiThermometer } from 'react-icons/fi';
+import React, { useState, useMemo, Fragment } from 'react';
 import { NavLink } from 'react-router-dom';
+import api from '../api';
+import {
+    FiCpu, FiPlay, FiActivity, FiZap, FiSun, FiWind, FiThermometer, FiDroplet, FiArrowUpRight, FiSearch,
+    FiChevronDown, FiTarget, FiLayers, FiRefreshCw, FiMapPin
+} from 'react-icons/fi';
+import { TbAirConditioning } from 'react-icons/tb';
 import DynamicLoader from '../components/DynamicLoader';
+
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const LEVELS = [
+    { key: 'Empty', color: '#ef4444' },
+    { key: 'Trace', color: '#f97316' },
+    { key: 'Light', color: '#f59e0b' },
+    { key: 'Balanced', color: '#06b6d4' },
+    { key: 'Maximum', color: '#10b981' }
+];
+const LEVEL_COLOR = Object.fromEntries(LEVELS.map(l => [l.key, l.color]));
+const ENERGY_MODES = {
+    eco: { label: 'Eco', color: '#10b981' },
+    balanced: { label: 'Balanced', color: '#06b6d4' },
+    comfort: { label: 'Comfort', color: '#f59e0b' },
+    full: { label: 'Full power', color: '#ef4444' }
+};
+// Estimated kWh saved per class by energy mode (mirrors /api/predict)
+const MODE_SAVING = { eco: 3.5, balanced: 2.0, comfort: 0.8, full: 0.1 };
+
+/** "Operating Systems (Batch 3 - Section I)" -> { course, section: 'Batch 3 · Sec I' } */
+function splitSubject(subject = '') {
+    const m = subject.match(/^(.*?)\s*\(Batch\s*(\d+)\s*-\s*Section\s*(II|I)\)\s*$/i);
+    return m ? { course: m[1], section: `Batch ${m[2]} · Sec ${m[3].toUpperCase()}` } : { course: subject, section: null };
+}
+
+function deviceTone(state) {
+    if (!state || state === 'OFF') return 'off';
+    if (state === 'ECO' || state === 'LOW' || state.startsWith('DIM')) return 'eco';
+    return 'on';
+}
+
+function DeviceState({ icon: Icon, label, state }) {
+    const value = state || 'OFF';
+    return (
+        <span className={`pred-device tone-${deviceTone(value)}`} title={`${label}: ${value}`}>
+            <Icon />
+            <span>{value.replace(' (50%)', ' 50%')}</span>
+        </span>
+    );
+}
 
 function Predictions() {
     const [predictions, setPredictions] = useState([]);
     const [climate, setClimate] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [hasRun, setHasRun] = useState(false);
+    const [error, setError] = useState('');
+    const [lastRun, setLastRun] = useState(null);
+    const [activeDay, setActiveDay] = useState(() => {
+        const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+        return DAYS.includes(today) ? today : 'Monday';
+    });
+    const [levelFilter, setLevelFilter] = useState('all');
+    const [query, setQuery] = useState('');
+    const [expanded, setExpanded] = useState(null);
 
     const runPredictions = async () => {
         setLoading(true);
+        setError('');
         try {
             const res = await api.get('/api/predict');
             setPredictions(res.data.predictions || res.data);
             setClimate(res.data.climate || null);
-            setHasRun(true);
+            setLastRun(new Date());
+            setExpanded(null);
         } catch (err) {
             console.error(err);
+            setError(err.response?.data?.message || 'The analysis could not be completed. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
-    const getOccupancyColor = (level) => {
-        if (level === 'Maximum') return '#10b981'; // Success Green
-        if (level === 'Balanced') return '#06b6d4'; // Cyan
-        if (level === 'Light') return '#f59e0b'; // Amber
-        if (level === 'Trace') return '#f97316'; // Orange
-        return '#ef4444'; // Empty/Red
-    };
+    const rows = useMemo(() => predictions.map((p, i) => ({
+        ...p,
+        key: p.id ?? i,
+        ...splitSubject(p.subject),
+        saving: MODE_SAVING[p.energy_mode] ?? 0,
+        confidence: parseFloat(p.confidence) || 0
+    })), [predictions]);
 
-    const getEnergyModeStyle = (mode) => {
-        const styles = {
-            eco: { bg: 'rgba(16, 185, 129, 0.08)', border: 'rgba(16, 185, 129, 0.15)', color: '#10b981', label: 'ECO' },
-            balanced: { bg: 'rgba(6, 182, 212, 0.08)', border: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', label: 'BALANCED' },
-            comfort: { bg: 'rgba(245, 158, 11, 0.08)', border: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', label: 'COMFORT' },
-            full: { bg: 'rgba(239, 68, 68, 0.08)', border: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', label: 'FULL POWER' }
+    const summary = useMemo(() => {
+        const counts = Object.fromEntries(LEVELS.map(l => [l.key, 0]));
+        rows.forEach(r => { counts[r.occupancy] = (counts[r.occupancy] || 0) + 1; });
+        return {
+            total: rows.length,
+            optimisable: rows.filter(r => r.occupancy !== 'Maximum').length,
+            saving: rows.reduce((s, r) => s + r.saving, 0),
+            confidence: rows.length ? rows.reduce((s, r) => s + r.confidence, 0) / rows.length : 0,
+            counts
         };
-        return styles[mode] || styles.balanced;
-    };
+    }, [rows]);
 
-    const getDeviceColor = (state) => {
-        if (state === 'OFF') return '#64748b';
-        if (state === 'ECO' || state === 'LOW') return '#06b6d4';
-        if (state === 'DIM (50%)') return '#f59e0b';
-        return '#10b981'; // ON, HIGH, FULL
-    };
+    const hasDays = rows.some(r => r.day);
+    const dayCounts = useMemo(() => Object.fromEntries(DAYS.map(d => [d, rows.filter(r => r.day === d).length])), [rows]);
 
-    const getDeviceOpacity = (state) => {
-        return state === 'OFF' ? 0.4 : 1;
-    };
+    const visible = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        return rows
+            .filter(r => !hasDays || r.day === activeDay)
+            .filter(r => levelFilter === 'all' || r.occupancy === levelFilter)
+            .filter(r => !q || `${r.classroom} ${r.course} ${r.section || ''}`.toLowerCase().includes(q))
+            .sort((a, b) => a.time.localeCompare(b.time) || a.classroom.localeCompare(b.classroom));
+    }, [rows, hasDays, activeDay, levelFilter, query]);
 
-    const stats = {
-        total: predictions.length,
-        optimized: predictions.filter(p => p.occupancy !== 'Maximum').length,
-        savingsEstimate: predictions.reduce((acc, p) => acc + (parseFloat(p.energy_saved) || 1.5), 0)
-    };
+    const daySaving = visible.reduce((s, r) => s + r.saving, 0);
 
     return (
-        <div className="fade-in">
+        <div className="fade-in pred-page">
             {/* Header */}
-            <div className="d-flex justify-content-between align-items-end mb-4">
+            <div className="dash-header">
                 <div>
-                    <div className="d-flex align-items-center gap-2 mb-2">
-                        <span className="badge" style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#a78bfa', fontSize: '0.7rem' }}>
-                            <FiCpu className="me-1" /> AI ENGINE
-                        </span>
-                        {climate && (
-                            <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', fontSize: '0.7rem' }}>
-                                <FiThermometer className="me-1" /> CLIMATE AWARE
-                            </span>
-                        )}
-                    </div>
+                    <span className="rooms-eyebrow">AI engine · occupancy forecasting</span>
                     <h2 className="fw-bold mb-1" style={{ letterSpacing: '-0.03em' }}>
                         Prediction <span className="text-gradient">Intelligence</span>
                     </h2>
-                    <p className="text-muted small m-0">ML-driven occupancy forecasting & climate-aware energy optimization</p>
+                    <p className="text-muted small m-0">Predicted occupancy for every timetabled class, with climate-aware device recommendations.</p>
                 </div>
-                <button
-                    className="btn btn-lg btn-gradient"
-                    onClick={runPredictions}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <DynamicLoader size={20} color="var(--bg-deep)" />
-                    ) : (
-                        <><FiPlay className="me-2" /> Run Analysis</>
-                    )}
-                </button>
-            </div>
-
-            {/* Climate Intelligence Bar */}
-            {climate && (
-                <div className="card mb-5 fade-in" style={{
-                    background: 'linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elevated) 100%)',
-                    border: `1px solid ${climate.climate_mode_color}25`,
-                    overflow: 'hidden',
-                    position: 'relative'
-                }}>
-                    {/* Accent glow line */}
-                    <div style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: '2px',
-                        background: `linear-gradient(90deg, transparent, ${climate.climate_mode_color}, transparent)`,
-                        opacity: 0.7
-                    }} />
-
-                    <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
-                        {/* Season & Mode */}
-                        <div className="d-flex align-items-center gap-3">
-                            <div style={{
-                                width: '52px',
-                                height: '52px',
-                                borderRadius: '16px',
-                                background: `${climate.climate_mode_color}15`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '1.5rem',
-                                border: `1px solid ${climate.climate_mode_color}25`
-                            }}>
-                                {climate.climate_mode_icon || climate.season_icon}
-                            </div>
-                            <div>
-                                <div className="d-flex align-items-center gap-2">
-                                    <h6 className="fw-bold mb-0" style={{ color: 'var(--text)' }}>
-                                        {climate.climate_mode_label}
-                                    </h6>
-                                    <span className="badge" style={{
-                                        background: `${climate.climate_mode_color}15`,
-                                        color: climate.climate_mode_color,
-                                        fontSize: '0.6rem',
-                                        fontWeight: 700,
-                                        letterSpacing: '0.05em'
-                                    }}>
-                                        {climate.season} Season
-                                    </span>
-                                </div>
-                                <p className="text-muted small m-0" style={{ fontSize: '0.75rem' }}>
-                                    {climate.description}
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Climate Stats */}
-                        <div className="d-flex gap-4 align-items-center">
-                            <div className="text-center">
-                                <div className="d-flex align-items-center gap-1 justify-content-center">
-                                    <FiThermometer style={{ color: climate.climate_mode_color, fontSize: '0.9rem' }} />
-                                    <span className="fw-bold" style={{ fontSize: '1.2rem', color: 'var(--text)' }}>
-                                        {climate.temperature}°C
-                                    </span>
-                                </div>
-                                <div className="text-muted" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Temperature</div>
-                            </div>
-                            <div style={{ width: '1px', height: '30px', background: 'var(--border)' }} />
-                            <div className="text-center">
-                                <div className="d-flex align-items-center gap-1 justify-content-center">
-                                    <FiThermometer style={{ color: '#f59e0b', fontSize: '0.9rem' }} />
-                                    <span className="fw-bold" style={{ fontSize: '1.2rem', color: 'var(--text)' }}>
-                                        {climate.feels_like}°C
-                                    </span>
-                                </div>
-                                <div className="text-muted" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Feels Like</div>
-                            </div>
-                            <div style={{ width: '1px', height: '30px', background: 'var(--border)' }} />
-                            <div className="text-center">
-                                <div className="d-flex align-items-center gap-1 justify-content-center">
-                                    <FiDroplet style={{ color: '#06b6d4', fontSize: '0.9rem' }} />
-                                    <span className="fw-bold" style={{ fontSize: '1.2rem', color: 'var(--text)' }}>
-                                        {climate.humidity}%
-                                    </span>
-                                </div>
-                                <div className="text-muted" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Humidity</div>
-                            </div>
-                            <div style={{ width: '1px', height: '30px', background: 'var(--border)' }} />
-                            <div className="text-center">
-                                <span className="badge" style={{
-                                    background: climate.source === 'api' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-                                    color: climate.source === 'api' ? '#10b981' : '#f59e0b',
-                                    fontSize: '0.6rem',
-                                    fontWeight: 700
-                                }}>
-                                    {climate.source === 'api' ? '● LIVE' : '◉ ESTIMATED'}
-                                </span>
-                                <div className="text-muted mt-1" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{climate.city}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Quick Status Bar - NAVIGATION TO INTELLIGENCE PROFILE */}
-            <div className="d-flex align-items-center justify-content-between p-3 rounded-4 mb-5 border" style={{ background: 'var(--bg-elevated)', borderStyle: 'dashed !important' }}>
-                <div className="d-flex align-items-center gap-3">
-                    <div className="icon-box-sm bg-primary bg-opacity-10 text-primary">
-                        <FiActivity size={18} />
-                    </div>
-                    <div>
-                        <div className="fw-bold small" style={{ color: 'var(--text)' }}>Looking for AI Health?</div>
-                        <div className="extra-small text-muted">Deep technical metrics and accuracy history have moved to the Intelligence Profile.</div>
-                    </div>
-                </div>
-                <NavLink to="/model-status" className="btn btn-sm btn-link text-primary fw-bold text-decoration-none d-flex align-items-center gap-1" style={{ fontSize: '0.7rem' }}>
-                    OPEN PROFILE <FiArrowUpRight size={14} />
-                </NavLink>
-            </div>
-
-            {/* Results Summary */}
-            {hasRun && (
-                <div className="row g-3 mb-5 fade-in">
-                    {[
-                        { label: 'Classes Analyzed', val: stats.total, icon: <FiActivity />, color: '#00f59b' },
-                        { label: 'Optimizable Slots', val: stats.optimized, icon: <FiTrendingUp />, color: '#06b6d4' },
-                        { label: 'Est. Savings', val: `${stats.savingsEstimate.toFixed(1)} kWh`, icon: <FiZap />, color: '#10b981' }
-                    ].map((s, i) => (
-                        <div className="col-md-4" key={i}>
-                            <div className="card d-flex flex-row align-items-center gap-4" style={{ padding: '1.25rem' }}>
-                                <div style={{
-                                    width: '48px',
-                                    height: '48px',
-                                    borderRadius: '12px',
-                                    background: `${s.color}15`,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: s.color,
-                                    fontSize: '1.25rem'
-                                }}>
-                                    {s.icon}
-                                </div>
-                                <div>
-                                    <h4 className="fw-bold mb-0" style={{ color: 'var(--text)' }}>{s.val}</h4>
-                                    <span className="text-muted small text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.1em' }}>{s.label}</span>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Results Grid */}
-            {predictions.length > 0 ? (
-                <div className="row g-4">
-                    {predictions.map((p, i) => {
-                        const energyStyle = getEnergyModeStyle(p.energy_mode);
-                        return (
-                            <div className="col-md-6 col-lg-4" key={i}>
-                                <div className="card h-100 fade-in-delay" style={{ animationDelay: `${i * 0.05}s` }}>
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: '-1px',
-                                        left: '20%',
-                                        right: '20%',
-                                        height: '2px',
-                                        background: getOccupancyColor(p.occupancy),
-                                        opacity: 0.8,
-                                        filter: 'blur(1px)'
-                                    }} />
-
-                                    <div className="d-flex justify-content-between align-items-start mb-3">
-                                        <div>
-                                            <h5 className="fw-bold mb-1" style={{ color: 'var(--text)' }}>{p.classroom}</h5>
-                                            <p className="text-secondary small fw-medium m-0">{p.subject}</p>
-                                        </div>
-                                        <div className="d-flex flex-column align-items-end gap-1">
-                                            <span className="badge fw-bold" style={{
-                                                background: `${getOccupancyColor(p.occupancy)}20`,
-                                                color: getOccupancyColor(p.occupancy)
-                                            }}>
-                                                {p.occupancy}
-                                            </span>
-                                            {p.energy_mode && (
-                                                <span className="badge" style={{
-                                                    background: energyStyle.bg,
-                                                    color: energyStyle.color,
-                                                    fontSize: '0.55rem',
-                                                    fontWeight: 800,
-                                                    letterSpacing: '0.08em',
-                                                    border: `1px solid ${energyStyle.border}`
-                                                }}>
-                                                    {energyStyle.label}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="row g-3 mb-3">
-                                        <div className="col-6">
-                                            <div className="p-2 rounded-2" style={{ background: 'var(--bg-elevated)' }}>
-                                                <div className="text-secondary opacity-75 fw-bold" style={{ fontSize: '0.65rem', letterSpacing: '0.05em' }}>TIME</div>
-                                                <div className="fw-bold mt-1" style={{ color: 'var(--text)' }}>{p.time}</div>
-                                            </div>
-                                        </div>
-                                        <div className="col-6">
-                                            <div className="p-2 rounded-2" style={{ background: 'var(--bg-elevated)' }}>
-                                                <div className="text-secondary opacity-75 fw-bold" style={{ fontSize: '0.65rem', letterSpacing: '0.05em' }}>ATTENDANCE</div>
-                                                <div className="fw-bold text-primary mt-1">{p.attendance}%</div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* 3-Device Smart Recommendation Panel */}
-                                    <div className="p-3 rounded-3" style={{ background: 'rgba(124, 58, 237, 0.04)', border: '1px solid rgba(124, 58, 237, 0.08)' }}>
-                                        <div className="text-secondary small fw-bold mb-2 pb-1 border-bottom border-white border-opacity-10" style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                                            Climate-Aware Recommendation
-                                        </div>
-                                        <div className="d-flex justify-content-between mb-3">
-                                            {/* Lights */}
-                                            <div className="text-center" style={{ flex: 1 }}>
-                                                <div style={{
-                                                    width: '36px',
-                                                    height: '36px',
-                                                    borderRadius: '10px',
-                                                    background: `${getDeviceColor(p.lights_action || 'OFF')}15`,
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    margin: '0 auto 6px',
-                                                    opacity: getDeviceOpacity(p.lights_action || 'OFF')
-                                                }}>
-                                                    <FiSun style={{ color: getDeviceColor(p.lights_action || 'OFF'), fontSize: '1rem' }} />
-                                                </div>
-                                                <div className="fw-bold" style={{ fontSize: '0.65rem', color: getDeviceColor(p.lights_action || 'OFF'), opacity: getDeviceOpacity(p.lights_action || 'OFF') }}>
-                                                    {p.lights_action || 'OFF'}
-                                                </div>
-                                                <div className="text-muted" style={{ fontSize: '0.55rem' }}>Lights</div>
-                                            </div>
-
-                                            {/* AC */}
-                                            <div className="text-center" style={{ flex: 1 }}>
-                                                <div style={{
-                                                    width: '36px',
-                                                    height: '36px',
-                                                    borderRadius: '10px',
-                                                    background: `${getDeviceColor(p.ac_action || 'OFF')}15`,
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    margin: '0 auto 6px',
-                                                    opacity: getDeviceOpacity(p.ac_action || 'OFF')
-                                                }}>
-                                                    <FiWind style={{ color: getDeviceColor(p.ac_action || 'OFF'), fontSize: '1rem' }} />
-                                                </div>
-                                                <div className="fw-bold" style={{ fontSize: '0.65rem', color: getDeviceColor(p.ac_action || 'OFF'), opacity: getDeviceOpacity(p.ac_action || 'OFF') }}>
-                                                    {p.ac_action || 'OFF'}
-                                                </div>
-                                                <div className="text-muted" style={{ fontSize: '0.55rem' }}>AC</div>
-                                            </div>
-
-                                            {/* Fan */}
-                                            <div className="text-center" style={{ flex: 1 }}>
-                                                <div style={{
-                                                    width: '36px',
-                                                    height: '36px',
-                                                    borderRadius: '10px',
-                                                    background: `${getDeviceColor(p.fan_action || 'OFF')}15`,
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    margin: '0 auto 6px',
-                                                    opacity: getDeviceOpacity(p.fan_action || 'OFF')
-                                                }}>
-                                                    <FiActivity style={{ color: getDeviceColor(p.fan_action || 'OFF'), fontSize: '1rem' }} />
-                                                </div>
-                                                <div className="fw-bold" style={{ fontSize: '0.65rem', color: getDeviceColor(p.fan_action || 'OFF'), opacity: getDeviceOpacity(p.fan_action || 'OFF') }}>
-                                                    {p.fan_action || 'OFF'}
-                                                </div>
-                                                <div className="text-muted" style={{ fontSize: '0.55rem' }}>Fan</div>
-                                            </div>
-                                        </div>
-
-                                        {/* Climate Reasoning */}
-                                        {p.climate_reasoning && (
-                                            <div className="p-2 rounded-2 mt-1" style={{ background: 'var(--bg-elevated)', fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                                                <FiThermometer style={{ marginRight: '6px', color: climate?.climate_mode_color || '#f59e0b', fontSize: '0.75rem' }} />
-                                                {p.climate_reasoning}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            ) : (
-                <div className="card text-center py-5">
-                    <div style={{
-                        width: '80px',
-                        height: '80px',
-                        margin: '0 auto 1.5rem',
-                        borderRadius: '24px',
-                        background: 'rgba(0, 245, 155, 0.05)',
-                        border: '1px solid rgba(0, 245, 155, 0.1)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        <FiCpu style={{ fontSize: '2rem', color: 'var(--primary)', opacity: 0.6 }} />
-                    </div>
-                    <h5 className="fw-bold mb-2">No Predictions Yet</h5>
-                    <p className="text-muted mb-4">Click "Run Analysis" to generate AI predictions with climate-aware energy optimization</p>
-                    <button className="btn btn-lg btn-gradient mx-auto" onClick={runPredictions} disabled={loading}>
-                        {loading ? <DynamicLoader size={20} color="var(--bg-deep)" /> : <><FiPlay className="me-2" /> Run Analysis</>}
+                <div className="pred-actions">
+                    <NavLink to="/model-status" className="pred-link">Model health <FiArrowUpRight /></NavLink>
+                    <button className="btn btn-gradient" onClick={runPredictions} disabled={loading}>
+                        {loading ? <DynamicLoader size={20} color="var(--bg-deep)" /> : (
+                            <>{lastRun ? <FiRefreshCw className="me-2" /> : <FiPlay className="me-2" />}{lastRun ? 'Re-run analysis' : 'Run analysis'}</>
+                        )}
                     </button>
                 </div>
+            </div>
+
+            {error && <div className="tt-form-note error mb-3"><FiActivity /> {error}</div>}
+
+            {!lastRun ? (
+                <section className="pred-empty">
+                    <span className="pred-empty-icon"><FiCpu /></span>
+                    <h3>Run the occupancy forecast</h3>
+                    <p>
+                        The model predicts how full each timetabled class will be, then recommends lighting, fan and AC settings
+                        for the current weather in Jamshoro.
+                    </p>
+                    <ol className="pred-steps">
+                        <li><span>1</span>Reads the weekly timetable</li>
+                        <li><span>2</span>Predicts an occupancy level per class</li>
+                        <li><span>3</span>Applies the live climate rules</li>
+                    </ol>
+                    <button className="btn btn-lg btn-gradient" onClick={runPredictions} disabled={loading}>
+                        {loading ? <DynamicLoader size={20} color="var(--bg-deep)" /> : <><FiPlay className="me-2" /> Run analysis</>}
+                    </button>
+                </section>
+            ) : (
+                <>
+                    {/* Climate strip */}
+                    {climate && (
+                        <section className="pred-climate" style={{ '--chip-color': climate.climate_mode_color || '#10b981' }}>
+                            <div className="pred-climate-main">
+                                <span className="pred-climate-icon"><FiThermometer /></span>
+                                <div>
+                                    <strong>{climate.climate_mode_label}</strong>
+                                    <small>{climate.city} · {climate.season} · recommendations below follow this climate mode</small>
+                                </div>
+                            </div>
+                            <div className="pred-climate-stats">
+                                <div><small>Temperature</small><strong>{climate.temperature}°C</strong></div>
+                                <div><small>Feels like</small><strong>{climate.feels_like}°C</strong></div>
+                                <div><small><FiDroplet /> Humidity</small><strong>{climate.humidity}%</strong></div>
+                                <div><small>Updated</small><strong>{lastRun.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong></div>
+                            </div>
+                        </section>
+                    )}
+
+                    {/* KPIs */}
+                    <div className="dash-kpis">
+                        <div className="dash-kpi" style={{ '--kpi-color': '#00f59b' }}>
+                            <div className="dash-kpi-head"><span className="dash-kpi-icon"><FiLayers /></span><span className="dash-kpi-label">Classes analysed</span></div>
+                            <div className="dash-kpi-value"><strong>{summary.total}</strong><span>slots</span></div>
+                            <div className="dash-kpi-foot"><span>Weekly timetable</span><strong>{DAYS.length} days</strong></div>
+                        </div>
+                        <div className="dash-kpi" style={{ '--kpi-color': '#06b6d4' }}>
+                            <div className="dash-kpi-head"><span className="dash-kpi-icon"><FiActivity /></span><span className="dash-kpi-label">Optimisable slots</span></div>
+                            <div className="dash-kpi-value"><strong>{summary.optimisable}</strong><span>of {summary.total}</span></div>
+                            <div className="dash-meter"><span style={{ width: `${summary.total ? (summary.optimisable / summary.total) * 100 : 0}%` }} /></div>
+                            <div className="dash-kpi-foot"><span>Below maximum occupancy</span><strong>{summary.total ? Math.round((summary.optimisable / summary.total) * 100) : 0}%</strong></div>
+                        </div>
+                        <div className="dash-kpi" style={{ '--kpi-color': '#10b981' }}>
+                            <div className="dash-kpi-head"><span className="dash-kpi-icon"><FiZap /></span><span className="dash-kpi-label">Estimated saving</span></div>
+                            <div className="dash-kpi-value"><strong>{summary.saving.toFixed(1)}</strong><span>kWh / week</span></div>
+                            <div className="dash-kpi-foot"><span>{activeDay}</span><strong>{daySaving.toFixed(1)} kWh</strong></div>
+                        </div>
+                        <div className="dash-kpi" style={{ '--kpi-color': '#a78bfa' }}>
+                            <div className="dash-kpi-head"><span className="dash-kpi-icon"><FiTarget /></span><span className="dash-kpi-label">Average confidence</span></div>
+                            <div className="dash-kpi-value"><strong>{summary.confidence.toFixed(0)}</strong><span>%</span></div>
+                            <div className="dash-meter"><span style={{ width: `${Math.min(100, summary.confidence)}%` }} /></div>
+                            <div className="dash-kpi-foot"><span>Model probability</span><strong>per class</strong></div>
+                        </div>
+                    </div>
+
+                    {/* Distribution */}
+                    <section className="pred-dist">
+                        <div className="pred-dist-head">
+                            <h3>Predicted occupancy mix</h3>
+                            <small>Share of {summary.total} classes by predicted level</small>
+                        </div>
+                        <div className="pred-dist-bar">
+                            {LEVELS.filter(l => summary.counts[l.key]).map(l => (
+                                <span key={l.key} style={{ flex: summary.counts[l.key], background: l.color }} title={`${l.key}: ${summary.counts[l.key]}`} />
+                            ))}
+                        </div>
+                        <div className="pred-dist-legend">
+                            {LEVELS.map(l => (
+                                <span key={l.key}>
+                                    <i style={{ background: l.color }} />{l.key}
+                                    <strong>{summary.counts[l.key] || 0}</strong>
+                                    <small>{summary.total ? Math.round(((summary.counts[l.key] || 0) / summary.total) * 100) : 0}%</small>
+                                </span>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* Table */}
+                    <section className="tt-card">
+                        <div className="tt-card-head">
+                            <div>
+                                <h3>{hasDays ? `${activeDay} schedule` : 'All classes'}</h3>
+                                <p>{visible.length} classes · {daySaving.toFixed(1)} kWh estimated saving · select a row for the reasoning</p>
+                            </div>
+                            {hasDays && (
+                                <div className="tt-day-tabs" role="tablist" aria-label="Day">
+                                    {DAYS.map(day => (
+                                        <button key={day} type="button" role="tab" aria-selected={activeDay === day} className={activeDay === day ? 'active' : ''} onClick={() => { setActiveDay(day); setExpanded(null); }}>
+                                            {day.slice(0, 3)} <small>{dayCounts[day]}</small>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="pred-filters">
+                            <div className="rooms-filters" role="tablist" aria-label="Filter by predicted level">
+                                {['all', ...LEVELS.map(l => l.key)].map(key => (
+                                    <button key={key} type="button" role="tab" aria-selected={levelFilter === key} className={levelFilter === key ? 'active' : ''} onClick={() => setLevelFilter(key)}>
+                                        {key !== 'all' && <i style={{ background: LEVEL_COLOR[key] }} />}
+                                        {key === 'all' ? 'All levels' : key}
+                                    </button>
+                                ))}
+                            </div>
+                            <label className="rooms-search">
+                                <FiSearch />
+                                <input type="search" placeholder="Search room, course or section" value={query} onChange={e => setQuery(e.target.value)} aria-label="Search predictions" />
+                            </label>
+                        </div>
+
+                        <div className="tt-grid-scroll">
+                            <table className="pred-table">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Class</th>
+                                        <th>Predicted occupancy</th>
+                                        <th className="num">Expected</th>
+                                        <th>Recommended devices</th>
+                                        <th>Mode</th>
+                                        <th className="num">Saving</th>
+                                        <th aria-label="Details" />
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {visible.length === 0 ? (
+                                        <tr><td colSpan="8" className="pred-none">No classes match these filters.</td></tr>
+                                    ) : visible.map(r => {
+                                        const mode = ENERGY_MODES[r.energy_mode] || ENERGY_MODES.balanced;
+                                        const open = expanded === r.key;
+                                        return (
+                                            <Fragment key={r.key}>
+                                                <tr className={`pred-row ${open ? 'open' : ''}`} onClick={() => setExpanded(open ? null : r.key)}>
+                                                    <td className="pred-time">{r.time}</td>
+                                                    <td>
+                                                        <div className="pred-class">
+                                                            <strong>{r.course}</strong>
+                                                            <small>
+                                                                {r.section && <span>{r.section}</span>}
+                                                                <span><FiMapPin /> {r.classroom}</span>
+                                                                {r.type === 'lab' && <span className="pred-lab">Lab</span>}
+                                                            </small>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div className="pred-level" style={{ '--level': LEVEL_COLOR[r.occupancy] || '#94a3b8' }}>
+                                                            <span className="pred-level-pill">{r.occupancy}</span>
+                                                            <div className="pred-confidence" title={`${r.confidence.toFixed(0)}% model confidence`}>
+                                                                <div><i style={{ width: `${Math.min(100, r.confidence)}%` }} /></div>
+                                                                <small>{r.confidence.toFixed(0)}%</small>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="num">{parseFloat(r.attendance || 0).toFixed(0)}%</td>
+                                                    <td>
+                                                        <div className="pred-devices">
+                                                            <DeviceState icon={FiSun} label="Lights" state={r.lights_action} />
+                                                            <DeviceState icon={FiWind} label="Fans" state={r.fan_action} />
+                                                            <DeviceState icon={TbAirConditioning} label="AC" state={r.ac_action} />
+                                                        </div>
+                                                    </td>
+                                                    <td><span className="pred-mode" style={{ '--mode': mode.color }}>{mode.label}</span></td>
+                                                    <td className="num pred-saving">{r.saving ? `−${r.saving.toFixed(1)} kWh` : '—'}</td>
+                                                    <td className="pred-chevron"><FiChevronDown /></td>
+                                                </tr>
+                                                {open && (
+                                                    <tr className="pred-detail">
+                                                        <td colSpan="8">
+                                                            <div className="pred-detail-grid">
+                                                                <div>
+                                                                    <small><FiCpu /> Why this occupancy</small>
+                                                                    <p>{r.reasoning || 'No model reasoning returned.'}</p>
+                                                                </div>
+                                                                <div>
+                                                                    <small><FiThermometer /> Climate recommendation</small>
+                                                                    <p>{r.climate_reasoning || r.recommendation || 'No climate adjustment.'}</p>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </Fragment>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </>
             )}
         </div>
     );

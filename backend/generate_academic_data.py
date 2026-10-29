@@ -28,6 +28,8 @@ from datetime import date, timedelta
 import numpy as np
 import pandas as pd
 
+from room_catalog import MAP_ROOMS, HOME_ROOMS, room_fields
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 ATTENDANCE_CSV = os.path.join(DATA_DIR, 'attendance_dataset.csv')
@@ -40,7 +42,7 @@ SECTIONS = ['I', 'II']
 WEEKS_PER_SEMESTER = 16
 SEMESTERS = [('Fall-2025', date(2025, 9, 1)), ('Spring-2026', date(2026, 2, 2))]
 
-# Room capacity 50 -> Section I has 50 students, Section II slightly fewer
+# Enrolled students per section (Section II slightly smaller)
 ENROLLMENT = {
     1: {'I': 50, 'II': 48},
     2: {'I': 48, 'II': 46},
@@ -50,16 +52,16 @@ ENROLLMENT = {
 
 # (course name, type, lab room) per batch
 CURRICULUM = {
-    1: [('Programming Fundamentals', 'theory', None), ('Programming Fundamentals Lab', 'lab', 'Computer Lab 1'),
+    1: [('Programming Fundamentals', 'theory', None), ('Programming Fundamentals Lab', 'lab', 'Lab CS-01'),
         ('Calculus & Analytical Geometry', 'theory', None), ('Applied Physics', 'theory', None),
-        ('Applied Physics Lab', 'lab', 'Electronics Lab'), ('Functional English', 'theory', None)],
-    2: [('Data Structures', 'theory', None), ('Data Structures Lab', 'lab', 'Computer Lab 2'),
+        ('Applied Physics Lab', 'lab', "Madam Anam's Lab"), ('Functional English', 'theory', None)],
+    2: [('Data Structures', 'theory', None), ('Data Structures Lab', 'lab', 'Lab CS-02'),
         ('Discrete Structures', 'theory', None), ('Digital Logic Design', 'theory', None),
-        ('Digital Logic Design Lab', 'lab', 'Electronics Lab'), ('Linear Algebra', 'theory', None)],
-    3: [('Operating Systems', 'theory', None), ('Operating Systems Lab', 'lab', 'Computer Lab 1'),
-        ('Database Systems', 'theory', None), ('Database Systems Lab', 'lab', 'Computer Lab 2'),
+        ('Digital Logic Design Lab', 'lab', "Madam Anam's Lab"), ('Linear Algebra', 'theory', None)],
+    3: [('Operating Systems', 'theory', None), ('Operating Systems Lab', 'lab', 'Lab CS-01'),
+        ('Database Systems', 'theory', None), ('Database Systems Lab', 'lab', 'Lab CS-02'),
         ('Theory of Automata', 'theory', None), ('Software Engineering', 'theory', None)],
-    4: [('Artificial Intelligence', 'theory', None), ('Artificial Intelligence Lab', 'lab', 'Computer Lab 1'),
+    4: [('Artificial Intelligence', 'theory', None), ('Artificial Intelligence Lab', 'lab', 'Lab CS-01'),
         ('Information Security', 'theory', None), ('Compiler Construction', 'theory', None),
         ('Professional Practices', 'theory', None)],
 }
@@ -77,7 +79,7 @@ FACULTY = [
     ("Engr. Sana Qureshi", "sana.q@university.edu"),
 ]
 
-LAB_ROOMS = ['Computer Lab 1', 'Computer Lab 2', 'Electronics Lab']
+LAB_ROOMS = ['Lab CS-01', 'Lab CS-02', "Madam Anam's Lab"]
 
 # --- Attendance behaviour (probability that an enrolled student shows up) ---
 BATCH_BASE = {1: 0.87, 2: 0.83, 3: 0.79, 4: 0.73}
@@ -99,7 +101,7 @@ def course_subject(course, batch, section):
 
 
 def home_room(batch, section):
-    return f"Room {100 + (batch - 1) * 2 + SECTIONS.index(section) + 1}"
+    return HOME_ROOMS[(batch, section)]
 
 
 def week_effect(week):
@@ -257,15 +259,7 @@ def apply_to_database(timetable_df):
         Classroom.query.delete()
         db.session.commit()
 
-        rooms = {}
-        for batch in sorted(CURRICULUM):
-            for section in SECTIONS:
-                name = home_room(batch, section)
-                rooms[name] = Classroom(name=name, building='Academic Block', capacity=50,
-                                        num_lights=8, num_acs=2, num_fans=4)
-        for name in LAB_ROOMS:
-            rooms[name] = Classroom(name=name, building='Lab Block', capacity=50,
-                                    num_lights=12, num_acs=3, num_fans=6)
+        rooms = {entry[1]: Classroom(**room_fields(*entry)) for entry in MAP_ROOMS}
         db.session.add_all(rooms.values())
         db.session.commit()
 

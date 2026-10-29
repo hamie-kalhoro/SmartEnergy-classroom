@@ -20,6 +20,8 @@ import {
     FiZap
 } from 'react-icons/fi';
 import { TbAirConditioning } from 'react-icons/tb';
+import { ROOM_TYPES, DEVICE_SPECS, UNIT_KW } from '../data/roomCatalog';
+import api from '../api';
 import { Line } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -61,29 +63,9 @@ const DEFAULT_SITE_BOUNDARY_POINTS = [
     [205, 1168]
 ];
 
-const ROOM_TYPES = {
-    lab: { label: 'Lab', color: '#38bdf8', fill: 'rgba(56, 189, 248, 0.16)' },
-    office: { label: 'Office', color: '#fbbf24', fill: 'rgba(251, 191, 36, 0.14)' },
-    utility: { label: 'Utility', color: '#94a3b8', fill: 'rgba(148, 163, 184, 0.13)' },
-    hall: { label: 'Hall', color: '#a78bfa', fill: 'rgba(167, 139, 250, 0.16)' },
-    classroom: { label: 'Classroom', color: '#34d399', fill: 'rgba(52, 211, 153, 0.15)' },
-    circulation: { label: 'Route', color: '#22c55e', fill: 'rgba(34, 197, 94, 0.07)' }
-};
-
-// Installed devices per room type: labs 4 ACs / 6 fans, classrooms 8 fans / no AC,
-// offices 1 AC / 1 fan. Light counts and the seminar hall are site estimates.
-const DEVICE_SPECS = {
-    lab: { lights: 12, fans: 6, acs: 4 },
-    classroom: { lights: 10, fans: 8, acs: 0 },
-    office: { lights: 2, fans: 1, acs: 1 },
-    hall: { lights: 16, fans: 8, acs: 4 },
-    utility: { lights: 2, fans: 0, acs: 0 }
-};
-
-// Rated power per unit (kW): LED tube, ceiling fan, 1.5-ton split AC (1-ton in offices)
-const UNIT_KW = { light: 0.02, fan: 0.075, ac: 1.5, officeAc: 1.1, standby: 0.04 };
-
-const ROOMS = [
+// Room shapes on the drawing. Name, type, seats and installed devices come from the
+// Rooms portal (/api/classrooms, linked by map_id); the values here are only fallbacks.
+const ROOM_SHAPES = [
     { id: 'cs-06', name: 'Lab CS-06', type: 'lab', x: 240, y: 90, w: 230, h: 205, seats: 40, present: 34, floor: 'Main block' },
     { id: 'cs-04', name: 'Lab CS-04', type: 'lab', x: 240, y: 335, w: 230, h: 175, seats: 40, present: 22, floor: 'Main block' },
     { id: 'dr-fawad', name: 'Dr. Fawad Office', short: 'Dr. Fawad', type: 'office', x: 240, y: 510, w: 230, h: 38, seats: 1, present: 1, floor: 'Main block' },
@@ -134,7 +116,7 @@ function occupancyLevel(present, seats) {
 
 /** Device counts the system recommends for a given headcount. */
 function recommendDevices(room, present) {
-    const spec = DEVICE_SPECS[room.type];
+    const spec = room.devices;
     if (room.type === 'utility') return { lights: spec.lights, fans: 0, acs: 0, temp: 24 };
     if (!present) return { lights: 0, fans: 0, acs: 0, temp: 24 };
     const ratio = Math.min(1, present / room.seats);
@@ -151,19 +133,48 @@ function initialRoomState(room) {
     return { mode: 'auto', present: room.present, ...recommendDevices(room, room.present) };
 }
 
+/** Map shapes merged with their portal records; shapes without an active record are inactive. */
+function buildRooms(records) {
+    const byMapId = records ? Object.fromEntries(records.filter(r => r.map_id).map(r => [r.map_id, r])) : {};
+    return ROOM_SHAPES.map(shape => {
+        if (!records) return { ...shape, devices: DEVICE_SPECS[shape.type] };
+        const record = byMapId[shape.id];
+        if (!record) return { ...shape, inactive: true, devices: { lights: 0, fans: 0, acs: 0 } };
+        return {
+            ...shape,
+            name: record.name,
+            short: record.name === shape.name ? shape.short : undefined,
+            type: DEVICE_SPECS[record.type] ? record.type : shape.type,
+            seats: record.capacity || 0,
+            floor: record.building || shape.floor,
+            devices: { lights: record.lights || 0, fans: record.fans || 0, acs: record.acs || 0 }
+        };
+    });
+}
+
+const FALLBACK_ROOMS = buildRooms(null);
+
 function loadRoomStates() {
-    const defaults = Object.fromEntries(ROOMS.map(room => [room.id, initialRoomState(room)]));
+    const defaults = Object.fromEntries(FALLBACK_ROOMS.map(room => [room.id, initialRoomState(room)]));
     try {
         const stored = JSON.parse(localStorage.getItem(ROOM_STATE_STORAGE_KEY));
         if (!stored || typeof stored !== 'object') return defaults;
-        return Object.fromEntries(ROOMS.map(room => [room.id, { ...defaults[room.id], ...stored[room.id] }]));
+        return Object.fromEntries(FALLBACK_ROOMS.map(room => [room.id, { ...defaults[room.id], ...stored[room.id] }]));
     } catch (error) {
         return defaults;
     }
 }
 
 /** Effective device state: in Auto mode counts always follow the headcount. */
-function resolveState(room, state) {
+function resolveState(room, stored) {
+    // Seats and installed devices can shrink in the portal: keep the saved state inside them
+    const state = {
+        ...stored,
+        present: Math.min(stored.present, room.seats),
+        lights: Math.min(stored.lights, room.devices.lights),
+        fans: Math.min(stored.fans, room.devices.fans),
+        acs: Math.min(stored.acs, room.devices.acs)
+    };
     return state.mode === 'auto' ? { ...state, ...recommendDevices(room, state.present), temp: state.temp } : state;
 }
 
@@ -306,7 +317,8 @@ function CampusMap() {
     const panX = useMotionValue(0);
     const panY = useMotionValue(0);
     const [zoom, setZoomState] = useState(1);
-    const [selectedRoom, setSelectedRoom] = useState(ROOMS[0]);
+    const [rooms, setRooms] = useState(FALLBACK_ROOMS);
+    const [selectedId, setSelectedId] = useState(ROOM_SHAPES[0].id);
     const [isDragging, setIsDragging] = useState(false);
     const [isEditingBoundary, setIsEditingBoundary] = useState(false);
     const [activeBoundaryPoint, setActiveBoundaryPoint] = useState(null);
@@ -319,20 +331,32 @@ function CampusMap() {
         try { localStorage.setItem(ROOM_STATE_STORAGE_KEY, JSON.stringify(roomStates)); } catch { /* storage unavailable */ }
     }, [roomStates]);
 
+    // Room names, seats and devices are managed in the Rooms portal
+    useEffect(() => {
+        let cancelled = false;
+        api.get('/api/classrooms')
+            .then(res => { if (!cancelled) setRooms(buildRooms(res.data)); })
+            .catch(err => console.error('Campus map: could not load rooms, showing drawing defaults', err));
+        return () => { cancelled = true; };
+    }, []);
+
+    const activeRooms = useMemo(() => rooms.filter(room => !room.inactive), [rooms]);
+    const selectedRoom = activeRooms.find(room => room.id === selectedId) || null;
+
     const visibleRooms = useMemo(() => {
         const normalized = query.trim().toLowerCase();
-        if (!normalized) return ROOMS;
-        return ROOMS.filter(room => `${room.name} ${room.type} ${room.floor}`.toLowerCase().includes(normalized));
-    }, [query]);
+        if (!normalized) return activeRooms;
+        return activeRooms.filter(room => `${room.name} ${room.type} ${room.floor}`.toLowerCase().includes(normalized));
+    }, [query, activeRooms]);
 
     const effective = useMemo(() => Object.fromEntries(
-        ROOMS.map(room => [room.id, resolveState(room, roomStates[room.id])])
-    ), [roomStates]);
+        rooms.map(room => [room.id, resolveState(room, roomStates[room.id])])
+    ), [rooms, roomStates]);
 
     const selectedState = selectedRoom ? effective[selectedRoom.id] : null;
     const activeBoundaryPoints = isEditingBoundary ? draftBoundaryPoints : boundaryPoints;
     const activeBoundaryPath = useMemo(() => pointsToPath(activeBoundaryPoints), [activeBoundaryPoints]);
-    const buildingLoad = useMemo(() => ROOMS.reduce((sum, room) => sum + roomPower(room, effective[room.id]), 0), [effective]);
+    const buildingLoad = useMemo(() => activeRooms.reduce((sum, room) => sum + roomPower(room, effective[room.id]), 0), [activeRooms, effective]);
 
     // ---------------------------------------------------------------- viewport
     const setZoom = (value) => {
@@ -378,7 +402,7 @@ function CampusMap() {
     }, [panX, panY]);
 
     const focusRoom = useCallback((room) => {
-        setSelectedRoom(room);
+        setSelectedId(room.id);
         const stage = stageRef.current;
         if (!stage) return;
         const { width, height } = stage.getBoundingClientRect();
@@ -511,7 +535,7 @@ function CampusMap() {
         }
     };
 
-    const spec = selectedRoom ? DEVICE_SPECS[selectedRoom.type] : null;
+    const spec = selectedRoom ? selectedRoom.devices : null;
     const level = selectedRoom ? occupancyLevel(selectedState.present, selectedRoom.seats) : null;
     const acKw = selectedRoom?.type === 'office' ? UNIT_KW.officeAc : UNIT_KW.ac;
     const acFactor = selectedState ? 1 + Math.max(0, 26 - selectedState.temp) * 0.06 : 1;
@@ -608,7 +632,19 @@ function CampusMap() {
                                 ))}
 
 
-                                {ROOMS.map(room => {
+                                {rooms.map(room => {
+                                    if (room.inactive) {
+                                        return (
+                                            <g key={room.id} className="campus-room inactive">
+                                                <title>{`${room.name} (deactivated in Rooms portal)`}</title>
+                                                {room.points ? (
+                                                    <polygon points={room.points} className="campus-room-shape" />
+                                                ) : (
+                                                    <rect x={room.x} y={room.y} width={room.w} height={room.h} rx="4" className="campus-room-shape" />
+                                                )}
+                                            </g>
+                                        );
+                                    }
                                     const isVisible = visibleRooms.some(item => item.id === room.id);
                                     const isSelected = selectedRoom?.id === room.id;
                                     const type = ROOM_TYPES[room.type];
@@ -617,7 +653,7 @@ function CampusMap() {
                                         <g
                                             key={room.id}
                                             className={`campus-room ${isSelected ? 'selected' : ''} ${isVisible ? '' : 'muted'}`}
-                                            onClick={() => setSelectedRoom(room)}
+                                            onClick={() => setSelectedId(room.id)}
                                             style={{ '--room-color': type.color, '--room-fill': type.fill }}
                                         >
                                             <title>{room.name}</title>
@@ -704,7 +740,7 @@ function CampusMap() {
                                     <span className="campus-type-badge" style={{ '--room-color': ROOM_TYPES[selectedRoom.type].color }}>
                                         {ROOM_TYPES[selectedRoom.type].label}
                                     </span>
-                                    <button type="button" onClick={() => setSelectedRoom(null)} title="Close panel" aria-label="Close panel"><FiX /></button>
+                                    <button type="button" onClick={() => setSelectedId(null)} title="Close panel" aria-label="Close panel"><FiX /></button>
                                 </div>
 
                                 <h3>{selectedRoom.name}</h3>
