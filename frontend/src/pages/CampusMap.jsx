@@ -34,31 +34,31 @@ import NumberedSlider from '../components/NumberedSlider';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
-const MAP_WIDTH = 1120;
-const MAP_HEIGHT = 1720;
+const MAP_WIDTH = 1300;
+const MAP_HEIGHT = 1900;
 // Bounding box of everything drawn on the map, used to fit it into the viewport
-const MAP_CONTENT = { x: 50, y: 50, w: 1010, h: 1620 };
+const MAP_CONTENT = { x: -20, y: 40, w: 1300, h: 1820 };
 const MIN_ZOOM = 0.3;
 const MAX_ZOOM = 1.8;
-const BOUNDARY_STORAGE_KEY = 'campusMap.siteBoundaryPoints.v1';
+const BOUNDARY_STORAGE_KEY = 'campusMap.siteBoundaryPoints.v2';
 const ROOM_STATE_STORAGE_KEY = 'campusMap.roomStates.v2';
 const DEFAULT_SITE_BOUNDARY_POINTS = [
     [205, 58],
     [828, 58],
-    [828, 1160],
-    [854, 1214],
-    [988, 1260],
-    [1042, 1296],
-    [1016, 1442],
-    [1044, 1488],
-    [958, 1650],
-    [710, 1656],
-    [520, 1632],
-    [96, 1538],
-    [60, 1402],
-    [355, 1228],
-    [355, 1160],
-    [205, 1160]
+    [828, 1140],
+    [1276, 1316],
+    [1256, 1480],
+    [1206, 1612],
+    [1078, 1742],
+    [1028, 1802],
+    [808, 1854],
+    [590, 1854],
+    [594, 1500],
+    [82, 1786],
+    [-16, 1602],
+    [406, 1364],
+    [406, 1168],
+    [205, 1168]
 ];
 
 const ROOM_TYPES = {
@@ -101,18 +101,21 @@ const ROOMS = [
     { id: 'seminar-hall', name: 'Seminar Hall', type: 'hall', x: 560, y: 562, w: 230, h: 165, seats: 120, present: 0, floor: 'Main block' },
     { id: 'anam-lab', name: "Madam Anam's Lab", type: 'lab', x: 560, y: 727, w: 230, h: 185, seats: 30, present: 9, floor: 'Main block' },
     { id: 'cs-01', name: 'Lab CS-01', type: 'lab', x: 560, y: 950, w: 230, h: 205, seats: 35, present: 18, floor: 'Main block' },
-    { id: 'third-year-i', name: '3rd Year Section I', type: 'classroom', points: '520,1342 650,1342 650,1632 520,1632', seats: 50, present: 41, floor: 'Lower academic wing' },
-    { id: 'final-year-i', name: 'Final Year Section I', type: 'classroom', points: '924,1254 1042,1296 1016,1442 900,1390', seats: 42, present: 29, floor: 'Lower academic wing' },
-    { id: 'third-year-ii', name: '3rd Year Section II', type: 'classroom', points: '682,1510 834,1408 1044,1488 958,1650 710,1656', seats: 48, present: 36, floor: 'Lower academic wing' }
+    // Lower academic wing, traced from the department drawing at the main block's scale
+    { id: 'third-year-i', name: '3rd Year Section I', type: 'classroom', points: '609,1648 803,1656 803,1833 606,1833', seats: 50, present: 41, floor: 'Lower academic wing' },
+    { id: 'final-year-i', name: 'Final Year Section I', type: 'classroom', points: '1047,1333 1256,1331 1237,1402 1219,1474 1189,1566 1047,1515', labelAt: { x: 1135, y: 1430 }, seats: 42, present: 29, floor: 'Lower academic wing' },
+    { id: 'third-year-ii', name: '3rd Year Section II', type: 'classroom', points: '803,1656 841,1656 1021,1546 1047,1515 1189,1566 1170,1607 1062,1720 1016,1780 803,1833', labelAt: { x: 960, y: 1705 }, seats: 48, present: 36, floor: 'Lower academic wing' }
 ];
 
 const ROUTES = [
     { id: 'central-corridor', d: 'M515 90 L515 1155', label: 'Central corridor' },
-    { id: 'left-entry-drop', d: 'M355 1155 L355 1260', label: 'Main entry drop' },
-    { id: 'left-approach-out', d: 'M355 1260 L96 1412 L126 1518 L540 1298', label: 'Left approach' },
-    { id: 'right-academic-approach', d: 'M790 1155 L854 1214 L838 1260 L988 1260', label: 'Academic wing approach' },
-    { id: 'lower-academic-link', d: 'M838 1260 L760 1438 L682 1510', label: 'Lower academic link' }
+    { id: 'entry-path', d: 'M422 1155 L422 1376', label: 'Entry path' }
 ];
+
+// Static site features of the lower area (from the department drawing; no dimensions shown)
+const APPROACH_AREA = '422,1376 3,1605 75,1762 612,1464';
+const WING_WALLS = 'M790 1155 L840 1154 L940 1272 L895 1336 L1256 1331 L1237 1402 L1219 1474 L1189 1566 L1170 1607 L1062 1720 L1016 1780 L803 1833 L606 1833 L612 1464';
+const WING_ANNEX = '888,1576 939,1544 1006,1564 903,1613';
 
 // Same thresholds as the backend occupancy model (ml_engine.level_for)
 const OCCUPANCY_LEVELS = [
@@ -203,8 +206,8 @@ function roomBox(room) {
         const xs = points.map(p => p[0]);
         const ys = points.map(p => p[1]);
         return {
-            cx: xs.reduce((a, b) => a + b, 0) / xs.length,
-            cy: ys.reduce((a, b) => a + b, 0) / ys.length,
+            cx: room.labelAt?.x ?? xs.reduce((a, b) => a + b, 0) / xs.length,
+            cy: room.labelAt?.y ?? ys.reduce((a, b) => a + b, 0) / ys.length,
             w: Math.max(...xs) - Math.min(...xs),
             h: Math.max(...ys) - Math.min(...ys)
         };
@@ -582,17 +585,19 @@ function CampusMap() {
                                         <stop offset="0%" stopColor="rgba(52, 211, 153, 0.04)" />
                                         <stop offset="100%" stopColor="rgba(56, 189, 248, 0.08)" />
                                     </linearGradient>
+                                    <pattern id="approachHatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(-29)">
+                                        <line x1="0" y1="0" x2="0" y2="14" className="campus-hatch-line" />
+                                    </pattern>
                                 </defs>
 
                                 <path className={`campus-site-boundary ${isEditingBoundary ? 'editing' : ''}`} d={activeBoundaryPath} />
                                 <rect className="campus-map-boundary" x="204" y="58" width="624" height="1128" rx="10" />
                                 <path className="campus-building-outline" d="M240 90 H470 V1155 H240 Z" />
                                 <path className="campus-building-outline" d="M560 90 H790 V1155 H560 Z" />
-                                <path className="campus-approach-outline" d="M92 1392 L355 1238 L548 1288 L126 1536 Z" />
-                                <path className="campus-academic-outline" d="M790 1155 L854 1214 L988 1260 L1042 1296 L1016 1442 L1044 1488 L958 1650 L710 1656 L682 1510 L760 1438 L838 1260 Z" />
-                                <path className="campus-building-outline" d="M520 1342 H650 V1632 H520 Z" />
-                                <path className="campus-building-outline" d="M924 1254 L1042 1296 L1016 1442 L900 1390 Z" />
-                                <path className="campus-building-outline" d="M682 1510 L834 1408 L1044 1488 L958 1650 L710 1656 Z" />
+                                {/* Lower area: approach strip and classroom-wing walls */}
+                                <polygon className="campus-approach-area" points={APPROACH_AREA} />
+                                <path className="campus-wing-walls" d={WING_WALLS} />
+                                <polygon className="campus-wing-annex" points={WING_ANNEX} />
                                 <rect className="campus-corridor" x="470" y="90" width="90" height="1065" rx="4" />
 
                                 {ROUTES.map(route => (
@@ -602,8 +607,6 @@ function CampusMap() {
                                     </g>
                                 ))}
 
-                                <path className="campus-lower-route" d="M96 1412 L126 1518 L540 1298" />
-                                <path className="campus-lower-route" d="M854 1214 L838 1260 L988 1260" />
 
                                 {ROOMS.map(room => {
                                     const isVisible = visibleRooms.some(item => item.id === room.id);
@@ -628,10 +631,13 @@ function CampusMap() {
                                     );
                                 })}
 
-                                <text className="campus-compass-label" x="88" y="90">N</text>
-                                <text className="campus-wing-label" x="334" y="1230">Main Entry</text>
-                                <text className="campus-wing-label" x="940" y="1218">Academic Wing</text>
-                                <text className="campus-wing-label" x="822" y="1460">Lower Classrooms</text>
+                                <g className="campus-compass" transform="translate(110 110)">
+                                    <circle r="34" />
+                                    <path d="M0 -24 L9 6 L0 0 L-9 6 Z" />
+                                    <text y="24">N</text>
+                                </g>
+                                <text className="campus-wing-label" transform="translate(300 1560) rotate(-29)">Main Entry</text>
+                                <text className="campus-wing-label" x="1060" y="1308">Academic Wing</text>
 
                                 {isEditingBoundary && activeBoundaryPoints.map((point, index) => (
                                     <g key={`boundary-point-${index}`} className="campus-boundary-point">

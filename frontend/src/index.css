@@ -2580,8 +2580,9 @@ tbody tr:hover {
 
 .campus-site-boundary {
     fill: color-mix(in srgb, var(--cm-map-text) 2%, transparent);
-    stroke: var(--cm-outline);
-    stroke-width: 3;
+    stroke: color-mix(in srgb, var(--cm-map-text) 12%, transparent);
+    stroke-width: 2;
+    stroke-dasharray: 10 8;
     stroke-linejoin: round;
 }
 
@@ -2605,6 +2606,51 @@ tbody tr:hover {
     stroke: color-mix(in srgb, var(--cm-accent) 35%, transparent);
     stroke-width: 2;
     stroke-linejoin: round;
+}
+
+.campus-approach-area {
+    fill: url(#approachHatch);
+    stroke: var(--cm-outline);
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+.campus-hatch-line {
+    stroke: color-mix(in srgb, var(--cm-map-text) 10%, transparent);
+    stroke-width: 3;
+}
+
+.campus-wing-walls {
+    fill: none;
+    stroke: color-mix(in srgb, var(--cm-map-text) 38%, transparent);
+    stroke-width: 3;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.campus-wing-annex {
+    fill: color-mix(in srgb, var(--cm-map-text) 8%, transparent);
+    stroke: var(--cm-outline);
+    stroke-width: 2;
+}
+
+.campus-compass circle {
+    fill: var(--cm-overlay);
+    stroke: var(--cm-outline);
+    stroke-width: 2;
+}
+
+.campus-compass path {
+    fill: var(--cm-accent);
+}
+
+.campus-compass text {
+    fill: var(--cm-map-muted);
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 700;
+    text-anchor: middle;
+    pointer-events: none;
 }
 
 .campus-corridor {
