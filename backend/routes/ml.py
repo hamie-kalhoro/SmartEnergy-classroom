@@ -5,7 +5,7 @@ import os
 import pandas as pd
 from models import Timetable, Classroom
 from services import EnergyService
-from ml_engine import MLEngine, get_ml_engine
+from ml_engine import get_ml_engine
 from climate_service import get_climate_context
 
 ml_bp = Blueprint('ml', __name__)
@@ -21,9 +21,10 @@ def get_recommendations():
     results = []
     for entry in timetable:
         classroom = entry.classroom
+        # expected_attendance = the class's historical average attendance %
         level_name, level_idx, reasoning, confidence = ml.predict(
-            entry.day_of_week, entry.time_slot, 
-            entry.subject_type, entry.expected_attendance
+            entry.day_of_week, entry.time_slot,
+            entry.subject_type, entry.expected_attendance, subject=entry.subject
         )
         
         # Climate-Aware Recommendation (NEW)
@@ -102,7 +103,7 @@ def get_climate():
 @jwt_required()
 def upload_and_train():
     """Upload a CSV dataset, digest it into history, and delete original."""
-    ml = MLEngine()
+    ml = get_ml_engine()
     
     if 'file' not in request.files:
         return jsonify({'success': False, 'message': 'No file provided'}), 400
@@ -144,7 +145,7 @@ def upload_and_train():
 @jwt_required()
 def predict_batch():
     """Upload a CSV dataset and get smart predictions."""
-    ml = MLEngine()
+    ml = get_ml_engine()
     climate_context = get_climate_context()
     
     if 'file' not in request.files:
@@ -167,7 +168,9 @@ def predict_batch():
                 attendance_val = row.get('attendance', 0)
                 
                 level_name, idx, reasoning, conf = ml.predict(
-                    day_val, hour_val, type_val, attendance_val
+                    day_val, hour_val, type_val, attendance_val,
+                    subject=row.get('subject'), batch=row.get('batch'), section=row.get('section'),
+                    week=row.get('week'), prev_attendance=row.get('prev_attendance')
                 )
                 
                 climate_rec = ml.get_climate_aware_recommendation(idx, climate_context)

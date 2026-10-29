@@ -122,7 +122,7 @@ class ReportingService:
         for slot in future_slots:
             try:
                 if int(slot.time_slot.split(':')[0]) > now.hour:
-                    _, idx, _, _ = ml.predict(slot.day_of_week, slot.time_slot, slot.subject_type, slot.expected_attendance)
+                    _, idx, _, _ = ml.predict(slot.day_of_week, slot.time_slot, slot.subject_type, slot.expected_attendance, subject=slot.subject)
                     if idx < 3: projected += 1.5 # Empty/Trace/Light all provide significant savings
             except: continue
         return round(float(actual) + projected, 1)

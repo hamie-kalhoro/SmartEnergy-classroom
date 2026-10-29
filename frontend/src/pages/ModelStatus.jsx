@@ -221,7 +221,7 @@ const ModelStatus = () => {
                             <FiAlertTriangle className="text-warning" /> Security & Guardrails
                         </h6>
                         <p className="extra-small text-muted mb-4">
-                            Operational guardrails prevent the AI from making erratic energy decisions if accuracy drops below 85% or if data noise is detected.
+                            Safety guardrail: the AI never switches a room fully off while students are expected, and flags a warning if it stops beating the simple 'recent average attendance' rule.
                         </p>
                         <button className="btn btn-lg btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2" style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>
                             <FiRefreshCcw size={14} /> EMERGENCY MODEL ROLLBACK
