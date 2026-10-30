@@ -14,6 +14,9 @@ instance/
 # Uploads
 uploads/
 
+# Recorded sensor events and the forecast model built from them
+hardware_data/
+
 # IDE
 .vscode/
 .idea/

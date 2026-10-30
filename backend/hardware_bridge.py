@@ -3,12 +3,15 @@
 The firmware switches the relays by itself; this bridge only observes it. The one
 thing it can do to the board is pulse the reset line (see request_reset).
 """
+import logging
 import os
 import re
 import threading
 import time
 from collections import deque
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 BAUD_RATE = 115200
 USB_BRIDGE_IDS = (0x10C4, 0xEA60)  # CP2102 USB-to-UART chip on the ESP32 board
@@ -61,6 +64,11 @@ class HardwareBridge:
         self._last_event_at = None
         self._next_event_id = 1
         self._events = deque(maxlen=MAX_EVENTS)
+        self._listeners = []
+
+    def add_listener(self, listener):
+        """Call listener(event) for each new event. A failing listener cannot stop the bridge."""
+        self._listeners.append(listener)
 
     def start(self):
         if self._thread is None:
@@ -94,22 +102,30 @@ class HardwareBridge:
 
     def handle_line(self, line):
         """Apply one line of firmware output. Unrecognised lines are ignored."""
+        event = None
         with self._lock:
             if match := ENTRY_RE.search(line):
                 self._entries += 1
                 self._apply_count(int(match.group(1)))
-                self._record('entry', line, students=self._students)
+                event = self._record('entry', line, students=self._students)
             elif match := EXIT_RE.search(line):
                 self._exits += 1
                 self._apply_count(int(match.group(1)))
-                self._record('exit', line, students=self._students)
+                event = self._record('exit', line, students=self._students)
             elif match := LOAD_RE.search(line):
                 self._load_percent = int(match.group(1))
-                self._record('load', line, load_percent=self._load_percent)
+                event = self._record('load', line, load_percent=self._load_percent)
             elif BOOT_MARKER in line:
                 self._students = 0
                 self._load_percent = 0
-                self._record('boot', line)
+                event = self._record('boot', line)
+
+        if event:
+            for listener in self._listeners:
+                try:
+                    listener(event)
+                except Exception:
+                    logger.exception('A hardware event listener failed.')
 
     def _apply_count(self, students):
         self._students = students
@@ -119,14 +135,16 @@ class HardwareBridge:
     def _record(self, event_type, message, **fields):
         now = datetime.now(timezone.utc).isoformat()
         self._last_event_at = now
-        self._events.appendleft({
+        event = {
             'id': self._next_event_id,
             'type': event_type,
             'message': message,
             'at': now,
             **fields,
-        })
+        }
+        self._events.appendleft(event)
         self._next_event_id += 1
+        return event
 
     def _find_port(self):
         if self.port:

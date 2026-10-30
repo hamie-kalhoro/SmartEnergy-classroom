@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    FiActivity, FiAlertTriangle, FiCpu, FiLogIn, FiLogOut, FiPower, FiRadio, FiRefreshCw, FiShield, FiSun, FiWind, FiZap
+    FiActivity, FiAlertTriangle, FiCpu, FiLogIn, FiLogOut, FiPower, FiRadio, FiRefreshCw, FiShield, FiSun, FiTrendingUp, FiWind, FiZap
 } from 'react-icons/fi';
 import api from '../api';
 import './HardwarePortal.css';
@@ -26,7 +26,128 @@ const PIPELINE = [
     { icon: FiCpu, title: 'ESP32', text: 'Updates the count and picks the load stage' },
     { icon: FiZap, title: 'Relays', text: 'Switch the lights and fans directly' },
     { icon: FiActivity, title: 'This portal', text: 'Mirrors the board live over USB' },
+    { icon: FiTrendingUp, title: 'Forecast model', text: 'Estimates the load one minute ahead, as advice only' },
 ];
+
+const FORECAST_STAGES = [
+    { load: 0, label: 'Everything off' },
+    { load: 50, label: 'Light 1 and Fan 1' },
+    { load: 100, label: 'All lights and fans' },
+];
+
+const percent = value => `${Math.round(value * 100)}%`;
+const oneDecimalPercent = value => `${(value * 100).toFixed(1)}%`;
+
+function forecastHeadline(forecast) {
+    const { predicted_load: predicted, current_load: current } = forecast;
+    if (current === null || current === undefined || predicted === current) return `Load likely to stay at ${predicted}%`;
+    return `Load likely to ${predicted > current ? 'rise' : 'fall'} to ${predicted}%`;
+}
+
+function ScoreBar({ label, value, muted }) {
+    return (
+        <div className="hwp-score">
+            <span>{label}</span>
+            <div className="hwp-meter" aria-hidden="true">
+                <i className={muted ? 'is-muted' : ''} style={{ width: `${value * 100}%` }} />
+            </div>
+            <strong>{oneDecimalPercent(value)}</strong>
+        </div>
+    );
+}
+
+function ForecastCard({ forecast, connected, onRetrain, retrainError }) {
+    const ready = forecast?.status === 'ready';
+    const training = !!forecast?.training;
+    const model = forecast?.model;
+    const metrics = model?.metrics;
+    const realScores = metrics?.real;
+    const simulatedOnly = model && model.real_sessions === 0;
+
+    let waitingText = 'Waiting for the board.';
+    if (forecast?.status === 'training') waitingText = 'The model is being trained. This takes a few seconds.';
+    else if (forecast?.status === 'unavailable') waitingText = forecast.error ? `Forecast unavailable: ${forecast.error}` : 'The forecast is not available right now.';
+    else if (connected) waitingText = 'A forecast appears once the student count is known.';
+
+    return (
+        <section className="hwp-card hwp-forecast" aria-labelledby="hwp-forecast-title">
+            <div className="hwp-card-head">
+                <h2 id="hwp-forecast-title">Occupancy forecast</h2>
+                <span className="hwp-tag">Independent model · Advice only</span>
+            </div>
+
+            <div className="hwp-forecast-grid">
+                <div className="hwp-forecast-now" aria-live="polite">
+                    <span className="hwp-muted">Next {forecast?.horizon_seconds ?? 60} seconds</span>
+                    {ready ? (
+                        <>
+                            <div className="hwp-forecast-value">{forecast.predicted_load}%</div>
+                            <strong>{forecastHeadline(forecast)}</strong>
+                            <small>
+                                Last minute: {forecast.signals.entries_last_minute} in, {forecast.signals.exits_last_minute} out.
+                                The board still makes every switching decision.
+                            </small>
+                        </>
+                    ) : (
+                        <>
+                            <div className="hwp-forecast-value">--</div>
+                            <small>{waitingText}</small>
+                        </>
+                    )}
+                </div>
+
+                <div>
+                    <h3 className="hwp-subhead">Estimated chance of each stage</h3>
+                    <ul className="hwp-probabilities">
+                        {FORECAST_STAGES.map(({ load, label }) => {
+                            const value = ready ? forecast.probabilities[load] : null;
+                            return (
+                                <li key={load} className={ready && forecast.predicted_load === load ? 'is-top' : ''}>
+                                    <div><strong>{load}%</strong><small>{label}</small></div>
+                                    <div className="hwp-meter" aria-hidden="true">
+                                        <i style={{ width: `${(value ?? 0) * 100}%` }} />
+                                    </div>
+                                    <span>{value === null ? '--' : percent(value)}</span>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
+
+                <div>
+                    <div className="hwp-subhead-row">
+                        <h3 className="hwp-subhead">Model evaluation</h3>
+                        <button type="button" className="hwp-link-btn" onClick={onRetrain} disabled={training}>
+                            <FiRefreshCw size={13} className={training ? 'is-spinning' : ''} />
+                            {training ? 'Training' : 'Retrain'}
+                        </button>
+                    </div>
+                    {metrics ? (
+                        <>
+                            <ScoreBar label="This model" value={(realScores?.model ?? metrics.model).accuracy} />
+                            <ScoreBar label="No-change guess" value={(realScores?.baseline ?? metrics.baseline).accuracy} muted />
+                            <dl className="hwp-stats hwp-model-stats">
+                                <div><dt>Changes caught</dt><dd>{metrics.changes_caught === null ? 'n/a' : percent(metrics.changes_caught)}</dd></div>
+                                <div><dt>False alarms</dt><dd>{metrics.false_alarms === null ? 'n/a' : percent(metrics.false_alarms)}</dd></div>
+                                <div><dt>Real sessions</dt><dd>{model.real_sessions}</dd></div>
+                            </dl>
+                            <p className={`hwp-data-note ${simulatedOnly ? 'is-simulated' : ''}`}>
+                                {simulatedOnly
+                                    ? `Scored on simulated sessions only, so these figures do not yet show real classroom accuracy. Sensor events are recorded automatically; retrain after running real sessions.`
+                                    : realScores
+                                        ? `Accuracy shown is from ${realScores.samples} held-out samples of real sessions. Training used ${model.real_sessions} real and ${model.simulated_sessions} simulated sessions.`
+                                        : `Trained on ${model.real_sessions} real and ${model.simulated_sessions} simulated sessions. No real session was held out, so accuracy is from simulated data.`}
+                            </p>
+                        </>
+                    ) : (
+                        <p className="hwp-muted">No trained model yet.</p>
+                    )}
+                    {retrainError && <p className="hwp-inline-error" role="alert">{retrainError}</p>}
+                </div>
+            </div>
+        </section>
+    );
+}
 
 const EVENT_META = {
     entry: { icon: FiLogIn, tone: 'in', title: 'Student entered', detail: e => `${e.students} in room` },
@@ -140,6 +261,7 @@ function HardwarePortal() {
     const [apiError, setApiError] = useState(false);
     const [resetting, setResetting] = useState(false);
     const [resetError, setResetError] = useState('');
+    const [retrainError, setRetrainError] = useState('');
     const [flash, setFlash] = useState(null);
     const lastEventId = useRef(null);
     const flashTimer = useRef(null);
@@ -192,6 +314,16 @@ function HardwarePortal() {
             setResetError(err.response?.data?.message || 'The board could not be restarted.');
         } finally {
             setResetting(false);
+        }
+    };
+
+    const handleRetrain = async () => {
+        setRetrainError('');
+        try {
+            await api.post('/api/hardware/forecast/retrain');
+            await refresh();
+        } catch (err) {
+            setRetrainError(err.response?.data?.message || 'Training could not be started.');
         }
     };
 
@@ -309,6 +441,8 @@ function HardwarePortal() {
                     </section>
                 </div>
             </div>
+
+            <ForecastCard forecast={status?.forecast} connected={connected} onRetrain={handleRetrain} retrainError={retrainError} />
 
             <div className="hwp-lower">
                 <section className="hwp-card" aria-labelledby="hwp-flow-title">

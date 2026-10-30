@@ -44,7 +44,6 @@ def create_app(config_name=None):
     from routes.ml import ml_bp
     from routes.analytics import analytics_bp
     from routes.system import system_bp
-    from routes.hardware import hardware_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(classroom_bp)
@@ -52,7 +51,13 @@ def create_app(config_name=None):
     app.register_blueprint(ml_bp)
     app.register_blueprint(analytics_bp)
     app.register_blueprint(system_bp)
-    app.register_blueprint(hardware_bp)
+
+    # Optional module: the website must still start if the hardware code cannot load.
+    try:
+        from routes.hardware import hardware_bp
+        app.register_blueprint(hardware_bp)
+    except Exception:
+        app.logger.exception('Hardware module could not be loaded; continuing without it.')
 
     # Initialize Automation (Admin Reporting)
     setup_automation(app)
@@ -190,8 +195,11 @@ app = create_app()
 if __name__ == '__main__':
     seed_database(app)
     # Started only here, not under gunicorn: one process can hold the USB port.
-    from hardware_bridge import bridge
-    bridge.start()
+    try:
+        from routes.hardware import start_hardware_services
+        start_hardware_services()
+    except Exception:
+        app.logger.exception('Hardware services could not start; continuing without them.')
     port = int(os.getenv('PORT', 5000))
     if app.config['DEBUG']:
         app.run(debug=True, host='0.0.0.0', port=port, use_reloader=False)
