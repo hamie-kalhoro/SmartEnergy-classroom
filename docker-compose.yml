@@ -6,7 +6,7 @@ services:
     volumes:
       - ./backend/instance:/app/instance
       - ./backend/logs:/app/logs
-      - ./backend/uploads:/app/uploads
+      - ./backend/secure_data:/app/secure_data
     env_file:
       - ./backend/.env
     ports:

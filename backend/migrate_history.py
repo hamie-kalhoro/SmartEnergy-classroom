@@ -1,14 +1,16 @@
 from datetime import timezone
+import os
 import pandas as pd
 from datetime import datetime, timedelta
 import random
 from app import app
+from data_paths import SECURE_DATA_DIR
 from models import db, EnergyDecision, Classroom
 
 def migrate():
     with app.app_context():
         # 1. Load Dataset
-        df = pd.read_csv('sample_2000_dataset.csv')
+        df = pd.read_csv(os.path.join(SECURE_DATA_DIR, 'sample_2000_dataset.csv'))
         
         # 2. Cleanup existing decisions
         EnergyDecision.query.delete()

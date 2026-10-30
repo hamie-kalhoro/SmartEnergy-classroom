@@ -11,11 +11,12 @@ import os
 import json
 from datetime import datetime
 from climate_service import get_climate_context, get_device_overrides
+from data_paths import SECURE_DATA_DIR
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, 'occupancy_model.pkl')
-MASTER_HISTORY_PATH = os.path.join(BASE_DIR, 'data', 'processed_history.csv')
-TRAINING_LOG_PATH = os.path.join(BASE_DIR, 'data', 'training_history.json')
+MASTER_HISTORY_PATH = os.path.join(SECURE_DATA_DIR, 'processed_history.csv')
+TRAINING_LOG_PATH = os.path.join(SECURE_DATA_DIR, 'training_history.json')
 
 # The model predicts the occupancy level of an UPCOMING class. It may only use what is
 # known before the class starts: the schedule (day, hour, type, batch, section, week)
@@ -106,7 +107,7 @@ class MLEngine:
         self._profile_cache = None
         self._profile_cache_time = 0
 
-        os.makedirs(os.path.join(BASE_DIR, 'data'), exist_ok=True)
+        os.makedirs(SECURE_DATA_DIR, exist_ok=True)
 
         if os.path.exists(TRAINING_LOG_PATH):
             try:

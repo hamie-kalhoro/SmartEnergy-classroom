@@ -3,6 +3,8 @@ import socket
 from datetime import timedelta
 from dotenv import load_dotenv
 
+from data_paths import UPLOADS_DIR
+
 # Load .env file
 load_dotenv()
 
@@ -55,7 +57,7 @@ class Config:
     FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
     
     # Uploads
-    UPLOAD_FOLDER = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'uploads')
+    UPLOAD_FOLDER = UPLOADS_DIR
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB limit
 
 class DevelopmentConfig(Config):

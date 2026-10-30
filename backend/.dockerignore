@@ -1,0 +1,2 @@
+# Datasets are mounted at runtime (see docker-compose.yml), never built into the image
+secure_data/

@@ -28,10 +28,9 @@ from datetime import date, timedelta
 import numpy as np
 import pandas as pd
 
+from data_paths import SECURE_DATA_DIR as DATA_DIR
 from room_catalog import MAP_ROOMS, HOME_ROOMS, room_fields
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(BASE_DIR, 'data')
 ATTENDANCE_CSV = os.path.join(DATA_DIR, 'attendance_dataset.csv')
 TIMETABLE_CSV = os.path.join(DATA_DIR, 'morning_timetable.csv')
 

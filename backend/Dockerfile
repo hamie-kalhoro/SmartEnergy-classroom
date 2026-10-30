@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p instance logs uploads
+RUN mkdir -p instance logs secure_data/uploads
 
 # Expose the port the app runs on
 EXPOSE 5000
