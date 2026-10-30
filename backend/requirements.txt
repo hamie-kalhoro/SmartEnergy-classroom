@@ -18,3 +18,4 @@ flask-talisman
 python-multipart
 watchdog
 requests
+pyserial

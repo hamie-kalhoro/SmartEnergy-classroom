@@ -14,6 +14,7 @@ import Users from './pages/Users';
 import LandingPage from './pages/LandingPage';
 import NotificationPanel from './components/NotificationPanel';
 import CampusMap from './pages/CampusMap';
+import HardwarePortal from './pages/HardwarePortal';
 import LuminousBackground from './components/LuminousBackground';
 
 import * as FiIcons from 'react-icons/fi';
@@ -150,6 +151,7 @@ function App() {
                             <Route path="/timetable" element={user ? <Timetable user={user} /> : <Navigate to="/login" />} />
                             <Route path="/ml-lab" element={user ? <MLDataset /> : <Navigate to="/login" />} />
                             <Route path="/users" element={user ? <Users user={user} /> : <Navigate to="/login" />} />
+                            <Route path="/hardware" element={user?.role === 'admin' ? <HardwarePortal /> : <Navigate to={user ? '/' : '/login'} />} />
                         </Routes>
                     </div>
                 </main>

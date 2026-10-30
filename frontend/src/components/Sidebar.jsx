@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { FiGrid, FiBox, FiTrendingUp, FiCalendar, FiLogOut, FiUsers, FiChevronDown, FiCpu, FiChevronLeft, FiMap, FiActivity, FiCloud, FiHardDrive, FiWifi } from 'react-icons/fi';
+import { FiGrid, FiBox, FiTrendingUp, FiCalendar, FiLogOut, FiUsers, FiChevronDown, FiCpu, FiChevronLeft, FiMap, FiActivity, FiCloud, FiHardDrive, FiWifi, FiRadio } from 'react-icons/fi';
 import api from '../api';
 import ConfirmModal from './ConfirmModal';
 import BrandMark from './BrandMark';
@@ -31,6 +31,7 @@ const NAV_GROUPS = [
         adminOnly: true,
         items: [
             { to: '/users', label: 'Faculty Users', icon: FiUsers },
+            { to: '/hardware', label: 'Hardware Portal', icon: FiRadio },
         ]
     }
 ];

@@ -44,13 +44,15 @@ def create_app(config_name=None):
     from routes.ml import ml_bp
     from routes.analytics import analytics_bp
     from routes.system import system_bp
-    
+    from routes.hardware import hardware_bp
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(classroom_bp)
     app.register_blueprint(timetable_bp)
     app.register_blueprint(ml_bp)
     app.register_blueprint(analytics_bp)
     app.register_blueprint(system_bp)
+    app.register_blueprint(hardware_bp)
 
     # Initialize Automation (Admin Reporting)
     setup_automation(app)
@@ -187,6 +189,9 @@ app = create_app()
 
 if __name__ == '__main__':
     seed_database(app)
+    # Started only here, not under gunicorn: one process can hold the USB port.
+    from hardware_bridge import bridge
+    bridge.start()
     port = int(os.getenv('PORT', 5000))
     if app.config['DEBUG']:
         app.run(debug=True, host='0.0.0.0', port=port, use_reloader=False)
