@@ -2,10 +2,14 @@ from flask import Blueprint, request, jsonify, redirect, current_app
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 import pandas as pd
 import os
+import time
 from models import db, User, Notification
 from services import AuthService, PasswordService, EmailService
 
 auth_bp = Blueprint('auth', __name__)
+
+RESEND_COOLDOWN_SECONDS = 60
+resend_available_at = {}
 
 @auth_bp.route('/api/signup', methods=['POST'])
 def signup():
@@ -18,10 +22,35 @@ def signup():
     )
     if error:
         return jsonify({'success': False, 'message': error}), 400
+    if not user.activation_email_sent:
+        return jsonify({
+            'success': True,
+            'email_sent': False,
+            'message': 'Your account was created, but the activation email could not be sent.'
+        })
     return jsonify({
-        'success': True, 
+        'success': True,
+        'email_sent': True,
         'message': f'Signup successful! An activation email has been sent to {user.email}.'
     })
+
+@auth_bp.route('/api/resend-activation', methods=['POST'])
+def resend_activation():
+    """Send a new activation link, limited per account so it cannot be used to flood an inbox."""
+    login_id = str((request.get_json(silent=True) or {}).get('login') or '').strip()
+    if not login_id:
+        return jsonify({'success': False, 'message': 'Enter your email or username.'}), 400
+
+    key = login_id.lower()
+    now = time.monotonic()
+    if resend_available_at.get(key, 0) > now:
+        return jsonify({'success': False, 'message': 'Please wait a minute before requesting another email.'}), 429
+    resend_available_at[key] = now + RESEND_COOLDOWN_SECONDS
+
+    if AuthService.resend_activation(login_id) is False:
+        return jsonify({'success': False, 'message': 'The email service is unavailable right now. Please contact an administrator.'}), 503
+    # Same reply whether or not the account exists, so this cannot be used to discover accounts.
+    return jsonify({'success': True, 'message': 'If this account is waiting for activation, a new email has been sent.'})
 
 @auth_bp.route('/api/activate', methods=['GET'])
 def activate():

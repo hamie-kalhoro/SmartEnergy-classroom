@@ -17,6 +17,8 @@ function Login({ onLogin }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [activated, setActivated] = useState(false);
+  const [resendStatus, setResendStatus] = useState(null);
+  const [resending, setResending] = useState(false);
 
   // Dynamic Placeholders Configurations
   const txtUser = "Enter your login ID";
@@ -43,6 +45,7 @@ function Login({ onLogin }) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setResendStatus(null);
     try {
       const res = await api.post("/api/login", formData);
       if (res.data.success) {
@@ -54,6 +57,22 @@ function Login({ onLogin }) {
       setError(err.response?.data?.message || "Invalid credentials");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResending(true);
+    setResendStatus(null);
+    try {
+      const res = await api.post("/api/resend-activation", { login: formData.username });
+      setResendStatus({ ok: true, message: res.data.message });
+    } catch (err) {
+      setResendStatus({
+        ok: false,
+        message: err.response?.data?.message || "The email could not be sent.",
+      });
+    } finally {
+      setResending(false);
     }
   };
 
@@ -155,6 +174,26 @@ function Login({ onLogin }) {
                 fontSize: "0.875rem",
               }}>
               {error}
+              {error === "Account not activated" && (
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    style={{ color: "var(--text)", border: "1px solid var(--border-light)" }}
+                    onClick={handleResend}
+                    disabled={resending}>
+                    {resending ? "Sending..." : "Resend activation email"}
+                  </button>
+                  {resendStatus && (
+                    <div
+                      className="mt-2"
+                      role="status"
+                      style={{ color: resendStatus.ok ? "#10b981" : "#f87171" }}>
+                      {resendStatus.message}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

@@ -1,4 +1,5 @@
 from datetime import timezone
+import logging
 import os
 import uuid
 import smtplib
@@ -6,7 +7,10 @@ import bcrypt
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
+from email_templates import build_activation_message
 from models import db, User, EnergyDecision, DailyEnergyLog, Notification
+
+logger = logging.getLogger(__name__)
 
 class EmailService:
     @staticmethod
@@ -19,23 +23,14 @@ class EmailService:
         backend_url = os.getenv('BACKEND_URL', 'http://localhost:5000')
         activation_link = f"{backend_url}/api/activate?token={token}"
 
-        html_body = f"""
-        <html>
-            <body style="background-color: #0f172a; color: #ffffff; padding: 40px; font-family: sans-serif;">
-                <div style="background: #020617; border-radius: 20px; padding: 40px; border: 1px solid #1e293b;">
-                    <h2 style="color: #3ecf8e;">Welcome to SmartEnergy, {username}!</h2>
-                    <p style="color: #94a3b8;">Click below to activate your administrative identity:</p>
-                    <a href="{activation_link}" style="background: #3ecf8e; color: #020617; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">Activate Account</a>
-                </div>
-            </body>
-        </html>
-        """
         try:
-            msg = MIMEMultipart(); msg['From'] = f"SmartEnergy <{sender}>"; msg['To'] = to_email; msg['Subject'] = "Activate Your Account"; msg.attach(MIMEText(html_body, 'html'))
+            msg = build_activation_message(to_email, sender, username, activation_link)
             with smtplib.SMTP(server, port, timeout=10) as smtp:
                 smtp.starttls(); smtp.login(username_smtp, password); smtp.send_message(msg)
             return True
-        except Exception as e: print(f"[ERROR] EMAIL: {e}"); return False
+        except Exception as e:
+            logger.error("Activation email to %s failed: %s", to_email, e)
+            return False
 
     @staticmethod
     def notify_superior_of_deletion(superior_email, admin_name, target_user_name, target_role):
@@ -62,7 +57,20 @@ class AuthService:
         if is_pending:
             db.session.add(Notification(type='admin_request', message=f'{username} requested access', target_role='admin', related_user_id=new_user.id))
             db.session.commit(); return new_user, "Admin access pending approval."
-        EmailService.send_activation_email(email, username, token); return new_user, None
+        # Not a database column: tells the signup route whether to promise an email.
+        new_user.activation_email_sent = EmailService.send_activation_email(email, username, token)
+        return new_user, None
+
+    @staticmethod
+    def resend_activation(login_id):
+        """Send a new activation email. Returns None when the account does not need one."""
+        user = User.query.filter((User.username == login_id) | (User.email == login_id)).first()
+        if not user or user.is_active_account or user.is_pending_admin:
+            return None
+        if not user.activation_token:
+            user.activation_token = str(uuid.uuid4())
+            db.session.commit()
+        return EmailService.send_activation_email(user.email, user.username, user.activation_token)
 
     @staticmethod
     def admin_create_user(username, email, password, role, auto_activate=False):

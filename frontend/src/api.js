@@ -26,7 +26,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response && error.response.status === 401) {
+        // A failed login is not an expired session: let the login page show the reason.
+        if (error.response && error.response.status === 401 && error.config?.url !== '/api/login') {
             localStorage.removeItem('user');
             window.location.href = '/login?expired=true';
         }

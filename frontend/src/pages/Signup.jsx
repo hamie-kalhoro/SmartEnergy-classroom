@@ -29,6 +29,7 @@ function Signup() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [emailSent, setEmailSent] = useState(true);
   const [showPassword, setShowPassword] = useState(true);
 
   // Dynamic Placeholders
@@ -74,6 +75,7 @@ function Signup() {
     try {
       const res = await api.post("/api/signup", formData);
       if (res.data.success) {
+        setEmailSent(res.data.email_sent !== false);
         setSuccess(true);
       }
     } catch (err) {
@@ -82,6 +84,38 @@ function Signup() {
       setLoading(false);
     }
   };
+
+  if (success && !emailSent) {
+    return (
+      <div
+        className="min-vh-100 d-flex align-items-center justify-content-center p-4"
+        style={{ background: "var(--bg-deep)" }}>
+        <div className="fade-in text-center" role="alert" style={{ maxWidth: "480px" }}>
+          <div
+            className="d-inline-flex align-items-center justify-content-center mb-4"
+            style={{
+              background: "linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)",
+              borderRadius: "50%",
+              padding: "24px",
+            }}>
+            <FiMail style={{ fontSize: "2.5rem", color: "white" }} />
+          </div>
+          <h2 className="fw-bold mb-3" style={{ letterSpacing: "-0.03em" }}>
+            Account Created, Email Not Sent
+          </h2>
+          <p className="text-muted mb-5" style={{ fontSize: "1.05rem" }}>
+            We couldn't send the activation link to{" "}
+            <span className="text-primary fw-bold">{formData.email}</span>. You
+            can request a new one from the login page, or ask an administrator
+            to activate your account.
+          </p>
+          <Link to="/login" className="btn btn-lg btn-gradient">
+            Go to Login <FiArrowRight className="ms-2" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (success) {
     const isAdminPending = formData.role === "admin";
