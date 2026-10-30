@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { FiGrid, FiBox, FiTrendingUp, FiCalendar, FiLogOut, FiUsers, FiChevronDown, FiCpu, FiChevronLeft, FiMap, FiActivity, FiCloud, FiHardDrive, FiWifi } from 'react-icons/fi';
+import { FiGrid, FiBox, FiTrendingUp, FiCalendar, FiLogOut, FiUsers, FiChevronDown, FiCpu, FiChevronLeft, FiMap, FiActivity, FiCloud, FiHardDrive, FiWifi, FiRadio } from 'react-icons/fi';
 import api from '../api';
 import ConfirmModal from './ConfirmModal';
 import BrandMark from './BrandMark';
@@ -31,6 +31,7 @@ const NAV_GROUPS = [
         adminOnly: true,
         items: [
             { to: '/users', label: 'Faculty Users', icon: FiUsers },
+            { to: '/hardware', label: 'Hardware Portal', icon: FiRadio },
         ]
     }
 ];
@@ -221,13 +222,28 @@ ${syncTooltip}` : undefined}
 
             <ConfirmModal
                 show={showLogout}
-                type="warning"
-                title="Exit Portal?"
-                message="You will be signed out of your SmartEnergy session."
-                confirmText="Sign Out"
+                type="confirm"
+                icon={<FiLogOut />}
+                title="Sign out of SmartEnergy?"
+                message="You'll need to sign in again to access the dashboard."
+                confirmText="Sign out"
+                tone="danger"
                 onConfirm={() => { setShowLogout(false); logout(); }}
                 onCancel={() => setShowLogout(false)}
-            />
+            >
+                <div className="cmodal-account" style={{ '--sb-status': sync.color }}>
+                    <span className="cmodal-account-avatar">{initial}</span>
+                    <div className="cmodal-account-text">
+                        <strong>{user?.username}</strong>
+                        <span>{user?.email || user?.role}</span>
+                    </div>
+                    <span className="cmodal-account-role">{user?.role}</span>
+                </div>
+                <div className="cmodal-session">
+                    <span className="cmodal-session-dot" />
+                    {syncTitle} · {sync.online ? 'Synced' : 'Offline'}
+                </div>
+            </ConfirmModal>
         </aside>
     );
 }

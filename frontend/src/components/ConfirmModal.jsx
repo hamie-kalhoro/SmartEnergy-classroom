@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { FiAlertTriangle, FiCheckCircle, FiHelpCircle, FiInfo, FiXCircle } from 'react-icons/fi';
 
 /**
- * SmartEnergy Custom Modal — replaces native alert() and confirm() dialogs.
+ * SmartEnergy dialog — replaces native alert() and confirm().
  *
  * Props:
  *   show        (bool)    — whether to display
@@ -11,54 +12,20 @@ import { motion, AnimatePresence } from 'framer-motion';
  *   title       (string)  — heading text
  *   message     (string)  — body text
  *   onConfirm   (fn)      — called on OK / Confirm click
- *   onCancel    (fn)      — called on Cancel or backdrop click (confirm only)
+ *   onCancel    (fn)      — called on Cancel, Escape or backdrop click (confirm only)
  *   confirmText (string)  — custom confirm button label
  *   cancelText  (string)  — custom cancel button label
+ *   tone        (string)  — confirm button style: 'primary' (default) | 'danger'
+ *   icon        (node)    — overrides the type icon
+ *   children    (node)    — optional extra content shown under the message
  */
 
-const iconMap = {
-    confirm: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#52eea3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-        </svg>
-    ),
-    alert: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="16" x2="12" y2="12" />
-            <line x1="12" y1="8" x2="12.01" y2="8" />
-        </svg>
-    ),
-    success: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-            <polyline points="22 4 12 14.01 9 11.01" />
-        </svg>
-    ),
-    error: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="15" y1="9" x2="9" y2="15" />
-            <line x1="9" y1="9" x2="15" y2="15" />
-        </svg>
-    ),
-    warning: (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-            <line x1="12" y1="9" x2="12" y2="13" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
-        </svg>
-    ),
-};
-
-const accentMap = {
-    confirm: '#00f59b',
-    alert: '#3b82f6',
-    success: '#10b981',
-    error: '#ef4444',
-    warning: '#f59e0b',
+const TYPES = {
+    confirm: { icon: FiHelpCircle, accent: '#10b981' },
+    alert: { icon: FiInfo, accent: 'var(--accent-sky-text)' },
+    success: { icon: FiCheckCircle, accent: '#10b981' },
+    error: { icon: FiXCircle, accent: '#ef4444' },
+    warning: { icon: FiAlertTriangle, accent: '#f59e0b' },
 };
 
 function ConfirmModal({
@@ -70,205 +37,85 @@ function ConfirmModal({
     onCancel,
     confirmText,
     cancelText,
+    tone = 'primary',
+    icon,
+    children,
 }) {
+    const dialogRef = useRef(null);
     const isConfirm = type === 'confirm' || type === 'warning';
-    const accent = accentMap[type] || accentMap.confirm;
-
-    // Default button labels
+    const { icon: TypeIcon, accent } = TYPES[type] || TYPES.confirm;
     const okLabel = confirmText || (isConfirm ? 'Confirm' : 'OK');
     const noLabel = cancelText || 'Cancel';
+    const dismiss = () => (isConfirm ? onCancel?.() : onConfirm?.());
 
-    // Close on Escape
     useEffect(() => {
-        if (!show) return;
+        if (!show) return undefined;
+        // Focus the safe choice first: Cancel for destructive actions, otherwise the primary button
+        const target = dialogRef.current?.querySelector(tone === 'danger' && isConfirm ? '[data-cancel]' : '[data-confirm]');
+        target?.focus();
+
         const handler = (e) => {
             if (e.key === 'Escape') {
-                isConfirm ? onCancel?.() : onConfirm?.();
+                e.preventDefault();
+                dismiss();
+            } else if (e.key === 'Tab' && dialogRef.current) {
+                // Keep keyboard focus inside the dialog
+                const focusable = dialogRef.current.querySelectorAll('button:not([disabled])');
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+                else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
             }
         };
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
-    }, [show, isConfirm, onCancel, onConfirm]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [show, isConfirm, tone, onCancel, onConfirm]);
 
     if (!show) return null;
 
     return ReactDOM.createPortal(
-        <AnimatePresence>
+        <motion.div
+            className="cmodal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.15 }}
+            onMouseDown={(e) => { if (e.target === e.currentTarget) dismiss(); }}
+        >
             <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                onClick={(e) => {
-                    if (e.target === e.currentTarget) {
-                        isConfirm ? onCancel?.() : onConfirm?.();
-                    }
-                }}
-                style={{
-                    position: 'fixed',
-                    inset: 0,
-                    zIndex: 99999, // Extremely high to bypass everything
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: 'rgba(0, 0, 0, 0.6)',
-                    backdropFilter: 'blur(6px)',
-                }}
+                ref={dialogRef}
+                className="cmodal"
+                role={isConfirm ? 'alertdialog' : 'dialog'}
+                aria-modal="true"
+                aria-labelledby="cmodal-title"
+                aria-describedby={message ? 'cmodal-message' : undefined}
+                style={{ '--cmodal-accent': accent }}
+                initial={{ opacity: 0, scale: 0.97, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             >
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 15 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                    style={{
-                        width: '100%',
-                        maxWidth: '400px',
-                        background: 'rgba(10, 10, 12, 0.75)',
-                        backdropFilter: 'blur(30px) saturate(150%)',
-                        WebkitBackdropFilter: 'blur(30px) saturate(150%)',
-                        border: '1px solid rgba(255, 255, 255, 0.06)',
-                        borderRadius: '24px',
-                        overflow: 'hidden',
-                        boxShadow: `0 40px 80px -20px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.02), 0 0 40px ${accent}10`,
-                        position: 'relative'
-                    }}
-                >
-                    {/* Premium Glowing Top Line */}
-                    <div style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: '20%',
-                        right: '20%',
-                        height: '1px',
-                        background: `linear-gradient(90deg, transparent, ${accent}, transparent)`,
-                        boxShadow: `0 0 20px 2px ${accent}60`,
-                    }} />
-
-                    {/* Content */}
-                    <div style={{ padding: '2.5rem 2rem 1.5rem', textAlign: 'center', position: 'relative' }}>
-                        {/* Ambient background glow behind the icon */}
-                        <div style={{
-                            position: 'absolute',
-                            top: '25%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            width: '120px',
-                            height: '120px',
-                            background: `${accent}`,
-                            filter: 'blur(60px)',
-                            opacity: 0.15,
-                            pointerEvents: 'none'
-                        }} />
-
-                        {/* Icon */}
-                        <div style={{
-                            width: '68px',
-                            height: '68px',
-                            borderRadius: '20px',
-                            background: `linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)`,
-                            border: `1px solid rgba(255,255,255,0.08)`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            margin: '0 auto 1.5rem',
-                            position: 'relative',
-                            boxShadow: `inset 0 2px 20px rgba(255,255,255,0.02), 0 10px 20px rgba(0,0,0,0.2)`,
-                        }}>
-                            {iconMap[type] || iconMap.confirm}
-                        </div>
-
-                        {/* Title */}
-                        <h4 style={{
-                            margin: '0 0 0.5rem',
-                            fontSize: '1.25rem',
-                            fontWeight: '800',
-                            color: 'var(--text)',
-                            fontFamily: 'var(--font-heading, "Inter", sans-serif)',
-                            letterSpacing: '-0.02em'
-                        }}>
-                            {title}
-                        </h4>
-
-                        {/* Message */}
-                        {message && (
-                            <p style={{
-                                margin: 0,
-                                fontSize: '0.95rem',
-                                color: 'var(--text-muted)',
-                                lineHeight: 1.6,
-                                padding: '0 0.5rem',
-                            }}>
-                                {message}
-                            </p>
-                        )}
+                <div className="cmodal-body">
+                    <span className="cmodal-icon" aria-hidden="true">{icon || <TypeIcon />}</span>
+                    <div className="cmodal-text">
+                        <h2 id="cmodal-title">{title}</h2>
+                        {message && <p id="cmodal-message">{message}</p>}
                     </div>
+                </div>
 
-                    {/* Actions */}
-                    <div style={{
-                        display: 'flex',
-                        gap: '12px',
-                        padding: '0 2rem 2rem',
-                        justifyContent: 'center',
-                    }}>
-                        {isConfirm && (
-                            <button
-                                onClick={onCancel}
-                                style={{
-                                    flex: 1,
-                                    padding: '0.8rem 1rem',
-                                    borderRadius: '16px',
-                                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                                    background: 'rgba(255, 255, 255, 0.03)',
-                                    color: 'var(--text-secondary)',
-                                    fontSize: '0.95rem',
-                                    fontWeight: '600',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.target.style.background = 'rgba(255, 255, 255, 0.08)';
-                                    e.target.style.color = 'var(--text)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.target.style.background = 'rgba(255, 255, 255, 0.03)';
-                                    e.target.style.color = 'var(--text-secondary)';
-                                }}
-                            >
-                                {noLabel}
-                            </button>
-                        )}
-                        <button
-                            onClick={onConfirm}
-                            autoFocus
-                            style={{
-                                flex: 1,
-                                padding: '0.8rem 1rem',
-                                borderRadius: '16px',
-                                border: `1px solid ${accent}40`,
-                                background: `linear-gradient(135deg, ${accent}dd 0%, ${accent} 100%)`,
-                                color: '#ffffff',
-                                fontSize: '0.95rem',
-                                fontWeight: '700',
-                                cursor: 'pointer',
-                                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                                boxShadow: `0 10px 25px -5px ${accent}60, inset 0 2px 5px rgba(255,255,255,0.3)`,
-                                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.target.style.transform = 'translateY(-2px)';
-                                e.target.style.boxShadow = `0 15px 35px -5px ${accent}80, inset 0 2px 5px rgba(255,255,255,0.4)`;
-                            }}
-                            onMouseLeave={(e) => {
-                                e.target.style.transform = 'translateY(0)';
-                                e.target.style.boxShadow = `0 10px 25px -5px ${accent}60, inset 0 2px 5px rgba(255,255,255,0.3)`;
-                            }}
-                        >
-                            {okLabel}
+                {children && <div className="cmodal-extra">{children}</div>}
+
+                <div className="cmodal-footer">
+                    {isConfirm && (
+                        <button type="button" className="cmodal-btn secondary" onClick={onCancel} data-cancel>
+                            {noLabel}
                         </button>
-                    </div>
-                </motion.div>
+                    )}
+                    <button type="button" className={`cmodal-btn ${tone === 'danger' ? 'danger' : 'primary'}`} onClick={onConfirm} data-confirm>
+                        {okLabel}
+                    </button>
+                </div>
             </motion.div>
-        </AnimatePresence>,
+        </motion.div>,
         document.body
     );
 }

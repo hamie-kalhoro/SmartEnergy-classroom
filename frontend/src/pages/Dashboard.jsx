@@ -1,60 +1,107 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { Chart as ChartJS, registerables } from 'chart.js';
+import { Bar, Line } from 'react-chartjs-2';
 import {
-    Chart as ChartJS,
-    registerables
-} from 'chart.js';
-import { Bar, Doughnut, Line } from 'react-chartjs-2';
-import { FiZap, FiHome, FiUsers, FiGlobe, FiCpu, FiActivity, FiArrowUpRight, FiChevronRight, FiThermometer } from 'react-icons/fi';
+    FiZap, FiUsers, FiCpu, FiActivity, FiChevronRight, FiThermometer, FiDroplet, FiTrendingUp, FiWind, FiTarget
+} from 'react-icons/fi';
 
 ChartJS.register(...registerables);
 
-// PERFECT WEEKEND PLUGIN: Draws the "Stylish Underline" for Sat/Sun
-const weekendPlugin = {
-    id: 'weekendUnderline',
-    afterDraw: (chart) => {
-        try {
-            const { ctx, chartArea: { bottom }, scales } = chart;
-            const x = scales?.x;
-            if (!x || !x.ticks) return;
-            
-            x.ticks.forEach((tick, index) => {
-                const label = x.getLabelForValue(tick.value);
-                if (label === 'Sat' || label === 'Sun') {
-                    const xPos = x.getPixelForTick(index);
-                    ctx.save();
-                    ctx.strokeStyle = '#f59e0b'; // Amber Glow
-                    ctx.lineWidth = 2;
-                    ctx.shadowBlur = 4;
-                    ctx.shadowColor = '#f59e0b';
-                    ctx.beginPath();
-                    ctx.moveTo(xPos - 12, bottom + 25);
-                    ctx.lineTo(xPos + 12, bottom + 25);
-                    ctx.stroke();
-                    ctx.restore();
-                }
-            });
-        } catch (e) {
-            console.error("Plugin Error:", e);
-        }
-    }
-};
+const RANGES = [
+    { label: 'Today', val: '1d', period: 'today', noun: 'day' },
+    { label: '7 days', val: '1w', period: 'this week', noun: 'week' },
+    { label: '30 days', val: '1m', period: 'this month', noun: 'month' }
+];
+
+const LEVEL_COLORS = { Maximum: '#10b981', Balanced: '#06b6d4', Light: '#f59e0b', Trace: '#f97316', Empty: '#ef4444' };
+const KG_CO2_PER_KWH = 0.5; // backend reports co2_reduced in tonnes at 0.5 kg/kWh
+
+const num = (v) => parseFloat(v) || 0;
+const fmt = (v, digits = 1) => num(v).toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: 0 });
+
+/** Theme colours from CSS variables, re-read when the light/dark theme flips. */
+function useThemeColors() {
+    const read = () => {
+        const css = getComputedStyle(document.documentElement);
+        return {
+            text: css.getPropertyValue('--text').trim() || '#fff',
+            muted: css.getPropertyValue('--text-muted').trim() || '#9ca3af',
+            border: css.getPropertyValue('--border').trim() || 'rgba(255,255,255,0.1)',
+            surface: css.getPropertyValue('--bg-surface').trim() || '#041418'
+        };
+    };
+    const [colors, setColors] = useState(read);
+    useEffect(() => {
+        const observer = new MutationObserver(() => setColors(read()));
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+        return () => observer.disconnect();
+    }, []);
+    return colors;
+}
+
+function Sparkline({ data, color }) {
+    const values = data.length ? data : [0];
+    const max = Math.max(...values, 1);
+    const w = 96;
+    const h = 32;
+    const step = values.length > 1 ? w / (values.length - 1) : w;
+    const points = values.map((v, i) => [i * step, h - 2 - (v / max) * (h - 6)]);
+    const line = points.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
+    const id = `spark-${color.replace('#', '')}`;
+    return (
+        <svg className="dash-spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+                <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor={color} stopOpacity="0.28" />
+                    <stop offset="100%" stopColor={color} stopOpacity="0" />
+                </linearGradient>
+            </defs>
+            <path d={`${line} L${w} ${h} L0 ${h} Z`} fill={`url(#${id})`} />
+            <path d={line} fill="none" stroke={color} strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        </svg>
+    );
+}
+
+function KpiCard({ icon: Icon, label, value, unit, color, footer, children }) {
+    return (
+        <div className="dash-kpi" style={{ '--kpi-color': color }}>
+            <div className="dash-kpi-head">
+                <span className="dash-kpi-icon"><Icon /></span>
+                <span className="dash-kpi-label">{label}</span>
+            </div>
+            <div className="dash-kpi-value">
+                <strong>{value}</strong>
+                {unit && <span>{unit}</span>}
+            </div>
+            {children}
+            {footer && <div className="dash-kpi-foot">{footer}</div>}
+        </div>
+    );
+}
+
+function CardHeader({ title, subtitle, children }) {
+    return (
+        <div className="dash-card-head">
+            <div>
+                <h3>{title}</h3>
+                {subtitle && <p>{subtitle}</p>}
+            </div>
+            {children}
+        </div>
+    );
+}
 
 function Dashboard() {
-    console.log('>> [DEBUG] Dashboard Component Mount/Render');
     const navigate = useNavigate();
-    const [stats, setStats] = useState({
-        energy_saved: 0, active_classrooms: 0, avg_occupancy: 0, co2_reduced: 0, total_decisions: 0
-    });
-    const [charts, setCharts] = useState({
-        weekly: { labels: ['M', 'T', 'W', 'T', 'F', 'S', 'S'], data: [0, 0, 0, 0, 0, 0, 0] },
-        hourly: { labels: ['8AM', '9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM'], data: [0, 0, 0, 0, 0, 0, 0, 0] }
-    });
-    const [activeRange, setActiveRange] = useState('1w'); // '1w' or '1m'
+    const theme = useThemeColors();
+    const [stats, setStats] = useState({ energy_saved: 0, active_classrooms: 0, avg_occupancy: 0, co2_reduced: 0, total_decisions: 0 });
+    const [charts, setCharts] = useState({ weekly: { labels: [], data: [] }, hourly: { labels: [], data: [] } });
+    const [activeRange, setActiveRange] = useState('1w');
     const [recentDecisions, setRecentDecisions] = useState([]);
-    const [maturity, setMaturity] = useState({ evolution_level: 'Seedling', coverage_pct: 10 });
-    const [climateData, setClimateData] = useState(null);
+    const [maturity, setMaturity] = useState({ evolution_level: '—', accuracy: 0 });
+    const [climate, setClimate] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -70,311 +117,336 @@ function Dashboard() {
             setCharts(chartsRes.data);
             setRecentDecisions(recentRes.data);
             setMaturity(mlRes.data);
-            setClimateData(climateRes.data);
+            setClimate(climateRes.data);
         }).catch(err => {
-            console.error("Dashboard Fetch Error:", err);
+            console.error('Dashboard fetch error:', err);
         }).finally(() => setLoading(false));
     }, [activeRange]);
 
-    const chartOptions = {
+    const range = RANGES.find(r => r.val === activeRange);
+    const energyLabels = charts?.weekly?.labels || [];
+    const energyData = (charts?.weekly?.data || []).map(num);
+    const occupancyLabels = charts?.hourly?.labels || [];
+    const occupancyData = (charts?.hourly?.data || []).map(num);
+
+    const saved = num(stats.energy_saved);
+    const baseline = num(stats.baseline_energy);
+    const consumed = Math.max(baseline - saved, 0);
+    const efficiency = baseline > 0 ? (saved / baseline) * 100 : 0;
+    const co2Kg = num(stats.co2_reduced) * 1000;
+    const occupancy = num(stats.avg_occupancy);
+
+    const energySummary = useMemo(() => {
+        const active = energyData.filter(v => v > 0);
+        const peakIndex = energyData.indexOf(Math.max(...energyData, 0));
+        return {
+            total: energyData.reduce((a, b) => a + b, 0),
+            avg: active.length ? active.reduce((a, b) => a + b, 0) / active.length : 0,
+            peak: energyData.length && energyData[peakIndex] > 0 ? energyLabels[peakIndex] : '—',
+            activeDays: active.length
+        };
+    }, [energyData.join(), energyLabels.join()]);
+
+    const axis = {
+        grid: { color: theme.border, drawTicks: false },
+        border: { display: false },
+        ticks: { color: theme.muted, font: { size: 11 }, padding: 8 }
+    };
+
+    const tooltip = {
+        backgroundColor: theme.surface,
+        titleColor: theme.text,
+        bodyColor: theme.muted,
+        borderColor: theme.border,
+        borderWidth: 1,
+        padding: 10,
+        cornerRadius: 8,
+        displayColors: false
+    };
+
+    const barOptions = {
         responsive: true,
         maintainAspectRatio: false,
-        resizeDelay: 250, // redraw once after the sidebar finishes animating, not every frame
+        resizeDelay: 250,
+        plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { label: ctx => `${fmt(ctx.parsed.y)} kWh saved` } } },
         scales: {
-            y: {
-                beginAtZero: true,
-                grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
-                ticks: { color: '#71717a', font: { size: 10 } }
-            },
+            y: { ...axis, beginAtZero: true, ticks: { ...axis.ticks, maxTicksLimit: 5 } },
             x: {
+                ...axis,
                 grid: { display: false },
-                ticks: { 
-                    color: (context) => {
-                        const label = context.tick.label;
-                        if (label === 'Sat' || label === 'Sun') return '#f59e0b';
-                        // Today highlight
-                        if (context.index === context.chart.scales.x.ticks.length - 1) return '#ffffff';
-                        return '#71717a';
-                    },
-                    font: { size: 11, weight: (context) => context.index === context.chart.scales.x.ticks.length - 1 ? '700' : '400' }
-                },
-                border: { display: false }
+                ticks: {
+                    ...axis.ticks,
+                    color: ctx => (ctx.index === energyLabels.length - 1 ? theme.text : theme.muted),
+                    font: ctx => ({ size: 11, weight: ctx.index === energyLabels.length - 1 ? '700' : '400' }),
+                    maxRotation: 0,
+                    autoSkipPadding: 12
+                }
             }
-        },
-        plugins: {
-            legend: { display: false },
-            tooltip: { enabled: true }
-        },
-        // Auto-scale bars based on count
-        categoryPercentage: activeRange === '1w' ? 0.8 : 0.9,
-        barPercentage: activeRange === '1w' ? 0.7 : 0.8
+        }
     };
 
     const barData = {
-        labels: charts?.weekly?.labels || [],
-        datasets: [
-            {
-                label: 'Actual Saved',
-                data: (charts?.weekly?.data || []).map(v => parseFloat(v) || 0),
-                backgroundColor: (charts?.weekly?.labels || []).map((l, i) => 
-                    i === (charts?.weekly?.labels || []).length - 1 ? '#00f59b' : 'rgba(0, 245, 155, 0.3)'
-                ),
-                borderRadius: 6,
-                borderSkipped: false,
-                barThickness: activeRange === '1w' ? 28 : (window.innerWidth < 768 ? 6 : 12)
+        labels: energyLabels,
+        datasets: [{
+            data: energyData,
+            backgroundColor: ctx => {
+                const last = ctx.dataIndex === energyLabels.length - 1;
+                const { chart } = ctx;
+                if (!chart.chartArea) return last ? '#00f59b' : 'rgba(0, 245, 155, 0.35)';
+                const g = chart.ctx.createLinearGradient(0, chart.chartArea.bottom, 0, chart.chartArea.top);
+                g.addColorStop(0, last ? 'rgba(6, 182, 212, 0.9)' : 'rgba(6, 182, 212, 0.25)');
+                g.addColorStop(1, last ? '#00f59b' : 'rgba(0, 245, 155, 0.45)');
+                return g;
             },
-            {
-                label: 'Projected Total',
-                data: (charts?.weekly?.labels || []).map((l, i) => 
-                    i === (charts?.weekly?.labels || []).length - 1 ? (parseFloat(charts?.weekly?.today_projection) || 0) : 0
-                ),
-                backgroundColor: 'rgba(0, 245, 155, 0.1)',
-                borderRadius: 6,
-                borderSkipped: false,
-                barThickness: activeRange === '1w' ? 28 : (window.innerWidth < 768 ? 6 : 12),
-                grouped: false // Stake on top
-            }
-        ]
+            borderRadius: 6,
+            borderSkipped: false,
+            maxBarThickness: activeRange === '1m' ? 14 : 36,
+            minBarLength: 3
+        }]
+    };
+
+    const lineOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        resizeDelay: 250,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { label: ctx => `${fmt(ctx.parsed.y, 0)}% occupancy` } } },
+        scales: {
+            y: { ...axis, beginAtZero: true, suggestedMax: 100, ticks: { ...axis.ticks, maxTicksLimit: 5, callback: v => `${v}%` } },
+            x: { ...axis, grid: { display: false }, ticks: { ...axis.ticks, maxRotation: 0, autoSkipPadding: 12 } }
+        }
     };
 
     const lineData = {
-        labels: charts?.hourly?.labels || [],
+        labels: occupancyLabels,
         datasets: [{
-            data: (charts?.hourly?.data || []).map(v => parseFloat(v) || 0),
-            borderColor: '#00f59b',
-            backgroundColor: 'rgba(0, 245, 155, 0.08)',
+            data: occupancyData,
+            borderColor: '#38bdf8',
+            borderWidth: 2,
+            backgroundColor: ctx => {
+                const { chart } = ctx;
+                if (!chart.chartArea) return 'rgba(56, 189, 248, 0.1)';
+                const g = chart.ctx.createLinearGradient(0, chart.chartArea.top, 0, chart.chartArea.bottom);
+                g.addColorStop(0, 'rgba(56, 189, 248, 0.25)');
+                g.addColorStop(1, 'rgba(56, 189, 248, 0)');
+                return g;
+            },
             fill: true,
-            tension: 0.4,
-            pointBackgroundColor: '#00f59b',
-            pointBorderColor: '#09090b',
-            pointBorderWidth: 2,
-            pointRadius: 4,
-            pointHoverRadius: 6,
+            tension: 0.35,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: '#38bdf8',
+            pointHoverBorderColor: theme.surface,
+            pointHoverBorderWidth: 2
         }]
     };
 
-    const doughnutData = {
-        labels: ['Optimized', 'Baseline'],
-        datasets: [{
-            data: [
-                parseFloat(stats.energy_saved) || 0, 
-                Math.max((parseFloat(stats.baseline_energy) || 3000) - (parseFloat(stats.energy_saved) || 0), 1)
-            ],
-            backgroundColor: ['#00f59b', '#27272a'],
-            borderWidth: 0,
-            cutout: '75%',
-        }]
-    };
+    const gaugeR = 62;
+    const gaugeC = 2 * Math.PI * gaugeR;
 
-    const statCards = [
-        {
-            label: 'Total Saved',
-            val: stats.energy_saved,
-            unit: 'kWh',
-            icon: <FiZap />,
-            gradient: 'linear-gradient(135deg, #00f59b 0%, #22e6b6 50%, #06b6d4 100%)',
-            sub: stats.today_estimation !== undefined ? `${activeRange === '1d' ? 'Today' : activeRange === '1w' ? 'Weekly' : 'Monthly'} Projection: ${stats.today_estimation} kWh` : `Est. Period EOD: ${stats.energy_saved || 0} kWh`
-        },
-        stats.efficiency_growth !== undefined ? {
-            label: 'Growth Rate',
-            val: stats.efficiency_growth || 0,
-            unit: '%',
-            icon: <FiActivity />,
-            gradient: 'linear-gradient(135deg, #ef4444 0%, #f43f5e 100%)', // Restored to PINK/RED
-            sub: `${stats.growth_label || 'stable'} vs last ${activeRange === '1d' ? 'day' : activeRange === '1w' ? 'week' : 'month'}`
-        } : null,
-        { label: 'Avg Occupancy', val: stats.avg_occupancy, unit: '%', icon: <FiUsers />, gradient: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)' },
-        { label: 'Active Nodes', val: stats.active_classrooms, unit: '', icon: <FiHome />, gradient: 'linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%)' },
-    ].filter(Boolean);
+    const actionCounts = recentDecisions.reduce((acc, d) => ({ ...acc, [d.occupancy]: (acc[d.occupancy] || 0) + 1 }), {});
 
     return (
-        <div className="fade-in">
-            <div className="d-flex align-items-end justify-content-between mb-4">
+        <div className="fade-in dash-page">
+            {/* Header */}
+            <div className="dash-header">
                 <div>
-                    <div className="d-flex align-items-center gap-3 mb-2">
-                        <h2 className="fw-bold m-0" style={{ letterSpacing: '-0.02em', fontSize: '1.75rem' }}>
-                            Operational <span className="text-secondary-glow">Intelligence</span>
-                        </h2>
-                        <div className="d-flex align-items-center gap-2 px-3 py-1 rounded-pill" style={{ 
-                            background: 'rgba(0, 245, 155, 0.08)', 
-                            border: '1px solid rgba(0, 245, 155, 0.2)',
-                            boxShadow: '0 0 15px rgba(0, 245, 155, 0.05)'
-                        }}>
-                            <div className="pulse-dot"></div>
-                            <span className="fw-bold extra-small text-uppercase tracking-wider" style={{ color: 'var(--primary-light)', fontSize: '0.65rem' }}>
-                                AI Level: {maturity.evolution_level}
+                    <span className="rooms-eyebrow">
+                        Operations overview · {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </span>
+                    <h2 className="fw-bold mb-1" style={{ letterSpacing: '-0.03em' }}>
+                        Operational <span className="text-gradient">Intelligence</span>
+                    </h2>
+                    <div className="dash-chips">
+                        <span className="dash-chip"><i className="dash-live" />Live</span>
+                        <span className="dash-chip"><FiCpu /> {maturity.evolution_level}{maturity.accuracy ? ` · ${fmt(maturity.accuracy)}% accuracy` : ''}</span>
+                        {climate && (
+                            <span className="dash-chip" style={{ '--chip-color': climate.climate_mode_color || '#f59e0b' }}>
+                                <FiThermometer /> {climate.city} {fmt(climate.temperature)}°C · {climate.season_label}
                             </span>
-                        </div>
-                        {climateData && (
-                            <div className="d-flex align-items-center gap-2 px-3 py-1 rounded-pill" style={{ 
-                                background: `${climateData.climate_mode_color || '#f59e0b'}10`, 
-                                border: `1px solid ${climateData.climate_mode_color || '#f59e0b'}30`,
-                                boxShadow: `0 0 15px ${climateData.climate_mode_color || '#f59e0b'}08`
-                            }}>
-                                <FiThermometer style={{ fontSize: '0.7rem', color: climateData.climate_mode_color || '#f59e0b' }} />
-                                <span className="fw-bold extra-small text-uppercase tracking-wider" style={{ color: climateData.climate_mode_color || '#f59e0b', fontSize: '0.65rem' }}>
-                                    {climateData.climate_mode_icon} {climateData.temperature}°C · {climateData.season_label}
-                                </span>
-                            </div>
                         )}
                     </div>
-                    <p className="text-muted small m-0">Live energy consumption & climate-aware forecasting</p>
                 </div>
-                <div className="d-flex gap-2">
-                    <span className="badge" style={{ background: 'rgba(0, 245, 155, 0.08)', color: 'var(--primary-light)', padding: '0.45rem 0.9rem', borderRadius: '6px', border: '1px solid rgba(0,210,106,0.15)' }}>
-                        <FiCpu className="me-2" /> {stats.total_decisions} Decisions
-                    </span>
+                <div className="tt-segmented" role="tablist" aria-label="Reporting period">
+                    {RANGES.map(r => (
+                        <button key={r.val} type="button" role="tab" aria-selected={activeRange === r.val} className={activeRange === r.val ? 'active' : ''} onClick={() => setActiveRange(r.val)}>
+                            {r.label}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="row g-4 mb-5">
-                {loading ? (
-                    [1, 2, 3, 4].map(i => (
-                        <div className="col-md-6 col-lg-3" key={i}>
-                            <div className="card h-100 border-0 skeleton" style={{ minHeight: '148px' }}></div>
-                        </div>
-                    ))
-                ) : (
-                    statCards.map((s, i) => (
-                        <div className="col-md-6 col-lg-3" key={i}>
-                            <div className="card h-100 border-0 glow-border" style={{ background: 'var(--bg-card)' }}>
-                                <div className="d-flex justify-content-between align-items-start mb-3">
-                                    <div className="icon-box" style={{ background: s.gradient }}>
-                                        {s.icon}
-                                    </div>
-                                    <FiArrowUpRight className="text-muted" style={{ opacity: 0.4 }} />
-                                </div>
-                                <h3 className="fw-bold mb-1 stat-value" style={{ fontSize: '1.75rem', letterSpacing: '-0.03em' }}>
-                                    {s.val}<span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>{s.unit}</span>
-                                </h3>
-                                <p className="text-muted small m-0 text-uppercase" style={{ fontSize: '0.7rem', letterSpacing: '0.1em' }}>{s.label}</p>
-                                {s.sub && (
-                                    <p className="m-0 mt-3 small" style={{ 
-                                        fontSize: '0.65rem', 
-                                        color: s.label === 'Growth Rate' ? '#f43f5e' : 'var(--primary-light)', 
-                                        fontWeight: '600', 
-                                        opacity: 0.8 
-                                    }}>
-                                        {s.sub}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    ))
+            {/* KPIs */}
+            <div className="dash-kpis">
+                {loading ? [1, 2, 3, 4].map(i => <div className="dash-kpi skeleton" key={i} />) : (
+                    <>
+                        <KpiCard
+                            icon={FiZap}
+                            label="Energy saved"
+                            value={fmt(saved)}
+                            unit="kWh"
+                            color="#00f59b"
+                            footer={<><span>Projected {range.period}</span><strong>{fmt(stats.today_estimation ?? saved)} kWh</strong></>}
+                        >
+                            <Sparkline data={energyData} color="#00f59b" />
+                        </KpiCard>
+                        <KpiCard
+                            icon={FiTarget}
+                            label="Efficiency vs baseline"
+                            value={fmt(efficiency, 0)}
+                            unit="%"
+                            color="#06b6d4"
+                            footer={<><span>Baseline {fmt(baseline)} kWh</span><strong>−{fmt(saved)} kWh</strong></>}
+                        >
+                            <div className="dash-meter"><span style={{ width: `${Math.min(100, efficiency)}%` }} /></div>
+                        </KpiCard>
+                        <KpiCard
+                            icon={FiUsers}
+                            label="Average occupancy"
+                            value={fmt(occupancy, 0)}
+                            unit="%"
+                            color="#38bdf8"
+                            footer={<><span>Across {stats.active_classrooms} rooms</span><strong>{occupancy >= 75 ? 'High' : occupancy >= 50 ? 'Balanced' : 'Light'}</strong></>}
+                        >
+                            <Sparkline data={occupancyData} color="#38bdf8" />
+                        </KpiCard>
+                        <KpiCard
+                            icon={FiWind}
+                            label="CO₂ avoided"
+                            value={co2Kg >= 1000 ? fmt(co2Kg / 1000, 2) : fmt(co2Kg, 0)}
+                            unit={co2Kg >= 1000 ? 't' : 'kg'}
+                            color="#a78bfa"
+                            footer={<><span>{stats.total_decisions} AI decisions</span><strong>{KG_CO2_PER_KWH} kg / kWh</strong></>}
+                        >
+                            <div className="dash-meter"><span style={{ width: `${Math.min(100, (stats.total_decisions / Math.max(stats.active_classrooms * 10, 1)) * 100)}%` }} /></div>
+                        </KpiCard>
+                    </>
                 )}
             </div>
 
-            {/* Charts Row */}
-            <div className="row g-4 mb-5">
-                <div className="col-lg-8">
-                    <div className={`card h-100 ${loading ? 'skeleton' : ''}`} style={{ minHeight: '350px' }}>
-                        {!loading && (
-                            <>
-                                <div className="d-flex justify-content-between align-items-center mb-4">
-                                    <div>
-                                        <h6 className="fw-bold mb-1">{activeRange === '1d' ? "Today's Energy Consumption" : activeRange === '1w' ? "Weekly Energy Consumption" : "Monthly Energy Consumption"}</h6>
-                                        <p className="text-muted small m-0">kWh usage by day</p>
-                                    </div>
-                                    <div className="d-flex gap-2">
-                                        {[
-                                            { label: 'Today', val: '1d' },
-                                            { label: '1Week', val: '1w' },
-                                            { label: '1Month', val: '1m' }
-                                        ].map((t) => (
-                                            <button 
-                                                key={t.val} 
-                                                onClick={() => setActiveRange(t.val)}
-                                                className={`btn btn-sm ${activeRange === t.val ? 'btn-primary' : 'btn-primary-dim'}`} 
-                                                style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}
-                                            >
-                                                {t.label}
-                                            </button>
-                                        ))}
-                                    </div>
+            {/* Energy + efficiency */}
+            <div className="dash-row">
+                <section className={`dash-card dash-span-8 ${loading ? 'skeleton' : ''}`}>
+                    {!loading && (
+                        <>
+                            <CardHeader title="Energy saved" subtitle={`kWh saved by AI recommendations, ${range.period}`}>
+                                <div className="dash-mini-stats">
+                                    <div><small>Total</small><strong>{fmt(energySummary.total)} kWh</strong></div>
+                                    <div><small>Daily avg</small><strong>{fmt(energySummary.avg)} kWh</strong></div>
+                                    <div><small>Peak</small><strong>{energySummary.peak}</strong></div>
                                 </div>
-                                <div style={{ height: '300px' }}>
-                                    <Bar data={barData} options={chartOptions} plugins={[weekendPlugin]} />
+                            </CardHeader>
+                            <div className="dash-chart" style={{ minHeight: 280 }}>
+                                <Bar data={barData} options={barOptions} />
+                            </div>
+                        </>
+                    )}
+                </section>
+
+                <section className={`dash-card dash-span-4 ${loading ? 'skeleton' : ''}`}>
+                    {!loading && (
+                        <>
+                            <CardHeader title="Optimisation rate" subtitle="Saved energy against the all-on baseline" />
+                            <div className="dash-gauge">
+                                <svg viewBox="0 0 160 160" aria-hidden="true">
+                                    <defs>
+                                        <linearGradient id="dashGauge" x1="0" x2="1" y1="0" y2="1">
+                                            <stop offset="0%" stopColor="#00f59b" />
+                                            <stop offset="100%" stopColor="#06b6d4" />
+                                        </linearGradient>
+                                    </defs>
+                                    <circle cx="80" cy="80" r={gaugeR} className="dash-gauge-track" />
+                                    <circle
+                                        cx="80" cy="80" r={gaugeR}
+                                        className="dash-gauge-value"
+                                        strokeDasharray={`${(Math.min(100, efficiency) / 100) * gaugeC} ${gaugeC}`}
+                                    />
+                                </svg>
+                                <div className="dash-gauge-label">
+                                    <strong>{fmt(efficiency, 0)}%</strong>
+                                    <small>optimised</small>
                                 </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-                <div className="col-lg-4">
-                    <div className={`card h-100 text-center ${loading ? 'skeleton' : ''}`} style={{ minHeight: '350px' }}>
-                        {!loading && (
-                            <>
-                                <h6 className="fw-bold mb-1">Optimization Rate</h6>
-                                <p className="text-muted small mb-4">Energy saved vs baseline</p>
-                                <div className="d-flex justify-content-center align-items-center" style={{ height: '200px' }}>
-                                    <div style={{ position: 'relative', width: '180px', height: '180px' }}>
-                                        <Doughnut data={doughnutData} options={{ plugins: { legend: { display: false } }, cutout: '75%', resizeDelay: 250 }} />
-                                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
-                                            <h3 className="fw-bold text-gradient mb-0">{parseFloat(stats.baseline_energy) > 0 ? Math.round((parseFloat(stats.energy_saved) / parseFloat(stats.baseline_energy)) * 100) : 0}%</h3>
-                                            <small className="text-muted" style={{ fontSize: '0.7rem' }}>Efficiency</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
+                            </div>
+                            <div className="dash-breakdown">
+                                <div><span><i style={{ background: '#00f59b' }} />Saved</span><strong>{fmt(saved)} kWh</strong></div>
+                                <div><span><i style={{ background: theme.muted }} />Consumed</span><strong>{fmt(consumed)} kWh</strong></div>
+                                <div className="total"><span>Baseline</span><strong>{fmt(baseline)} kWh</strong></div>
+                            </div>
+                        </>
+                    )}
+                </section>
             </div>
 
-            {/* Activity Timeline */}
-            <div className="row g-4">
-                <div className="col-lg-8">
-                    <div className={`card ${loading ? 'skeleton' : ''}`} style={{ minHeight: '300px' }}>
-                        {!loading && (
-                            <>
-                                <div className="d-flex justify-content-between align-items-center mb-4">
-                                    <div>
-                                        <h6 className="fw-bold mb-1">Occupancy Trend</h6>
-                                        <p className="text-muted small m-0">{activeRange === '1d' ? "Today's" : activeRange === '1w' ? "Weekly" : "Monthly"} classroom activity</p>
-                                    </div>
+            {/* Occupancy + climate + actions */}
+            <div className="dash-row">
+                <section className={`dash-card dash-span-5 ${loading ? 'skeleton' : ''}`}>
+                    {!loading && (
+                        <>
+                            <CardHeader title="Occupancy trend" subtitle={`Average classroom occupancy, ${range.period}`}>
+                                <span className="dash-pill"><FiTrendingUp /> {fmt(occupancy, 0)}% avg</span>
+                            </CardHeader>
+                            <div className="dash-chart">
+                                <Line data={lineData} options={lineOptions} />
+                            </div>
+                        </>
+                    )}
+                </section>
+
+                <section className={`dash-card dash-span-3 ${loading ? 'skeleton' : ''}`}>
+                    {!loading && climate && (
+                        <>
+                            <CardHeader title="Campus climate" subtitle={`${climate.city} · ${climate.weather}`} />
+                            <div className="dash-climate">
+                                <div className="dash-climate-temp">
+                                    <strong>{fmt(climate.temperature)}°</strong>
+                                    <span>Feels like {fmt(climate.feels_like)}°C</span>
                                 </div>
-                                <div style={{ height: '200px' }}>
-                                    <Line data={lineData} options={chartOptions} />
+                                <span className="dash-climate-mode" style={{ '--chip-color': climate.climate_mode_color || '#10b981' }}>
+                                    {climate.climate_mode_label}
+                                </span>
+                            </div>
+                            <p className="dash-climate-note">{climate.description}</p>
+                            <div className="dash-climate-grid">
+                                <div><FiDroplet /><small>Humidity</small><strong>{climate.humidity}%</strong></div>
+                                <div><FiThermometer /><small>Typical</small><strong>{climate.typical_temp_range}</strong></div>
+                            </div>
+                        </>
+                    )}
+                </section>
+
+                <section className={`dash-card dash-span-4 ${loading ? 'skeleton' : ''}`}>
+                    {!loading && (
+                        <>
+                            <CardHeader title={activeRange === '1d' ? 'Recent AI actions' : 'Top AI actions'} subtitle={`${recentDecisions.length} recommendations ${range.period}`}>
+                                <FiActivity className="dash-head-icon" />
+                            </CardHeader>
+                            {recentDecisions.length > 0 && (
+                                <div className="dash-level-bar" aria-label="Recommendations by occupancy level">
+                                    {Object.keys(LEVEL_COLORS).filter(l => actionCounts[l]).map(l => (
+                                        <span key={l} style={{ flex: actionCounts[l], background: LEVEL_COLORS[l] }} title={`${l}: ${actionCounts[l]}`} />
+                                    ))}
                                 </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-                <div className="col-lg-4">
-                    <div className={`card h-100 ${loading ? 'skeleton' : ''}`} style={{ minHeight: '300px' }}>
-                        {!loading && (
-                            <>
-                                <div className="d-flex justify-content-between align-items-center mb-4">
-                                    <h6 className="fw-bold m-0">
-                                        <FiActivity className="me-2 text-primary" /> {activeRange === '1d' ? 'Recent' : 'Top'} AI Actions
-                                    </h6>
-                                </div>
-                                <div className="d-flex flex-column gap-2" style={{ maxHeight: '220px', overflowY: 'auto' }}>
-                                    {recentDecisions.length > 0 ? recentDecisions.slice(0, 5).map(d => (
-                                        <div key={d.id} className="d-flex justify-content-between align-items-center mb-2">
-                                            <div className="d-flex align-items-center gap-2">
-                                                <div style={{ 
-                                                    width: '8px', height: '8px', borderRadius: '50%', 
-                                                    background: d.occupancy === 'Maximum' ? '#10b981' : 
-                                                                d.occupancy === 'Balanced' ? '#06b6d4' : 
-                                                                d.occupancy === 'Light' ? '#f59e0b' : 
-                                                                d.occupancy === 'Trace' ? '#f97316' : '#ef4444' 
-                                                }}></div>
-                                                <span className="small fw-bold" style={{ color: 'var(--text)' }}>{d.classroom}</span>
-                                            </div>
-                                            <span className="text-muted small">{d.saved} kWh</span>
+                            )}
+                            <div className="dash-actions">
+                                {recentDecisions.length > 0 ? recentDecisions.slice(0, 5).map(d => (
+                                    <div key={d.id} className="dash-action">
+                                        <span className="dash-action-dot" style={{ '--level': LEVEL_COLORS[d.occupancy] || '#94a3b8' }} />
+                                        <div className="dash-action-text">
+                                            <strong>{d.classroom}</strong>
+                                            <small>{d.occupancy} occupancy{d.timestamp ? ` · ${d.timestamp}` : ''}</small>
                                         </div>
-                                    )) : (
-                                        <p className="text-muted small text-center py-4">No actions yet</p>
-                                    )}
-                                </div>
-                                <button onClick={() => navigate('/ml-lab')} className="btn btn-sm btn-primary-dim w-100 mt-3">
-                                    View All <FiChevronRight className="ms-1" />
-                                </button>
-                            </>
-                        )}
-                    </div>
-                </div>
+                                        <span className="dash-action-saved">−{fmt(d.saved)} kWh</span>
+                                    </div>
+                                )) : (
+                                    <p className="dash-empty">No AI actions in this period yet.</p>
+                                )}
+                            </div>
+                            <button type="button" onClick={() => navigate('/ml-lab')} className="dash-link">
+                                View all decisions <FiChevronRight />
+                            </button>
+                        </>
+                    )}
+                </section>
             </div>
         </div>
     );

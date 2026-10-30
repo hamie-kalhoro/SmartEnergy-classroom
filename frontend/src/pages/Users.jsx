@@ -1,8 +1,32 @@
 import React, { useState } from 'react';
 import api from '../api';
-import { FiUpload, FiDownload, FiCheckCircle, FiAlertCircle, FiUsers, FiMail, FiUserCheck, FiUserCheck as FiUserCheckIcon, FiShield, FiTrash2, FiUserPlus, FiClock, FiCheck, FiUnlock, FiEdit2, FiKey, FiToggleLeft, FiToggleRight, FiAlertTriangle, FiStar, FiBookOpen, FiLock } from 'react-icons/fi';
+import {
+    FiUpload, FiDownload, FiCheckCircle, FiAlertCircle, FiUsers, FiMail, FiUserCheck, FiShield, FiTrash2, FiUserPlus, FiClock,
+    FiCheck, FiUnlock, FiEdit2, FiKey, FiToggleLeft, FiToggleRight, FiAlertTriangle, FiStar, FiBookOpen, FiLock, FiSearch,
+    FiUser, FiFileText, FiX
+} from 'react-icons/fi';
 import DynamicLoader from '../components/DynamicLoader';
 import ConfirmModal from '../components/ConfirmModal';
+import Portal from '../components/Portal';
+
+const ROLE_META = {
+    admin: { label: 'Administrator', color: '#a78bfa', icon: FiShield },
+    faculty: { label: 'Faculty', color: '#06b6d4', icon: FiBookOpen },
+    user: { label: 'Student', color: '#94a3b8', icon: FiUser }
+};
+const ROLE_ORDER = ['admin', 'faculty', 'user'];
+const AVATAR_HUES = [158, 199, 262, 32, 340, 188, 222, 12];
+
+function initials(name = '') {
+    const words = name.replace(/^(Dr|Prof|Engr|Mr|Ms|Mrs)\.?\s+/i, '').split(/[\s._-]+/).filter(Boolean);
+    return ((words[0]?.[0] || '') + (words[1]?.[0] || '')).toUpperCase() || '?';
+}
+
+function avatarHue(name = '') {
+    let hash = 0;
+    for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+    return AVATAR_HUES[hash % AVATAR_HUES.length];
+}
 
 function Users({ user }) {
     const [file, setFile] = useState(null);
@@ -23,6 +47,9 @@ function Users({ user }) {
     const [editForm, setEditForm] = useState({ username: '', email: '', role: '', is_active: false, new_password: '' });
     const [editSaving, setEditSaving] = useState(false);
     const [showRoleWarning, setShowRoleWarning] = useState(false);
+    const [roleFilter, setRoleFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [query, setQuery] = useState('');
 
     // Superior Admin identification
     const SUPERIOR_EMAIL = 'admin@smart.com';
@@ -185,349 +212,281 @@ function Users({ user }) {
         );
     }
 
+    const q = query.trim().toLowerCase();
+    const visibleUsers = users
+        .filter(u => roleFilter === 'all' || u.role === roleFilter)
+        .filter(u => statusFilter === 'all' || (statusFilter === 'active' ? u.is_active : !u.is_active))
+        .filter(u => !q || `${u.username} ${u.email}`.toLowerCase().includes(q))
+        .sort((a, b) => Number(b.is_permanent) - Number(a.is_permanent) || ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role) || a.username.localeCompare(b.username));
+
+    const counts = {
+        total: users.length,
+        active: users.filter(u => u.is_active).length,
+        inactive: users.filter(u => !u.is_active).length,
+        admin: users.filter(u => u.role === 'admin').length,
+        faculty: users.filter(u => u.role === 'faculty').length,
+        user: users.filter(u => u.role === 'user').length
+    };
+
+    const stats = [
+        { label: 'Total users', val: counts.total, icon: <FiUsers />, color: '#00f59b' },
+        { label: 'Active', val: counts.active, icon: <FiUserCheck />, color: '#10b981' },
+        { label: 'Awaiting activation', val: counts.inactive, icon: <FiClock />, color: '#f59e0b' },
+        { label: 'Administrators', val: counts.admin, icon: <FiShield />, color: '#a78bfa' },
+        { label: 'Faculty', val: counts.faculty, icon: <FiBookOpen />, color: '#06b6d4' }
+    ];
+
+    const closeImport = () => {
+        setShowBulkImport(false);
+        setResult(null);
+        setFile(null);
+    };
+
     return (
-        <div className="fade-in">
-            {/* ─── Header ─── */}
-            <div className="d-flex align-items-end justify-content-between mb-4">
+        <div className="fade-in um-page">
+            <div className="dash-header">
                 <div>
-                    <div className="d-flex align-items-center gap-2 mb-2">
-                        <span className="badge" style={{ background: 'rgba(0, 245, 155, 0.08)', color: 'var(--primary-light)', fontSize: '0.7rem', border: '1px solid rgba(0,210,106,0.2)', borderRadius: '6px', padding: '0.3rem 0.65rem' }}>
-                            <FiShield className="me-1" /> ADMIN ZONE
-                        </span>
-                    </div>
+                    <span className="rooms-eyebrow">Administration · access control</span>
                     <h2 className="fw-bold mb-1" style={{ letterSpacing: '-0.03em' }}>
                         User <span className="text-gradient">Management</span>
                     </h2>
-                    <p className="text-muted small m-0">Bulk import or manually add system users</p>
+                    <p className="text-muted small m-0">Invite faculty, approve administrators and manage account access.</p>
                 </div>
-                <div className="d-flex align-items-center gap-2">
-                    <button
-                        className={`btn d-flex align-items-center gap-2 ${showBulkImport ? 'btn-primary-dim' : 'btn-primary-dim'}`}
-                        onClick={() => setShowBulkImport(!showBulkImport)}
-                        style={{ padding: '0.65rem 1.25rem' }}
-                    >
-                        <FiUpload /> {showBulkImport ? 'Hide CSV Import' : 'Upload CSV'}
+                <div className="d-flex gap-2 flex-wrap">
+                    <button className="btn btn-primary-dim" onClick={() => setShowBulkImport(true)}>
+                        <FiUpload className="me-2" /> Import CSV
                     </button>
-                    <button className="btn btn-gradient d-flex align-items-center gap-2" onClick={() => setShowAddModal(true)}>
-                        <FiUserPlus /> Add User
+                    <button className="btn btn-gradient" onClick={() => setShowAddModal(true)}>
+                        <FiUserPlus className="me-2" /> Add user
                     </button>
                 </div>
             </div>
 
-            {/* ─── Pending Admin Approvals ─── */}
-            {pendingAdmins.length > 0 && (
-                <div className="mb-4 fade-in">
-                    <div className="d-flex align-items-center gap-2 mb-3">
-                        <FiClock className="text-warning" />
-                        <h5 className="fw-bold m-0">Pending Admin Approvals</h5>
-                        <span className="badge bg-warning bg-opacity-10 text-warning">{pendingAdmins.length} Action Required</span>
+            <div className="rooms-stats">
+                {stats.map(s => (
+                    <div className={`rooms-stat ${loading ? 'skeleton' : ''}`} key={s.label}>
+                        {!loading && (
+                            <>
+                                <span className="rooms-stat-icon" style={{ color: s.color, background: `${s.color}1a` }}>{s.icon}</span>
+                                <div>
+                                    <strong>{s.val}</strong>
+                                    <small>{s.label}</small>
+                                </div>
+                            </>
+                        )}
                     </div>
-                    <div className="card p-0 overflow-hidden border-warning border-opacity-25 shadow-sm">
-                        <div className="table-container">
-                            <table className="table m-0">
-                                <thead className="bg-warning bg-opacity-5">
-                                    <tr>
-                                        <th className="ps-4">Candidate</th>
-                                        <th>Requested</th>
-                                        <th className="text-end pe-4" style={{ width: '200px' }}>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {loading ? (
-                                        [1, 2].map(i => (
-                                            <tr key={i}>
-                                                <td className="ps-4 py-3"><div className="skeleton skeleton-text w-50"></div></td>
-                                                <td><div className="skeleton skeleton-text w-25"></div></td>
-                                                <td className="text-end pe-4"><div className="skeleton skeleton-text w-50 ms-auto"></div></td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        pendingAdmins.map(p => (
-                                            <tr key={p.id}>
-                                                <td className="ps-4 py-3">
-                                                    <div className="fw-bold text-white">{p.username}</div>
-                                                    <div className="small text-muted">{p.email}</div>
-                                                </td>
-                                                <td className="text-muted small">{p.created_at}</td>
-                                                <td className="text-end pe-4">
-                                                    <button
-                                                        className="btn btn-sm btn-success-dim d-flex align-items-center gap-2 ms-auto"
-                                                        style={{ padding: '0.5rem 1rem' }}
-                                                        onClick={() => handleApproveAdmin(p.id)}
-                                                        disabled={approvingId === p.id}
-                                                    >
-                                                        {approvingId === p.id ? <DynamicLoader size={18} color="currentColor" /> : <><FiCheck /> Approve Access</>}
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                ))}
+            </div>
+
+            {/* Pending admin approvals */}
+            {pendingAdmins.length > 0 && (
+                <section className="um-pending">
+                    <div className="um-pending-head">
+                        <span className="um-pending-icon"><FiClock /></span>
+                        <div>
+                            <h3>Administrator requests</h3>
+                            <p>{pendingAdmins.length} account{pendingAdmins.length > 1 ? 's' : ''} asked for admin access and {pendingAdmins.length > 1 ? 'are' : 'is'} locked until approved.</p>
                         </div>
                     </div>
-                </div>
+                    <div className="um-pending-list">
+                        {pendingAdmins.map(p => (
+                            <div key={p.id} className="um-pending-row">
+                                <span className="um-avatar" style={{ '--hue': avatarHue(p.username) }}>{initials(p.username)}</span>
+                                <div className="um-user-text">
+                                    <strong>{p.username}</strong>
+                                    <small>{p.email}{p.created_at ? ` · requested ${p.created_at}` : ''}</small>
+                                </div>
+                                <button className="btn btn-sm btn-gradient" onClick={() => handleApproveAdmin(p.id)} disabled={approvingId === p.id}>
+                                    {approvingId === p.id ? <DynamicLoader size={16} color="var(--bg-deep)" /> : <><FiCheck className="me-1" /> Approve</>}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </section>
             )}
 
-            {/* ─── System Users Table (Primary Content) ─── */}
-            <div className="d-flex align-items-center justify-content-between mb-3">
-                <h4 className="fw-bold m-0"><FiUsers className="me-2" />System Users</h4>
-                <span className="badge bg-surface border text-muted">{users.length} Total</span>
-            </div>
+            <section className="tt-card">
+                <div className="um-toolbar">
+                    <div className="rooms-filters" role="tablist" aria-label="Filter by role">
+                        {[['all', 'All users', counts.total], ['admin', 'Admins', counts.admin], ['faculty', 'Faculty', counts.faculty], ['user', 'Students', counts.user]].map(([key, label, n]) => (
+                            <button key={key} type="button" role="tab" aria-selected={roleFilter === key} className={roleFilter === key ? 'active' : ''} onClick={() => setRoleFilter(key)}>
+                                {key !== 'all' && <i style={{ background: ROLE_META[key].color }} />}
+                                {label}<span>{n}</span>
+                            </button>
+                        ))}
+                    </div>
+                    <div className="um-toolbar-right">
+                        <div className="tt-day-tabs" role="tablist" aria-label="Filter by status">
+                            {[['all', 'Any status'], ['active', 'Active'], ['inactive', 'Inactive']].map(([key, label]) => (
+                                <button key={key} type="button" role="tab" aria-selected={statusFilter === key} className={statusFilter === key ? 'active' : ''} onClick={() => setStatusFilter(key)}>{label}</button>
+                            ))}
+                        </div>
+                        <label className="rooms-search">
+                            <FiSearch />
+                            <input type="search" placeholder="Search name or email" value={query} onChange={e => setQuery(e.target.value)} aria-label="Search users" />
+                        </label>
+                    </div>
+                </div>
 
-            <div className="card p-0 overflow-hidden mb-4">
-                <div className="table-container">
-                    <table className="table">
+                <div className="tt-grid-scroll">
+                    <table className="pred-table um-table">
                         <thead>
                             <tr>
-                                <th className="ps-4">User Details</th>
+                                <th>User</th>
                                 <th>Role</th>
                                 <th>Status</th>
-                                <th className="text-end pe-4">Actions</th>
+                                <th className="um-actions-head">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                [1, 2, 3, 4, 5].map(i => (
-                                    <tr key={i}>
-                                        <td className="ps-4 py-3">
-                                            <div className="d-flex align-items-center gap-3">
-                                                <div className="skeleton skeleton-circle" style={{ width: '32px', height: '32px' }}></div>
-                                                <div className="w-75">
-                                                    <div className="skeleton skeleton-text w-75"></div>
-                                                    <div className="skeleton skeleton-text w-50"></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td><div className="skeleton skeleton-text w-50"></div></td>
-                                        <td><div className="skeleton skeleton-text w-50"></div></td>
-                                        <td className="text-end pe-4"><div className="skeleton skeleton-text w-75 ms-auto"></div></td>
-                                    </tr>
+                                [1, 2, 3, 4].map(i => (
+                                    <tr key={i}><td colSpan="4"><div className="skeleton" style={{ height: 40 }} /></td></tr>
                                 ))
-                            ) : users.length === 0 ? (
-                                <tr>
-                                    <td colSpan="4" className="text-center py-5 text-muted">No users found. Import some!</td>
-                                </tr>
-                            ) : (
-                                users.map(u => (
+                            ) : visibleUsers.length === 0 ? (
+                                <tr><td colSpan="4" className="pred-none">{users.length ? 'No users match these filters.' : 'No users yet. Add one or import a CSV.'}</td></tr>
+                            ) : visibleUsers.map(u => {
+                                const role = ROLE_META[u.role] || ROLE_META.user;
+                                const RoleIcon = role.icon;
+                                const status = u.is_active ? 'active' : u.is_pending_admin ? 'locked' : 'inactive';
+                                return (
                                     <tr key={u.id}>
-                                        <td className="ps-4">
-                                            <div className="d-flex align-items-center gap-3">
-                                                <div style={{
-                                                    width: '32px', height: '32px', borderRadius: '10px',
-                                                    background: 'linear-gradient(135deg, var(--bg-elevated) 0%, rgba(255,255,255,0.05) 100%)',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                    fontWeight: 'bold', color: 'var(--primary-light)',
-                                                    border: '1px solid rgba(255,255,255,0.05)',
-                                                    boxShadow: u.is_permanent ? '0 0 15px rgba(245, 158, 11, 0.15)' : 'none'
-                                                }}>
-                                                    {u.is_permanent ? <FiStar size={14} className="text-warning" /> : u.username.charAt(0).toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <div className="fw-bold text-white d-flex align-items-center gap-2" style={{ fontSize: '0.9rem', letterSpacing: '-0.01em' }}>
+                                        <td>
+                                            <div className="um-user">
+                                                <span className={`um-avatar ${u.is_permanent ? 'core' : ''}`} style={{ '--hue': avatarHue(u.username) }}>
+                                                    {u.is_permanent ? <FiStar /> : initials(u.username)}
+                                                </span>
+                                                <div className="um-user-text">
+                                                    <strong>
                                                         {u.username}
-                                                        {u.is_pending_admin && <span className="badge bg-warning text-dark" style={{ fontSize: '0.6rem', padding: '0.2em 0.5em', borderRadius: '4px' }}>PENDING</span>}
-                                                    </div>
-                                                    <div className="text-muted small" style={{ opacity: 0.7, fontSize: '0.75rem' }}>{u.email}</div>
+                                                        {u.id === user.id && <span className="um-tag you">You</span>}
+                                                        {u.is_permanent && <span className="um-tag core" title="Protected from deletion and deactivation"><FiLock /> Protected</span>}
+                                                    </strong>
+                                                    <small>{u.email}</small>
                                                 </div>
                                             </div>
                                         </td>
                                         <td>
-                                            <div className="d-flex align-items-center gap-2">
-                                                {u.is_permanent ? (
-                                                    <div className="d-flex align-items-center" style={{
-                                                        background: 'rgba(245, 158, 11, 0.1)',
-                                                        border: '1px solid rgba(245, 158, 11, 0.2)',
-                                                        padding: '4px 10px',
-                                                        borderRadius: '8px',
-                                                        color: '#f59e0b',
-                                                        fontSize: '0.65rem',
-                                                        fontWeight: '700',
-                                                        letterSpacing: '0.05em',
-                                                        boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-                                                    }}>
-                                                        <FiStar size={10} className="me-1" /> CORE ADMIN
-                                                    </div>
-                                                ) : (
-                                                    <span className={`badge ${u.role === 'admin' ? 'bg-primary' : u.role === 'faculty' ? 'btn-success-dim border-0' : 'bg-premium-chip border'}`} style={{
-                                                        padding: '6px 12px',
-                                                        fontSize: '0.65rem',
-                                                        fontWeight: '600',
-                                                        textTransform: 'uppercase'
-                                                    }}>
-                                                        {u.role === 'faculty' ? <FiBookOpen size={10} className="me-1" /> : null}
-                                                        {u.role.toUpperCase()}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span className={`badge ${u.is_active ? 'text-success' : (u.is_pending_admin ? 'text-warning' : 'text-secondary')}`} style={{ background: 'transparent' }}>
-                                                <span className={`d-inline-block rounded-circle me-1 ${u.is_active ? 'bg-success' : (u.is_pending_admin ? 'bg-warning' : 'bg-secondary')}`} style={{ width: '6px', height: '6px' }}></span>
-                                                {u.is_active ? 'Active' : (u.is_pending_admin ? 'Locked' : 'Inactive')}
+                                            <span className="um-role" style={{ '--role': u.is_permanent ? '#f59e0b' : role.color }}>
+                                                {u.is_permanent ? <FiStar /> : <RoleIcon />} {u.is_permanent ? 'Core admin' : role.label}
                                             </span>
                                         </td>
-                                        <td className="text-end pe-4">
-                                            <div className="d-flex justify-content-end gap-2">
+                                        <td>
+                                            <span className={`um-status ${status}`}>
+                                                <i />{status === 'active' ? 'Active' : status === 'locked' ? 'Awaiting approval' : 'Not activated'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div className="um-actions">
                                                 {u.is_pending_admin && (
-                                                    <button
-                                                        className="btn btn-sm btn-warning-dim p-1 px-3 d-flex align-items-center gap-1"
-                                                        style={{ fontSize: '0.75rem' }}
-                                                        onClick={() => handleApproveAdmin(u.id)}
-                                                        disabled={approvingId === u.id}
-                                                        title="Unlock / Approve Admin Access"
-                                                    >
-                                                        {approvingId === u.id ? <DynamicLoader size={16} color="currentColor" /> : <><FiUnlock size={14} /> Unlock</>}
+                                                    <button className="um-text-btn warn" onClick={() => handleApproveAdmin(u.id)} disabled={approvingId === u.id}>
+                                                        {approvingId === u.id ? <DynamicLoader size={14} color="currentColor" /> : <><FiUnlock /> Approve</>}
                                                     </button>
                                                 )}
                                                 {!u.is_active && !u.is_pending_admin && (
-                                                    <button
-                                                        className="btn btn-sm btn-success-dim p-1 px-3"
-                                                        style={{ fontSize: '0.75rem' }}
-                                                        onClick={() => handleManualActivate(u.id)}
-                                                        title="Activate manually"
-                                                    >
-                                                        Activate
+                                                    <button className="um-text-btn" onClick={() => handleManualActivate(u.id)} title="Activate without the email link">
+                                                        <FiUserCheck /> Activate
                                                     </button>
                                                 )}
-                                                {/* Professional Edit Button */}
-                                                <button
-                                                    className="btn btn-sm p-1 px-3 d-flex align-items-center gap-1"
-                                                    style={{
-                                                        fontSize: '0.75rem',
-                                                        background: 'rgba(99, 102, 241, 0.08)',
-                                                        color: '#818cf8',
-                                                        border: '1px solid rgba(99, 102, 241, 0.15)',
-                                                        transition: 'all 0.2s ease',
-                                                        borderRadius: '8px'
-                                                    }}
-                                                    onMouseOver={e => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.15)'}
-                                                    onMouseOut={e => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.08)'}
-                                                    onClick={() => openEditModal(u)}
-                                                >
-                                                    <FiEdit2 size={12} /> Edit
+                                                <button className="um-icon-btn" onClick={() => openEditModal(u)} title="Edit user" aria-label={`Edit ${u.username}`}>
+                                                    <FiEdit2 />
                                                 </button>
-                                                {/* Compact Delete Button */}
                                                 <button
-                                                    className={`btn btn-sm p-1 ${u.is_permanent ? 'btn-secondary opacity-25' : 'btn-danger-dim'}`}
-                                                    style={{ fontSize: '0.75rem', minWidth: '34px', borderRadius: '8px' }}
+                                                    className="um-icon-btn danger"
                                                     onClick={() => handleDelete(u)}
                                                     disabled={u.is_permanent || deletingId === u.id}
-                                                    title={u.is_permanent ? "Protected" : "Delete user"}
+                                                    title={u.is_permanent ? 'Protected account' : 'Delete user'}
+                                                    aria-label={`Delete ${u.username}`}
                                                 >
-                                                    {deletingId === u.id ? <DynamicLoader size={16} color="currentColor" /> : <FiTrash2 size={14} style={{ color: u.is_permanent ? 'inherit' : '#ef4444' }} />}
+                                                    {deletingId === u.id ? <DynamicLoader size={14} color="currentColor" /> : <FiTrash2 />}
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
-            </div>
+                {!loading && <p className="um-foot">Showing {visibleUsers.length} of {users.length} users</p>}
+            </section>
 
-            {/* ─── Bulk CSV Import (Collapsible) ─── */}
+            {/* Bulk import */}
             {showBulkImport && (
-                <div className="fade-in mb-4">
-                    <div className="card d-flex flex-row overflow-hidden" style={{ minHeight: '280px' }}>
-                        {/* Left Side - Visual */}
-                        <div className="d-none d-md-flex flex-column justify-content-center align-items-center p-5 text-center"
-                            style={{ width: '35%', background: 'linear-gradient(135deg, #00f59b 0%, #22e6b6 50%, #06b6d4 100%)', color: 'white' }}>
-                            <div className="mb-4 p-3 rounded-circle" style={{ background: 'rgba(255,255,255,0.2)' }}>
-                                <FiUsers size={36} />
-                            </div>
-                            <h4 className="fw-bold mb-2">Bulk Onboarding</h4>
-                            <p className="small opacity-75 mb-0">
-                                Automatically verify emails, hash passwords, and send activation links to new users.
-                            </p>
-                        </div>
-
-                        {/* Right Side - Form */}
-                        <div className="p-4 p-md-5 flex-grow-1 d-flex flex-column justify-content-center">
-                            {result ? (
-                                <div className="text-center fade-in">
-                                    {result.success ? (
-                                        <div className="mb-4">
-                                            <FiCheckCircle className="text-success h1 mb-3" />
-                                            <h4 className="fw-bold text-success">Import Complete!</h4>
-                                            <p className="text-muted mb-4">{result.message}</p>
-
-                                            <div className="row g-2 mb-4">
-                                                <div className="col-6">
-                                                    <div className="p-3 rounded-3 bg-success bg-opacity-10">
-                                                        <h3 className="fw-bold text-success mb-0">{result.added}</h3>
-                                                        <small className="text-muted text-uppercase" style={{ fontSize: '0.65rem' }}>Added</small>
-                                                    </div>
-                                                </div>
-                                                <div className="col-6">
-                                                    <div className="p-3 rounded-3 bg-warning bg-opacity-10">
-                                                        <h3 className="fw-bold text-warning mb-0">{result.skipped}</h3>
-                                                        <small className="text-muted text-uppercase" style={{ fontSize: '0.65rem' }}>Skipped</small>
-                                                    </div>
+                <Portal>
+                    <div className="modal show" onClick={closeImport}>
+                        <div className="modal-dialog modal-dialog-centered" onClick={e => e.stopPropagation()}>
+                            <div className="modal-content">
+                                <div className="modal-header d-block">
+                                    <div className="d-flex justify-content-between align-items-center">
+                                        <h5 className="fw-bold mb-0">Import users from CSV</h5>
+                                        <button className="btn-close" style={{ filter: 'var(--close-filter)' }} onClick={closeImport}></button>
+                                    </div>
+                                    <p className="text-muted small mb-0 mt-1">Each new user gets an activation email. Existing emails are skipped.</p>
+                                </div>
+                                <div className="modal-body text-start">
+                                    {result ? (
+                                        <div className="um-import-result">
+                                            <div className={`ml-result-head ${result.success ? '' : 'warn'}`}>
+                                                <span className="ml-result-icon">{result.success ? <FiCheckCircle /> : <FiAlertCircle />}</span>
+                                                <div>
+                                                    <h3>{result.success ? 'Import complete' : 'Import failed'}</h3>
+                                                    <p>{result.message}</p>
                                                 </div>
                                             </div>
-
-                                            {result.errors && result.errors.length > 0 && (
-                                                <div className="text-start p-3 rounded-3 bg-danger bg-opacity-10 mb-3">
-                                                    <small className="fw-bold text-danger d-block mb-2">Errors Encountered:</small>
-                                                    <ul className="mb-0 small text-muted ps-3">
-                                                        {result.errors.map((e, i) => <li key={i}>{e}</li>)}
-                                                    </ul>
+                                            {result.success && (
+                                                <div className="ml-metrics compact">
+                                                    <div className="ml-metric tone-good"><small>Added</small><strong>{result.added ?? 0}</strong></div>
+                                                    <div className="ml-metric"><small>Skipped</small><strong>{result.skipped ?? 0}</strong></div>
+                                                    <div className="ml-metric"><small>Errors</small><strong>{result.errors?.length ?? 0}</strong></div>
                                                 </div>
                                             )}
-
-                                            <button className="btn btn-primary-dim" onClick={() => { setResult(null); setFile(null); }}>
-                                                Import More
-                                            </button>
+                                            {result.errors?.length > 0 && (
+                                                <ul className="um-errors">{result.errors.map((e, i) => <li key={i}>{e}</li>)}</ul>
+                                            )}
+                                            <button className="btn btn-primary-dim w-100" onClick={() => { setResult(null); setFile(null); }}>Import another file</button>
                                         </div>
                                     ) : (
-                                        <div className="mb-4">
-                                            <FiAlertCircle className="text-danger h1 mb-3" />
-                                            <h4 className="fw-bold text-danger">Import Failed</h4>
-                                            <p className="text-muted">{result.message}</p>
-                                            <button className="btn btn-primary-dim mt-3" onClick={() => setResult(null)}>Try Again</button>
-                                        </div>
+                                        <form onSubmit={handleImport}>
+                                            {!file ? (
+                                                <label className="ml-drop">
+                                                    <input type="file" accept=".csv" onChange={e => setFile(e.target.files[0])} />
+                                                    <span className="ml-drop-icon"><FiUpload /></span>
+                                                    <strong>Drop a CSV here or <u>browse</u></strong>
+                                                    <small>Columns: email, username, password, role</small>
+                                                </label>
+                                            ) : (
+                                                <div className="ml-file">
+                                                    <span className="ml-file-icon"><FiFileText /></span>
+                                                    <div className="ml-file-text">
+                                                        <strong title={file.name}>{file.name}</strong>
+                                                        <small>{(file.size / 1024).toFixed(1)} KB</small>
+                                                    </div>
+                                                    <button type="button" onClick={() => setFile(null)} aria-label="Remove file"><FiX /></button>
+                                                </div>
+                                            )}
+                                            <div className="um-import-notes">
+                                                <span><FiMail /> Activation email per user</span>
+                                                <span><FiUserCheck /> Duplicate emails skipped</span>
+                                                <span><FiKey /> Passwords stored hashed</span>
+                                            </div>
+                                            <div className="d-flex gap-2">
+                                                <button type="button" className="btn btn-primary-dim flex-grow-1" onClick={downloadTemplate}><FiDownload className="me-2" /> Template</button>
+                                                <button type="submit" className="btn btn-gradient flex-grow-1" disabled={!file || importing}>
+                                                    {importing ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Start import'}
+                                                </button>
+                                            </div>
+                                        </form>
                                     )}
                                 </div>
-                            ) : (
-                                <form onSubmit={handleImport}>
-                                    <div className="mb-4 text-center">
-                                        <label
-                                            className={`d-block p-4 border rounded-3 cursor-pointer transition-all ${file ? 'border-primary bg-primary bg-opacity-5' : 'border-dashed'}`}
-                                            style={{ borderStyle: file ? 'solid' : 'dashed' }}
-                                        >
-                                            <input type="file" className="d-none" accept=".csv" onChange={e => setFile(e.target.files[0])} />
-                                            <FiUpload className={`h2 mb-2 ${file ? 'text-primary' : 'text-muted'}`} />
-                                            <div className="fw-bold">{file ? file.name : 'Click to Upload CSV'}</div>
-                                            <div className="small text-muted">{file ? `${(file.size / 1024).toFixed(1)} KB` : 'Drag & drop or browse'}</div>
-                                        </label>
-                                    </div>
-
-                                    <div className="d-flex gap-2">
-                                        <button type="button" className="btn btn-primary-dim flex-grow-1" onClick={downloadTemplate}>
-                                            <FiDownload /> Template
-                                        </button>
-                                        <button type="submit" className="btn btn-gradient flex-grow-1" disabled={!file || importing}>
-                                            {importing ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Start Import'}
-                                        </button>
-                                    </div>
-
-                                    <div className="mt-4 pt-3 border-top d-flex gap-3 text-muted small">
-                                        <div className="d-flex align-items-center gap-2">
-                                            <FiMail className="text-primary" /> Auto-Email
-                                        </div>
-                                        <div className="d-flex align-items-center gap-2">
-                                            <FiUserCheck className="text-success" /> Email Uniqueness
-                                        </div>
-                                    </div>
-                                </form>
-                            )}
+                            </div>
                         </div>
                     </div>
-                </div>
+                </Portal>
             )}
+
             {showAddModal && (
+                <Portal>
                 <div className="modal show" onClick={() => setShowAddModal(false)}>
                     <div className="modal-dialog modal-dialog-centered" onClick={e => e.stopPropagation()}>
                         <div className="modal-content">
@@ -567,17 +526,19 @@ function Users({ user }) {
                                     </div>
                                 </div>
                                 <div className="modal-footer">
-                                    <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
+                                    <button type="button" className="btn btn-primary-dim" onClick={() => setShowAddModal(false)}>Cancel</button>
                                     <button type="submit" className="btn btn-lg btn-gradient flex-grow-1 fw-bold">Create User Account</button>
                                 </div>
                             </form>
                         </div>
                     </div>
                 </div>
+                </Portal>
             )}
 
             {/* Edit User Modal */}
             {editTarget && (
+                <Portal>
                 <div className="modal show" onClick={() => setEditTarget(null)}>
                     <div className="modal-dialog modal-dialog-centered" onClick={e => e.stopPropagation()}>
                         <div className="modal-content">
@@ -696,7 +657,7 @@ function Users({ user }) {
                                 </div>
                                 <div className="modal-footer">
                                     <div className="d-flex gap-2 w-100">
-                                        <button type="button" className="btn btn-secondary-dim flex-grow-1" onClick={() => setEditTarget(null)}>Cancel</button>
+                                        <button type="button" className="btn btn-primary-dim flex-grow-1" onClick={() => setEditTarget(null)}>Cancel</button>
                                         <button type="submit" className="btn btn-gradient flex-grow-1 fw-bold" disabled={editSaving}>
                                             {editSaving ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Save Changes'}
                                         </button>
@@ -706,6 +667,7 @@ function Users({ user }) {
                         </div>
                     </div>
                 </div>
+                </Portal>
             )}
 
             {/* Alert Modal (replaces native alert()) */}
@@ -735,10 +697,11 @@ function Users({ user }) {
                 title={`Delete ${deleteTarget?.username || 'User'}?`}
                 message="This action cannot be undone. The user's account and data will be permanently removed."
                 confirmText="Delete"
+                tone="danger"
                 onConfirm={confirmDelete}
                 onCancel={() => setDeleteTarget(null)}
             />
-        </div >
+        </div>
     );
 }
 
