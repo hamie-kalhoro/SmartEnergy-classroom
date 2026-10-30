@@ -1,0 +1,402 @@
+/*
+ * Enterprise light theme for every page except the landing page.
+ *
+ * Everything here is scoped to light mode, so dark mode is unaffected. LandingPage sets
+ * data-page="landing" on <html> while it is mounted, which switches this file off for it.
+ * Colours are chosen for at least 4.5:1 text contrast on the surfaces they sit on.
+ */
+
+html[data-theme='light']:not([data-page='landing']) {
+    color-scheme: light;
+
+    /* Brand */
+    --primary: #047857;
+    --primary-light: #047857;
+    --primary-mint: #059669;
+    --primary-sage: #059669;
+    --primary-dark: #065f46;
+    --primary-glow: rgba(4, 120, 87, 0.16);
+    --brand-soft: #ecfdf5;
+    --brand-line: #a7f3d0;
+
+    /* Accents */
+    --accent-sky: #0284c7;
+    --accent-sky-text: #026aa2;
+    --accent: #1d4ed8;
+    --accent-pink: #b42318;
+
+    /* Status text */
+    --success-text: #027a48;
+    --warning-text: #b54708;
+    --danger-text: #b42318;
+    --info-text: #026aa2;
+
+    /* Surfaces */
+    --bg-deep: #f5f6f8;
+    --bg-surface: #ffffff;
+    --bg-elevated: #f8f9fb;
+    --bg-card: #ffffff;
+    --border: #e4e7ec;
+    --border-light: #eef0f3;
+    --border-strong: #d0d5dd;
+
+    /* Text */
+    --text: #101828;
+    --text-primary: #101828;
+    --text-secondary: #475467;
+    --text-muted: #5d6b82;
+
+    /* Solid colour where the dark theme uses a neon gradient */
+    --gradient-primary: linear-gradient(0deg, #047857, #047857);
+    --gradient-emerald: linear-gradient(0deg, #047857, #047857);
+    --gradient-mint: linear-gradient(0deg, #047857, #047857);
+    --gradient-card: none;
+    --gradient-glow: none;
+
+    /* Elevation */
+    --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.04);
+    --shadow-md: 0 4px 8px -2px rgba(16, 24, 40, 0.08), 0 2px 4px -2px rgba(16, 24, 40, 0.04);
+    --shadow-lg: 0 12px 16px -4px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.03);
+    --shadow-xl: 0 20px 24px -4px rgba(16, 24, 40, 0.08), 0 8px 8px -4px rgba(16, 24, 40, 0.03);
+    --radius-xl: 12px;
+
+    --font-heading: 'Inter', sans-serif;
+
+    /* Read by the login and signup pages */
+    --auth-backdrop: none;
+    --auth-logo-bg: #047857;
+    --auth-logo-shadow: 0 1px 2px rgba(16, 24, 40, 0.1);
+    --auth-success-bg: #ecfdf5;
+    --auth-success-border: #a7f3d0;
+    --auth-success-glow: 0 1px 2px rgba(16, 24, 40, 0.1);
+    --auth-pending-bg: #b54708;
+    --auth-danger-bg: #fef3f2;
+    --auth-role-selected: #ecfdf5;
+    --auth-role-icon: #f2f4f7;
+    --auth-role-selected-shadow: none;
+    --auth-role-selected-text: #475467;
+    --auth-radio-border: #d0d5dd;
+    --auth-muted-opacity: 1;
+
+    /* Spinner on a disabled button */
+    --loader-on-button: #047857;
+
+    /* Read by the Dashboard charts */
+    --chart-bar: #047857;
+    --chart-bar-soft: #a7d7c5;
+    --chart-line: #026aa2;
+
+    /* Bootstrap */
+    --bs-body-color: #101828;
+    --bs-body-bg: #f5f6f8;
+    --bs-border-color: #e4e7ec;
+    --bs-secondary-color: #5d6b82;
+}
+
+/* ===== Canvas ===== */
+html[data-theme='light']:not([data-page='landing']) body::after {
+    display: none;
+}
+
+html[data-theme='light']:not([data-page='landing']) .lbg-root {
+    --lbg-base: #f5f6f8;
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(.lbg-glow, .lbg-grid, .lbg-glint) {
+    display: none;
+}
+
+/* ===== Type ===== */
+html[data-theme='light']:not([data-page='landing']) :is(h1, h2, h3, h4, h5, h6) {
+    font-weight: 600;
+    letter-spacing: -0.015em;
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(h1, h2) {
+    letter-spacing: -0.022em !important;
+}
+
+/* Page titles are one colour; only links keep the brand colour */
+html[data-theme='light']:not([data-page='landing']) .text-gradient {
+    background: none;
+    color: var(--primary);
+    -webkit-text-fill-color: currentColor;
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(h1, h2) .text-gradient {
+    color: inherit;
+}
+
+html[data-theme='light']:not([data-page='landing']) .text-success { color: var(--success-text) !important; }
+html[data-theme='light']:not([data-page='landing']) .text-warning { color: var(--warning-text) !important; }
+html[data-theme='light']:not([data-page='landing']) .text-danger { color: var(--danger-text) !important; }
+html[data-theme='light']:not([data-page='landing']) .text-info { color: var(--info-text) !important; }
+html[data-theme='light']:not([data-page='landing']) .text-primary { color: var(--primary) !important; }
+
+/* ===== Buttons ===== */
+html[data-theme='light']:not([data-page='landing']) :is(.btn-primary, .btn-gradient) {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #ffffff;
+    box-shadow: var(--shadow-xs);
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(.btn-primary, .btn-gradient):hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+    color: #ffffff;
+    box-shadow: var(--shadow-xs);
+    transform: none;
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(.btn-primary, .btn-gradient):disabled {
+    background: #f2f4f7;
+    border-color: var(--border);
+    color: #667085;
+    opacity: 1;
+}
+
+/* Secondary actions: white with a neutral outline */
+html[data-theme='light']:not([data-page='landing']) :is(.btn-primary-dim, .btn-outline-primary, .btn-secondary, .btn-glass, .hwp-reset) {
+    background: #ffffff;
+    border: 1px solid var(--border-strong);
+    color: #344054;
+    box-shadow: var(--shadow-xs);
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(.btn-primary-dim, .btn-outline-primary, .btn-secondary, .btn-glass, .hwp-reset):hover:not(:disabled) {
+    background: #f9fafb;
+    border-color: var(--border-strong);
+    color: var(--text);
+    transform: none;
+}
+
+html[data-theme='light']:not([data-page='landing']) .btn-outline-danger { color: var(--danger-text); border-color: #fda29b; }
+html[data-theme='light']:not([data-page='landing']) .btn-outline-danger:hover { background: #fef3f2; color: var(--danger-text); }
+html[data-theme='light']:not([data-page='landing']) .btn-success-dim { color: var(--success-text); }
+html[data-theme='light']:not([data-page='landing']) .btn-warning-dim { color: var(--warning-text); }
+html[data-theme='light']:not([data-page='landing']) .btn-danger-dim { color: var(--danger-text); }
+
+html[data-theme='light']:not([data-page='landing']) .glow-border:hover,
+html[data-theme='light']:not([data-page='landing']) .hover-lift:hover {
+    border-color: var(--border-strong) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+html[data-theme='light']:not([data-page='landing']) .glow-primary {
+    box-shadow: var(--shadow-sm);
+}
+
+/* ===== Forms ===== */
+html[data-theme='light']:not([data-page='landing']) :is(.form-control, .form-select) {
+    background-color: #ffffff;
+    border-color: var(--border-strong);
+    color: var(--text);
+    box-shadow: var(--shadow-xs);
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(.form-control, .form-select):focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.14);
+}
+
+html[data-theme='light']:not([data-page='landing']) .form-control::placeholder {
+    color: #667085;
+}
+
+html[data-theme='light']:not([data-page='landing']) .form-label {
+    color: #344054;
+    font-weight: 500;
+}
+
+/* ===== Surfaces: flat white with a hairline border; no tints, sheens or hover lift ===== */
+html[data-theme='light']:not([data-page='landing']) :is(.card, .dash-card, .dash-kpi, .rooms-card, .mp-hero, .pred-empty, .pred-climate, .um-pending) {
+    background: #ffffff;
+    border-color: var(--border);
+    box-shadow: var(--shadow-xs);
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(.card, .dash-card, .dash-kpi, .rooms-card):hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-sm);
+    transform: none;
+}
+
+html[data-theme='light']:not([data-page='landing']) .rooms-card::before {
+    display: none;
+}
+
+html[data-theme='light']:not([data-page='landing']) .tt-block {
+    background: color-mix(in srgb, var(--class-color) 6%, #ffffff);
+    border-color: color-mix(in srgb, var(--class-color) 28%, #ffffff);
+    box-shadow: none;
+}
+
+html[data-theme='light']:not([data-page='landing']) .ml-metric.tone-good {
+    background: var(--brand-soft);
+    border-color: var(--brand-line);
+}
+
+/* ===== Tables ===== */
+html[data-theme='light']:not([data-page='landing']) :is(.table thead th, .tt-grid thead th) {
+    background: #f9fafb;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+
+/* ===== Sidebar and top controls ===== */
+html[data-theme='light']:not([data-page='landing']) .sidebar {
+    --sb-accent: #047857;
+    --sb-accent-soft: #ecfdf5;
+    --sb-accent-ring: transparent;
+    --sb-hover: #f2f4f7;
+    --sb-card: #f9fafb;
+}
+
+html[data-theme='light']:not([data-page='landing']) .sb-icon-btn:hover {
+    color: var(--danger-text);
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(.theme-toggle-ceiling, .notif-bell-ceiling) {
+    background: #ffffff !important;
+    border-color: var(--border) !important;
+    color: var(--text-secondary) !important;
+    box-shadow: var(--shadow-xs) !important;
+}
+
+html[data-theme='light']:not([data-page='landing']) .theme-toggle-ceiling > div {
+    filter: none !important;
+}
+
+html[data-theme='light']:not([data-page='landing']) .theme-toggle-ceiling svg {
+    animation: none;
+    color: var(--text-secondary) !important;
+}
+
+html[data-theme='light']:not([data-page='landing']) .theme-toggle-ceiling .opacity-75 {
+    opacity: 1 !important;
+}
+
+/* ===== Per-item accent colours: darkened so they read as text on white ===== */
+html[data-theme='light']:not([data-page='landing']) :is(.dash-chip svg, .dash-climate-mode, .pred-climate-icon) { color: color-mix(in srgb, var(--chip-color) 55%, #000); }
+html[data-theme='light']:not([data-page='landing']) .dash-kpi-icon { color: color-mix(in srgb, var(--kpi-color) 55%, #000); }
+html[data-theme='light']:not([data-page='landing']) .pred-level-pill { color: color-mix(in srgb, var(--level) 55%, #000); }
+html[data-theme='light']:not([data-page='landing']) :is(.mp-rec-icon, .mp-rec-meta span) { color: color-mix(in srgb, var(--rec) 55%, #000); }
+html[data-theme='light']:not([data-page='landing']) .um-role { color: color-mix(in srgb, var(--role) 55%, #000); }
+html[data-theme='light']:not([data-page='landing']) .campus-type-badge { color: color-mix(in srgb, var(--room-color) 55%, #000); }
+html[data-theme='light']:not([data-page='landing']) :is(.rooms-type-icon, .rooms-type-badge) { color: color-mix(in srgb, var(--type-color) 55%, #000); }
+html[data-theme='light']:not([data-page='landing']) :is(.rooms-device-icon, .rooms-device-kw) { color: color-mix(in srgb, var(--tone) 55%, #000); }
+html[data-theme='light']:not([data-page='landing']) .nslider-scale button.current { color: color-mix(in srgb, var(--tone) 55%, #000); }
+html[data-theme='light']:not([data-page='landing']) :is(.tt-chip, .tt-type-pill) { color: color-mix(in srgb, var(--class-color) 55%, #000); }
+html[data-theme='light']:not([data-page='landing']) .cmodal-icon { color: color-mix(in srgb, var(--cmodal-accent) 55%, #000); }
+
+/* ===== Fixed status colours ===== */
+html[data-theme='light']:not([data-page='landing']) :is(.rooms-status, .rooms-form-load svg, .tt-att.tone-good, .dash-action-saved, .pred-device.tone-on, .pred-saving, .ml-col.ok, .ml-metric.tone-good strong, .ml-result-icon, .ml-callout svg, .mp-status.ok, .mp-lift, .mp-delta.up, .mp-guards svg, .um-text-btn, .um-tag.you) {
+    color: var(--success-text);
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(.tt-att.tone-fair, .tt-form-note.warn, .ml-metric.tone-warn strong, .ml-result-head.warn .ml-result-icon, .ml-callout.warn svg, .mp-status.warn, .um-pending-icon, .um-avatar.core, .um-tag.core, .um-status.locked, .um-text-btn.warn, .campus-level.tone-warn) {
+    color: var(--warning-text);
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(.rooms-form-error, .tt-att.tone-low, .tt-form-note.error, .ml-col.missing, .mp-delta.down, .mp-rec-meta small.prio-high, .um-errors) {
+    color: var(--danger-text);
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(.dash-pill, .pred-lab, .pred-device.tone-eco) {
+    color: var(--info-text);
+}
+
+/* ===== Charts and meters: solid colours, no glows ===== */
+html[data-theme='light']:not([data-page='landing']) :is(.dash-gauge-value, .mp-ring-value) {
+    filter: none;
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(.dash-gauge, .mp-ring) stop {
+    stop-color: #047857;
+}
+
+html[data-theme='light']:not([data-page='landing']) .dash-spark path:last-child {
+    stroke: color-mix(in srgb, var(--kpi-color) 70%, #000);
+}
+
+html[data-theme='light']:not([data-page='landing']) .dash-spark stop {
+    stop-color: color-mix(in srgb, var(--kpi-color) 70%, #000);
+}
+
+html[data-theme='light']:not([data-page='landing']) .dash-meter span {
+    background: color-mix(in srgb, var(--kpi-color) 70%, #000);
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(.ml-bar-row.primary .ml-bar i, .mp-coverage-bar i, .progress-bar) {
+    background: var(--primary);
+}
+
+html[data-theme='light']:not([data-page='landing']) .ml-feature-bar i {
+    background: var(--accent-sky);
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(.mp-line, .mp-dot) {
+    stroke: var(--primary);
+}
+
+html[data-theme='light']:not([data-page='landing']) .mp-area {
+    fill: rgba(4, 120, 87, 0.08);
+}
+
+/* ===== Campus map ===== */
+html[data-theme='light']:not([data-page='landing']) .campus-map-shell {
+    --cm-accent: #047857;
+}
+
+html[data-theme='light']:not([data-page='landing']) .device-dot.active-glow {
+    background: #059669;
+    box-shadow: none;
+}
+
+/* ===== Selected states: a clean brand tint instead of a mix against grey ===== */
+html[data-theme='light']:not([data-page='landing']) :is(.rooms-filters button.active, .tt-segmented button.active, .tt-day-tabs button.active, .tt-batch-sections button.active, .ml-mode.active) {
+    background: var(--brand-soft);
+    border-color: var(--primary);
+    box-shadow: none;
+    color: var(--primary-dark);
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(.tt-segmented button.active, .tt-day-tabs button.active) {
+    box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+html[data-theme='light']:not([data-page='landing']) :is(.pred-empty-icon, .pred-steps span, .ml-mode.active .ml-mode-icon, .ml-drop-icon, .ml-file-icon, .ml-how li span, .mp-stages li.done .mp-stage-dot, .um-tag.you) {
+    background: var(--brand-soft);
+}
+
+html[data-theme='light']:not([data-page='landing']) .tt-batch-sections button.active small {
+    color: var(--text-secondary);
+}
+
+/* ===== Status label in the sidebar ===== */
+html[data-theme='light']:not([data-page='landing']) .sb-status-label {
+    color: color-mix(in srgb, var(--sb-status) 72%, #000);
+}
+
+/* ===== Hardware portal: offline values stay readable; the banner already says they are old ===== */
+html[data-theme='light']:not([data-page='landing']) .hwp-main.is-stale :is(.hwp-devices, .hwp-count, .hwp-seats, .hwp-load, .hwp-rules) {
+    opacity: 1;
+}
+
+html[data-theme='light']:not([data-page='landing']) .hwp h1 {
+    font-size: 2rem;
+}
+
+html[data-theme='light']:not([data-page='landing']) .hwp-notice.is-bad {
+    background: #fef3f2;
+    border-color: #fecdca;
+}
+
+html[data-theme='light']:not([data-page='landing']) .pred-saving {
+    color: var(--success-text) !important;
+}

@@ -254,7 +254,7 @@ function MLDataset() {
                         )}
 
                         <button type="submit" className="btn btn-lg btn-gradient w-100 mt-3" disabled={!file || loading || missing.length > 0}>
-                            {loading ? <><DynamicLoader size={20} color="var(--bg-deep)" /> <span className="ms-2">Processing…</span></> : <><ModeIcon className="me-2" /> {MODES[mode].action}</>}
+                            {loading ? <><DynamicLoader size={20} color="var(--loader-on-button, var(--bg-deep))" /> <span className="ms-2">Processing…</span></> : <><ModeIcon className="me-2" /> {MODES[mode].action}</>}
                         </button>
                     </form>
                 </aside>

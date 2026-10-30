@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
@@ -90,6 +90,12 @@ const LandingPage = () => {
             status: "Zero Grid Draw"
         }
     ];
+
+    // Keeps the enterprise light theme (theme-light.css) off this page.
+    useLayoutEffect(() => {
+        document.documentElement.setAttribute('data-page', 'landing');
+        return () => document.documentElement.removeAttribute('data-page');
+    }, []);
 
     useEffect(() => {
         const teamTimer = setInterval(() => {

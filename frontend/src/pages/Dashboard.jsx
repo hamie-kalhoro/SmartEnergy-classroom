@@ -29,7 +29,10 @@ function useThemeColors() {
             text: css.getPropertyValue('--text').trim() || '#fff',
             muted: css.getPropertyValue('--text-muted').trim() || '#9ca3af',
             border: css.getPropertyValue('--border').trim() || 'rgba(255,255,255,0.1)',
-            surface: css.getPropertyValue('--bg-surface').trim() || '#041418'
+            surface: css.getPropertyValue('--bg-surface').trim() || '#041418',
+            bar: css.getPropertyValue('--chart-bar').trim(),
+            barSoft: css.getPropertyValue('--chart-bar-soft').trim(),
+            line: css.getPropertyValue('--chart-line').trim() || '#38bdf8'
         };
     };
     const [colors, setColors] = useState(read);
@@ -192,6 +195,7 @@ function Dashboard() {
             backgroundColor: ctx => {
                 const last = ctx.dataIndex === energyLabels.length - 1;
                 const { chart } = ctx;
+                if (theme.bar) return last ? theme.bar : theme.barSoft;
                 if (!chart.chartArea) return last ? '#00f59b' : 'rgba(0, 245, 155, 0.35)';
                 const g = chart.ctx.createLinearGradient(0, chart.chartArea.bottom, 0, chart.chartArea.top);
                 g.addColorStop(0, last ? 'rgba(6, 182, 212, 0.9)' : 'rgba(6, 182, 212, 0.25)');
@@ -221,7 +225,7 @@ function Dashboard() {
         labels: occupancyLabels,
         datasets: [{
             data: occupancyData,
-            borderColor: '#38bdf8',
+            borderColor: theme.line,
             borderWidth: 2,
             backgroundColor: ctx => {
                 const { chart } = ctx;
@@ -235,7 +239,7 @@ function Dashboard() {
             tension: 0.35,
             pointRadius: 0,
             pointHoverRadius: 5,
-            pointHoverBackgroundColor: '#38bdf8',
+            pointHoverBackgroundColor: theme.line,
             pointHoverBorderColor: theme.surface,
             pointHoverBorderWidth: 2
         }]
@@ -368,7 +372,7 @@ function Dashboard() {
                                 </div>
                             </div>
                             <div className="dash-breakdown">
-                                <div><span><i style={{ background: '#00f59b' }} />Saved</span><strong>{fmt(saved)} kWh</strong></div>
+                                <div><span><i style={{ background: theme.bar || '#00f59b' }} />Saved</span><strong>{fmt(saved)} kWh</strong></div>
                                 <div><span><i style={{ background: theme.muted }} />Consumed</span><strong>{fmt(consumed)} kWh</strong></div>
                                 <div className="total"><span>Baseline</span><strong>{fmt(baseline)} kWh</strong></div>
                             </div>

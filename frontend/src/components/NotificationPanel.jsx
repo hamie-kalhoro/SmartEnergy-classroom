@@ -261,7 +261,7 @@ function NotificationPanel({ user }) {
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div className="d-flex justify-content-between align-items-start mb-1">
-                                                <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '800', opacity: 0.6, color: 'var(--text-muted)' }}>
+                                                <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '800', opacity: 'var(--auth-muted-opacity, 0.6)', color: 'var(--text-muted)' }}>
                                                     {(n.type || 'System Alert').replace(/_/g, ' ')}
                                                 </span>
                                                 <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }} className="d-flex align-items-center gap-1">
@@ -289,7 +289,7 @@ function NotificationPanel({ user }) {
                                 </div>
                                 <div className="d-flex align-items-center gap-1">
                                     <div className="pulse-green" style={{ width: '6px', height: '6px', background: '#22c55e', borderRadius: '50%' }} />
-                                    <span style={{ fontSize: '0.6rem', color: '#22c55e', fontWeight: '900' }}>ONLINE</span>
+                                    <span style={{ fontSize: '0.6rem', color: 'var(--success-text, #22c55e)', fontWeight: '900' }}>ONLINE</span>
                                 </div>
                             </div>
                         </div>

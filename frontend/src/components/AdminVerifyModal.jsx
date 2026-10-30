@@ -59,7 +59,7 @@ function AdminVerifyModal({ show, onVerify, onCancel }) {
                         <div className="modal-footer border-0">
                             <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={loading}>Cancel</button>
                             <button type="submit" className="btn btn-primary" disabled={loading}>
-                                {loading ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Verify & Proceed'}
+                                {loading ? <DynamicLoader size={20} color="var(--loader-on-button, var(--bg-deep))" /> : 'Verify & Proceed'}
                             </button>
                         </div>
                     </form>

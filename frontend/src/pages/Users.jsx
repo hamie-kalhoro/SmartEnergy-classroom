@@ -297,7 +297,7 @@ function Users({ user }) {
                                     <small>{p.email}{p.created_at ? ` · requested ${p.created_at}` : ''}</small>
                                 </div>
                                 <button className="btn btn-sm btn-gradient" onClick={() => handleApproveAdmin(p.id)} disabled={approvingId === p.id}>
-                                    {approvingId === p.id ? <DynamicLoader size={16} color="var(--bg-deep)" /> : <><FiCheck className="me-1" /> Approve</>}
+                                    {approvingId === p.id ? <DynamicLoader size={16} color="var(--loader-on-button, var(--bg-deep))" /> : <><FiCheck className="me-1" /> Approve</>}
                                 </button>
                             </div>
                         ))}
@@ -473,7 +473,7 @@ function Users({ user }) {
                                             <div className="d-flex gap-2">
                                                 <button type="button" className="btn btn-primary-dim flex-grow-1" onClick={downloadTemplate}><FiDownload className="me-2" /> Template</button>
                                                 <button type="submit" className="btn btn-gradient flex-grow-1" disabled={!file || importing}>
-                                                    {importing ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Start import'}
+                                                    {importing ? <DynamicLoader size={20} color="var(--loader-on-button, var(--bg-deep))" /> : 'Start import'}
                                                 </button>
                                             </div>
                                         </form>
@@ -659,7 +659,7 @@ function Users({ user }) {
                                     <div className="d-flex gap-2 w-100">
                                         <button type="button" className="btn btn-primary-dim flex-grow-1" onClick={() => setEditTarget(null)}>Cancel</button>
                                         <button type="submit" className="btn btn-gradient flex-grow-1 fw-bold" disabled={editSaving}>
-                                            {editSaving ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Save Changes'}
+                                            {editSaving ? <DynamicLoader size={20} color="var(--loader-on-button, var(--bg-deep))" /> : 'Save Changes'}
                                         </button>
                                     </div>
                                 </div>

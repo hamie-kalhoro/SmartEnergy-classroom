@@ -89,7 +89,7 @@ function Login({ onLogin }) {
           width: "200%",
           height: "200%",
           background:
-            "radial-gradient(ellipse at 30% 20%, rgba(0, 245, 155, 0.07) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 50%)",
+            "var(--auth-backdrop, radial-gradient(ellipse at 30% 20%, rgba(0, 245, 155, 0.07) 0%, transparent 50%), radial-gradient(ellipse at 70% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 50%))",
           pointerEvents: "none",
         }}
       />
@@ -128,10 +128,10 @@ function Login({ onLogin }) {
           <div
             className="d-inline-flex align-items-center justify-content-center mb-4"
             style={{
-              background: "linear-gradient(135deg, #00f59b 0%, #22e6b6 50%, #06b6d4 100%)",
+              background: "var(--auth-logo-bg, linear-gradient(135deg, #00f59b 0%, #22e6b6 50%, #06b6d4 100%))",
               borderRadius: "16px",
               padding: "18px",
-              boxShadow: "0 8px 32px rgba(0, 245, 155, 0.35)",
+              boxShadow: "var(--auth-logo-shadow, 0 8px 32px rgba(0, 245, 155, 0.35))",
             }}>
             <FiZap style={{ fontSize: "2rem", color: "white" }} />
           </div>
@@ -148,12 +148,12 @@ function Login({ onLogin }) {
           <div
             className="mb-4 p-4 rounded-3 d-flex align-items-center gap-3 fade-in"
             style={{
-              background: "rgba(16, 185, 129, 0.1)",
-              border: "1px solid rgba(16, 185, 129, 0.2)",
+              background: "var(--auth-success-bg, rgba(16, 185, 129, 0.1))",
+              border: "1px solid var(--auth-success-border, rgba(16, 185, 129, 0.2))",
             }}>
-            <FiCheckCircle style={{ fontSize: "1.5rem", color: "#10b981" }} />
+            <FiCheckCircle style={{ fontSize: "1.5rem", color: "var(--success-text, #10b981)" }} />
             <div>
-              <div className="fw-bold" style={{ color: "#10b981" }}>
+              <div className="fw-bold" style={{ color: "var(--success-text, #10b981)" }}>
                 Account Activated!
               </div>
               <div className="small text-muted">You can now sign in below</div>
@@ -169,8 +169,8 @@ function Login({ onLogin }) {
             <div
               className="mb-4 p-3 rounded-3"
               style={{
-                background: "rgba(239, 68, 68, 0.1)",
-                color: "#f87171",
+                background: "var(--auth-danger-bg, rgba(239, 68, 68, 0.1))",
+                color: "var(--danger-text, #f87171)",
                 fontSize: "0.875rem",
               }}>
               {error}
@@ -188,7 +188,7 @@ function Login({ onLogin }) {
                     <div
                       className="mt-2"
                       role="status"
-                      style={{ color: resendStatus.ok ? "#10b981" : "#f87171" }}>
+                      style={{ color: resendStatus.ok ? "var(--success-text, #10b981)" : "var(--danger-text, #f87171)" }}>
                       {resendStatus.message}
                     </div>
                   )}
@@ -254,7 +254,7 @@ function Login({ onLogin }) {
               disabled={loading}
               style={{ fontSize: "1rem", fontWeight: "600" }}>
               {loading ? (
-                <DynamicLoader size={24} color="var(--bg-deep)" />
+                <DynamicLoader size={24} color="var(--loader-on-button, var(--bg-deep))" />
               ) : (
                 <>
                   Sign In <FiArrowRight className="ms-2" />
@@ -276,7 +276,7 @@ function Login({ onLogin }) {
 
         <p
           className="text-center text-muted small mt-4"
-          style={{ opacity: 0.5 }}>
+          style={{ opacity: "var(--auth-muted-opacity, 0.5)" }}>
           © 2026 SmartEnergy FYP Project
         </p>
       </div>

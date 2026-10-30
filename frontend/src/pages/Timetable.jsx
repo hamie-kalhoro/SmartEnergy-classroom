@@ -713,7 +713,7 @@ function Timetable({ user }) {
                                     </div>
                                     <div className="modal-footer">
                                         <button type="submit" className="btn btn-lg btn-gradient w-100" disabled={saving}>
-                                            {saving ? <DynamicLoader size={24} color="var(--bg-deep)" /> : conflicts.length ? 'Add Anyway' : 'Add to Timetable'}
+                                            {saving ? <DynamicLoader size={24} color="var(--loader-on-button, var(--bg-deep))" /> : conflicts.length ? 'Add Anyway' : 'Add to Timetable'}
                                         </button>
                                     </div>
                                 </form>
@@ -765,7 +765,7 @@ function Timetable({ user }) {
                                                 <FiDownload className="me-2" /> Download Template
                                             </button>
                                             <button type="submit" className="btn btn-lg btn-gradient w-100" disabled={!importFile || importing}>
-                                                {importing ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Upload & Import'}
+                                                {importing ? <DynamicLoader size={20} color="var(--loader-on-button, var(--bg-deep))" /> : 'Upload & Import'}
                                             </button>
                                         </form>
                                     )}

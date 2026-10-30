@@ -94,7 +94,7 @@ function Signup() {
           <div
             className="d-inline-flex align-items-center justify-content-center mb-4"
             style={{
-              background: "linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)",
+              background: "var(--auth-pending-bg, linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%))",
               borderRadius: "50%",
               padding: "24px",
             }}>
@@ -128,11 +128,11 @@ function Signup() {
             className="d-inline-flex align-items-center justify-content-center mb-4"
             style={{
               background: isAdminPending
-                ? "linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)"
-                : "linear-gradient(135deg, #10b981 0%, #34d399 100%)",
+                ? "var(--auth-pending-bg, linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%))"
+                : "var(--auth-logo-bg, linear-gradient(135deg, #10b981 0%, #34d399 100%))",
               borderRadius: "50%",
               padding: "24px",
-              boxShadow: `0 0 50px ${isAdminPending ? "rgba(245, 158, 11, 0.4)" : "rgba(16, 185, 129, 0.4)"}`,
+              boxShadow: `var(--auth-success-glow, 0 0 50px ${isAdminPending ? "rgba(245, 158, 11, 0.4)" : "rgba(16, 185, 129, 0.4)"})`,
             }}>
             {isAdminPending ? (
               <FiShield style={{ fontSize: "2.5rem", color: "white" }} />
@@ -182,7 +182,7 @@ function Signup() {
           width: "200%",
           height: "200%",
           background:
-            "radial-gradient(ellipse at 70% 30%, rgba(0, 245, 155, 0.07) 0%, transparent 50%), radial-gradient(ellipse at 30% 70%, rgba(6, 182, 212, 0.05) 0%, transparent 50%)",
+            "var(--auth-backdrop, radial-gradient(ellipse at 70% 30%, rgba(0, 245, 155, 0.07) 0%, transparent 50%), radial-gradient(ellipse at 30% 70%, rgba(6, 182, 212, 0.05) 0%, transparent 50%))",
           pointerEvents: "none",
         }}
       />
@@ -221,10 +221,10 @@ function Signup() {
           <div
             className="d-inline-flex align-items-center justify-content-center mb-4"
             style={{
-              background: "linear-gradient(135deg, #00f59b 0%, #22e6b6 50%, #06b6d4 100%)",
+              background: "var(--auth-logo-bg, linear-gradient(135deg, #00f59b 0%, #22e6b6 50%, #06b6d4 100%))",
               borderRadius: "16px",
               padding: "18px",
-              boxShadow: "0 8px 32px rgba(0, 245, 155, 0.35)",
+              boxShadow: "var(--auth-logo-shadow, 0 8px 32px rgba(0, 245, 155, 0.35))",
             }}>
             <FiZap style={{ fontSize: "2rem", color: "white" }} />
           </div>
@@ -259,8 +259,8 @@ function Signup() {
             <div
               className="mb-4 p-3 rounded-3"
               style={{
-                background: "rgba(239, 68, 68, 0.1)",
-                color: "#f87171",
+                background: "var(--auth-danger-bg, rgba(239, 68, 68, 0.1))",
+                color: "var(--danger-text, #f87171)",
                 fontSize: "0.875rem",
               }}>
               {error}
@@ -279,7 +279,7 @@ function Signup() {
                     style={{
                       background:
                         formData.role === r.key
-                          ? "rgba(0, 245, 155, 0.12)"
+                          ? "var(--auth-role-selected, rgba(0, 245, 155, 0.12))"
                           : "var(--bg-elevated)",
                       border: `2px solid ${formData.role === r.key ? "var(--primary)" : "transparent"}`,
                       transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -294,7 +294,7 @@ function Signup() {
                         background:
                           formData.role === r.key
                             ? "var(--gradient-primary)"
-                            : "rgba(255,255,255,0.03)",
+                            : "var(--auth-role-icon, rgba(255,255,255,0.03))",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -303,7 +303,7 @@ function Signup() {
                             ? "white"
                             : "var(--text-muted)",
                         fontSize: "1.25rem",
-                        boxShadow: formData.role === r.key ? '0 4px 15px rgba(0, 245, 155, 0.3)' : 'none'
+                        boxShadow: formData.role === r.key ? 'var(--auth-role-selected-shadow, 0 4px 15px rgba(0, 245, 155, 0.3))' : 'none'
                       }}>
                       {r.icon}
                     </div>
@@ -316,8 +316,8 @@ function Signup() {
                         {r.label}
                       </div>
                       <div className="small" style={{
-                        color: formData.role === r.key ? 'white' : 'var(--text-muted)',
-                        opacity: formData.role === r.key ? 0.9 : 0.7
+                        color: formData.role === r.key ? 'var(--auth-role-selected-text, white)' : 'var(--text-muted)',
+                        opacity: formData.role === r.key ? 0.9 : 'var(--auth-muted-opacity, 0.7)'
                       }}>
                         {r.desc}
                       </div>
@@ -327,7 +327,7 @@ function Signup() {
                         width: "22px",
                         height: "22px",
                         borderRadius: "50%",
-                        border: `2px solid ${formData.role === r.key ? "var(--primary)" : "rgba(255,255,255,0.15)"}`,
+                        border: `2px solid ${formData.role === r.key ? "var(--primary)" : "var(--auth-radio-border, rgba(255,255,255,0.15))"}`,
                         background:
                           formData.role === r.key ? "var(--primary)" : "transparent",
                         display: "flex",
@@ -483,7 +483,7 @@ function Signup() {
                   className="btn btn-lg btn-gradient flex-grow-1"
                   disabled={loading}>
                   {loading ? (
-                    <DynamicLoader size={24} color="var(--bg-deep)" />
+                    <DynamicLoader size={24} color="var(--loader-on-button, var(--bg-deep))" />
                   ) : (
                     "Create Account"
                   )}

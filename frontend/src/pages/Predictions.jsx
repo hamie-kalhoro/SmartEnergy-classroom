@@ -127,7 +127,7 @@ function Predictions() {
                 <div className="pred-actions">
                     <NavLink to="/model-status" className="pred-link">Model health <FiArrowUpRight /></NavLink>
                     <button className="btn btn-gradient" onClick={runPredictions} disabled={loading}>
-                        {loading ? <DynamicLoader size={20} color="var(--bg-deep)" /> : (
+                        {loading ? <DynamicLoader size={20} color="var(--loader-on-button, var(--bg-deep))" /> : (
                             <>{lastRun ? <FiRefreshCw className="me-2" /> : <FiPlay className="me-2" />}{lastRun ? 'Re-run analysis' : 'Run analysis'}</>
                         )}
                     </button>
@@ -150,7 +150,7 @@ function Predictions() {
                         <li><span>3</span>Applies the live climate rules</li>
                     </ol>
                     <button className="btn btn-lg btn-gradient" onClick={runPredictions} disabled={loading}>
-                        {loading ? <DynamicLoader size={20} color="var(--bg-deep)" /> : <><FiPlay className="me-2" /> Run analysis</>}
+                        {loading ? <DynamicLoader size={20} color="var(--loader-on-button, var(--bg-deep))" /> : <><FiPlay className="me-2" /> Run analysis</>}
                     </button>
                 </section>
             ) : (

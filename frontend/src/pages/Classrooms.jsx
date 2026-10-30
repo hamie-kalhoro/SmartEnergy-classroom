@@ -292,7 +292,7 @@ function Classrooms({ user }) {
                             </div>
                             <div className="modal-footer">
                                 <button type="submit" className="btn btn-lg btn-gradient w-100" disabled={loading}>
-                                    {loading ? <DynamicLoader size={24} color="var(--bg-deep)" /> : submitText}
+                                    {loading ? <DynamicLoader size={24} color="var(--loader-on-button, var(--bg-deep))" /> : submitText}
                                 </button>
                             </div>
                         </form>
@@ -424,7 +424,7 @@ function Classrooms({ user }) {
                                                 <FiDownload className="me-2" /> Download Template
                                             </button>
                                             <button type="submit" className="btn btn-lg btn-gradient w-100" disabled={!importFile || importing}>
-                                                {importing ? <DynamicLoader size={20} color="var(--bg-deep)" /> : 'Upload & Import'}
+                                                {importing ? <DynamicLoader size={20} color="var(--loader-on-button, var(--bg-deep))" /> : 'Upload & Import'}
                                             </button>
                                         </form>
                                     )}
