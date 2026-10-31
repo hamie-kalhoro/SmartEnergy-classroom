@@ -1,30 +1,37 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { FiArrowRight, FiTrendingUp } from 'react-icons/fi';
-import { FaPlay } from 'react-icons/fa';
-import { TbBolt, TbBulb, TbLeaf, TbBooks, TbSchool, TbFlask, TbBuildingBank, TbBallFootball } from 'react-icons/tb';
-import CyberGridLightningBackground from './CyberGridLightningBackground';
+import { FiAlertTriangle, FiArrowRight, FiBarChart2, FiCpu, FiSliders } from 'react-icons/fi';
+import { ChargeArc } from './ChargeEffects';
+import { TbBooks, TbSchool, TbFlask, TbBuildingBank, TbBallFootball } from 'react-icons/tb';
 import './HeroVideoSection.css';
 
 // Each node card sits exactly over the label baked into hero_campus_v2.mp4
 // (positions are % of the 1000x596 video frame), so the video's own labels are hidden.
 const CAMPUS_NODES = [
   { id: 'library', name: 'Library', load: 2.1, icon: <TbBooks />, box: { left: 7.0, top: 23.6, width: 25.0, height: 13.8 } },
-  { id: 'classrooms', name: 'Classroom Block', load: 3.4, icon: <TbSchool />, box: { left: 38.4, top: 22.3, width: 27.5, height: 14.0 } },
-  { id: 'labs', name: 'Science Lab', load: 5.2, icon: <TbFlask />, box: { left: 70.5, top: 22.3, width: 26.0, height: 14.2 } },
-  { id: 'admin', name: 'Admin Block', load: 1.8, icon: <TbBuildingBank />, box: { left: 1.4, top: 80.2, width: 25.0, height: 14.6 } },
-  { id: 'outdoor', name: 'Sports Complex', load: 0.6, icon: <TbBallFootball />, box: { left: 69.5, top: 82.2, width: 27.0, height: 14.6 } }
+  { id: 'classrooms', name: 'Classroom Block', short: 'Classrooms', load: 3.4, icon: <TbSchool />, box: { left: 38.4, top: 22.3, width: 27.5, height: 14.0 } },
+  { id: 'labs', name: 'Science Lab', short: 'Labs', load: 5.2, icon: <TbFlask />, box: { left: 70.5, top: 22.3, width: 26.0, height: 14.2 } },
+  { id: 'admin', name: 'Admin Block', short: 'Admin', load: 1.8, icon: <TbBuildingBank />, box: { left: 1.4, top: 80.2, width: 25.0, height: 14.6 } },
+  { id: 'outdoor', name: 'Sports Complex', short: 'Sports', load: 0.6, icon: <TbBallFootball />, box: { left: 69.5, top: 82.2, width: 27.0, height: 14.6 } }
+];
+
+// Arcs jump only between two powered buildings. Coordinates are in the 1000x596 video frame.
+const CAMPUS_ARCS = [
+  { from: 'library', to: 'classrooms', d: 'M320 182 L336 170 L346 192 L360 168 L370 186 L384 175' },
+  { from: 'classrooms', to: 'labs', d: 'M659 175 L671 190 L681 164 L693 187 L705 175' },
+  { from: 'library', to: 'admin', slow: true, d: 'M150 223 L138 262 L162 300 L132 345 L158 395 L130 438 L142 478' },
+  { from: 'labs', to: 'outdoor', slow: true, d: 'M835 217 L852 262 L822 312 L850 360 L818 412 L842 455 L830 490' }
 ];
 
 const FEATURES = [
-  { icon: <TbBolt />, title: 'Real-time Monitoring', desc: 'Live energy usage tracking' },
-  { icon: <TbBulb />, title: 'Smart Control', desc: 'Turn on/off devices remotely' },
-  { icon: <TbLeaf />, title: 'Cost Reduction', desc: 'Optimize usage, save money' },
-  { icon: <FiTrendingUp />, title: 'Sustainable Campus', desc: 'Lower carbon footprint' }
+  { icon: <FiCpu />, title: 'Occupancy Prediction', desc: 'Estimates how full each session will be' },
+  { icon: <FiSliders />, title: 'Device Recommendations', desc: 'Suggests lights, fans and AC settings' },
+  { icon: <FiAlertTriangle />, title: 'Load Alerts', desc: 'Flags rooms above their recommended load' },
+  { icon: <FiBarChart2 />, title: 'Energy Reports', desc: 'Shows estimated kWh savings' }
 ];
 
-const Toggle = ({ on, onClick, label }) => (
+export const Toggle = ({ on, onClick, label }) => (
   <button
     type="button"
     role="switch"
@@ -38,56 +45,12 @@ const Toggle = ({ on, onClick, label }) => (
 );
 
 const HeroVideoSection = () => {
-  const [isLightningActive, setIsLightningActive] = useState(false);
-  const [campusPowered, setCampusPowered] = useState(false);
   const [nodesOn, setNodesOn] = useState({ library: true, classrooms: true, labs: true, admin: true, outdoor: false });
-
-  const videoRef = useRef(null);
-
-  // Synchronize lightning pulse with the video's timeline
-  // Video starts dark (0-1.5s), lightning surges at ~2s, conduits power up
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLightningActive(true);
-      setCampusPowered(true);
-      setTimeout(() => setIsLightningActive(false), 500);
-    }, 1800);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleVideoTimeUpdate = () => {
-    if (!videoRef.current) return;
-    const time = videoRef.current.currentTime;
-
-    if (time >= 1.6 && time <= 2.2 && !isLightningActive) {
-      setIsLightningActive(true);
-      setCampusPowered(true);
-      setTimeout(() => setIsLightningActive(false), 400);
-    } else if (time < 1.0 && campusPowered) {
-      setCampusPowered(false);
-    }
-  };
 
   const toggleNode = (id) => setNodesOn(prev => ({ ...prev, [id]: !prev[id] }));
 
   return (
     <header className="hero-lightning-section hero-section">
-      <CyberGridLightningBackground isLightningActive={isLightningActive} />
-
-      {/* Lightning Flash Overlay Screen FX */}
-      <AnimatePresence>
-        {isLightningActive && (
-          <motion.div
-            className="hero-flash"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.25 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          />
-        )}
-      </AnimatePresence>
-
       <div className="hero-container">
         <div className="hero-grid">
           {/* Left Column: Heading, Subtext, CTAs */}
@@ -101,19 +64,18 @@ const HeroVideoSection = () => {
 
             <h1 className="hero-title">
               Stop Wasting Energy.<br />
-              <span className="hero-title-green">Start Saving </span>
-              <span className="hero-title-cyan">Future.</span>
+              <span className="hero-title-accent">Start Saving the Future.</span>
             </h1>
 
             <p className="hero-subtitle">
-              SmartClass monitors, controls, and optimizes your energy footprint in real time.
-              Powering smarter decisions for a sustainable and efficient campus.
+              SmartClass predicts classroom occupancy and recommends how lights, fans and
+              air conditioning should run, so campus teams can see where energy is being wasted.
             </p>
 
             <div className="hero-actions">
               <Link to="/signup" className="hero-btn-primary">
-                <span>Start Saving Now</span>
-                <FiArrowRight size={20} />
+                <span>Get started</span>
+                <FiArrowRight size={18} />
               </Link>
               <button
                 type="button"
@@ -123,8 +85,7 @@ const HeroVideoSection = () => {
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
               >
-                <FaPlay size={14} className="hero-play-icon" />
-                <span>Live Demo</span>
+                <span>See the demo</span>
               </button>
             </div>
           </motion.div>
@@ -136,19 +97,21 @@ const HeroVideoSection = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="hero-visual-glow" style={{ opacity: campusPowered ? 1 : 0.35 }} />
-
             <div className="hero-campus">
               <video
-                ref={videoRef}
                 className="hero-campus-video"
                 src="/assets/hero_campus_v2.mp4"
                 autoPlay
                 loop
                 muted
                 playsInline
-                onTimeUpdate={handleVideoTimeUpdate}
               />
+
+              <svg className="hero-campus-arcs" viewBox="0 0 1000 596" preserveAspectRatio="none" aria-hidden="true">
+                {CAMPUS_ARCS.filter(arc => nodesOn[arc.from] && nodesOn[arc.to]).map(arc => (
+                  <ChargeArc key={`${arc.from}-${arc.to}`} d={arc.d} slow={arc.slow} />
+                ))}
+              </svg>
 
               {CAMPUS_NODES.map(node => {
                 const on = nodesOn[node.id];
@@ -165,7 +128,10 @@ const HeroVideoSection = () => {
                   >
                     <span className="hero-node-icon">{node.icon}</span>
                     <span className="hero-node-text">
-                      <span className="hero-node-name">{node.name}</span>
+                      <span className="hero-node-name">
+                        <span className="hero-node-long">{node.name}</span>
+                        <span className="hero-node-short">{node.short || node.name}</span>
+                      </span>
                       <span className="hero-node-load">{node.load.toFixed(1)} kW</span>
                     </span>
                     <Toggle on={on} onClick={() => toggleNode(node.id)} label={`${node.name} power`} />
@@ -173,6 +139,7 @@ const HeroVideoSection = () => {
                 );
               })}
             </div>
+            <p className="hero-campus-note">Simulated preview with sample values.</p>
           </motion.div>
         </div>
 
