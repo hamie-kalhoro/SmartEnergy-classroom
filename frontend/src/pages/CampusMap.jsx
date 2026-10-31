@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence, animate, useMotionValue } from 'framer-motion';
 import {
     FiActivity,
+    FiAlertTriangle,
     FiCheck,
+    FiCheckCircle,
     FiCopy,
     FiEdit3,
     FiLayers,
@@ -33,6 +35,8 @@ import {
     Filler
 } from 'chart.js';
 import NumberedSlider from '../components/NumberedSlider';
+import { AlertCenter, EnergyPanel, RoomAlertBanner, evaluateLoadAlert, isAcknowledged, sortAlerts } from '../components/LoadAlerts';
+import LabAssistantPanel from '../components/LabAssistantPanel';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
@@ -43,7 +47,11 @@ const MAP_CONTENT = { x: -20, y: 40, w: 1300, h: 1820 };
 const MIN_ZOOM = 0.3;
 const MAX_ZOOM = 1.8;
 const BOUNDARY_STORAGE_KEY = 'campusMap.siteBoundaryPoints.v2';
-const ROOM_STATE_STORAGE_KEY = 'campusMap.roomStates.v2';
+const ROOM_SYNC_INTERVAL_MS = 4000;
+const ROOM_SAVE_DELAY_MS = 350;
+const ASSISTANT_SYNC_INTERVAL_MS = 30000;
+const ASSISTANT_ROOM_TYPES = ['lab', 'classroom', 'hall'];
+const PLAN_TEMP = 24;
 const DEFAULT_SITE_BOUNDARY_POINTS = [
     [205, 58],
     [828, 58],
@@ -117,15 +125,15 @@ function occupancyLevel(present, seats) {
 /** Device counts the system recommends for a given headcount. */
 function recommendDevices(room, present) {
     const spec = room.devices;
-    if (room.type === 'utility') return { lights: spec.lights, fans: 0, acs: 0, temp: 24 };
-    if (!present) return { lights: 0, fans: 0, acs: 0, temp: 24 };
+    if (room.type === 'utility') return { lights: spec.lights, fans: 0, acs: 0, temp: PLAN_TEMP };
+    if (!present) return { lights: 0, fans: 0, acs: 0, temp: PLAN_TEMP };
     const ratio = Math.min(1, present / room.seats);
     const scaled = (count, floor = 0) => (count ? Math.min(count, Math.max(1, Math.ceil(count * (floor + (1 - floor) * ratio)))) : 0);
     return {
         lights: scaled(spec.lights, 0.3),   // keep the occupied zones lit, not the whole room
         fans: scaled(spec.fans),
         acs: scaled(spec.acs),
-        temp: 24
+        temp: PLAN_TEMP
     };
 }
 
@@ -154,15 +162,8 @@ function buildRooms(records) {
 
 const FALLBACK_ROOMS = buildRooms(null);
 
-function loadRoomStates() {
-    const defaults = Object.fromEntries(FALLBACK_ROOMS.map(room => [room.id, initialRoomState(room)]));
-    try {
-        const stored = JSON.parse(localStorage.getItem(ROOM_STATE_STORAGE_KEY));
-        if (!stored || typeof stored !== 'object') return defaults;
-        return Object.fromEntries(FALLBACK_ROOMS.map(room => [room.id, { ...defaults[room.id], ...stored[room.id] }]));
-    } catch (error) {
-        return defaults;
-    }
+function defaultRoomStates() {
+    return Object.fromEntries(FALLBACK_ROOMS.map(room => [room.id, initialRoomState(room)]));
 }
 
 /** Effective device state: in Auto mode counts always follow the headcount. */
@@ -187,6 +188,33 @@ function roomPower(room, state) {
         + state.fans * UNIT_KW.fan
         + state.acs * acKw * acFactor;
     return Number(total.toFixed(2));
+}
+
+function roomLoadAlert(room, state) {
+    const plan = recommendDevices(room, state.present);
+    return evaluateLoadAlert(room, state, plan, roomPower(room, state), roomPower(room, plan));
+}
+
+/** Required versus current load of a room, device by device. */
+function roomEnergy(room, state) {
+    const plan = recommendDevices(room, state.present);
+    const acKw = room.type === 'office' ? UNIT_KW.officeAc : UNIT_KW.ac;
+    const acFactor = 1 + Math.max(0, 26 - state.temp) * 0.06;
+    const liveKw = roomPower(room, state);
+    const planKw = roomPower(room, plan);
+    return {
+        liveKw,
+        planKw,
+        excessKw: Number((liveKw - planKw).toFixed(2)),
+        temp: state.temp,
+        planTemp: plan.temp,
+        overcooling: state.acs > 0 && state.temp < plan.temp,
+        rows: [
+            { key: 'lights', label: 'Lights', live: state.lights, plan: plan.lights, installed: room.devices.lights, liveKw: state.lights * UNIT_KW.light },
+            { key: 'fans', label: 'Fans', live: state.fans, plan: plan.fans, installed: room.devices.fans, liveKw: state.fans * UNIT_KW.fan },
+            { key: 'acs', label: 'AC units', live: state.acs, plan: plan.acs, installed: room.devices.acs, liveKw: state.acs * acKw * acFactor }
+        ].filter(row => row.installed > 0)
+    };
 }
 
 function pointsToPath(points) {
@@ -241,6 +269,30 @@ function labelLines(text, maxWidth, fontSize) {
     return best;
 }
 
+function RoomAlertBadge({ room, alert }) {
+    const { cx, cy, h } = roomBox(room);
+    const triangle = 'M0 -9 L10 8 L-10 8 Z';
+    if (h < 80) {
+        return (
+            <g className={`campus-alert-badge sev-${alert.severity}`} transform={`translate(${room.x + room.w - 22} ${cy})`}>
+                <circle r="15" />
+                <path d={triangle} className="campus-alert-badge-icon" />
+            </g>
+        );
+    }
+    const text = `+${alert.excessKw.toFixed(2)} kW`;
+    const width = 42 + text.length * 10;
+    const x = room.points ? cx - width / 2 : room.x + room.w - width - 10;
+    const y = room.points ? cy - 85 : room.y + 10;
+    return (
+        <g className={`campus-alert-badge sev-${alert.severity}`} transform={`translate(${x} ${y})`}>
+            <rect width={width} height="30" rx="6" />
+            <path d={triangle} className="campus-alert-badge-icon" transform="translate(19 15) scale(0.7)" />
+            <text x="33" y="21">{text}</text>
+        </g>
+    );
+}
+
 function RoomLabel({ room, state }) {
     const { cx, cy, w, h } = roomBox(room);
     const compact = h < 80;
@@ -281,7 +333,7 @@ function RoomLabel({ room, state }) {
     );
 }
 
-function DeviceControl({ icon: Icon, title, units, count, installed, kw, onChange, note }) {
+function DeviceControl({ icon: Icon, title, units, count, installed, kw, onChange, note, disabled }) {
     if (!installed) {
         return (
             <div className="campus-device not-installed">
@@ -305,12 +357,13 @@ function DeviceControl({ icon: Icon, title, units, count, installed, kw, onChang
                 </div>
                 <span className="campus-device-kw">{kw.toFixed(2)} kW</span>
             </div>
-            <NumberedSlider value={count} max={installed} onChange={onChange} label={`${title} units on`} />
+            <NumberedSlider value={count} max={installed} onChange={onChange} label={`${title} units on`} disabled={disabled} />
         </div>
     );
 }
 
-function CampusMap() {
+function CampusMap({ user }) {
+    const isAdmin = user?.role === 'admin';
     const stageRef = useRef(null);
     const svgRef = useRef(null);
     const zoomRef = useRef(1);
@@ -325,11 +378,93 @@ function CampusMap() {
     const [boundaryPoints, setBoundaryPoints] = useState(loadStoredBoundaryPoints);
     const [draftBoundaryPoints, setDraftBoundaryPoints] = useState(boundaryPoints);
     const [query, setQuery] = useState('');
-    const [roomStates, setRoomStates] = useState(loadRoomStates);
+    const [roomStates, setRoomStates] = useState(defaultRoomStates);
+    const [roomMeta, setRoomMeta] = useState({});
+    const [syncFailed, setSyncFailed] = useState(false);
+    const [assistants, setAssistants] = useState({});
+    const openedOwnRoom = useRef(false);
+    const roomsRef = useRef(rooms);
+    const roomStatesRef = useRef(roomStates);
+    const lastEditAt = useRef({});
+    const saveTimers = useRef({});
+    roomsRef.current = rooms;
+    roomStatesRef.current = roomStates;
+
+    const canControlRoom = (room) => ['admin', 'faculty'].includes(user?.role) || assistants[room.id]?.user_id === user?.id;
+
+    const loadAssistants = useCallback(() => (
+        api.get('/api/map/assistants').then(res => setAssistants(res.data)).catch(err => console.error('Campus map: could not load assistants', err))
+    ), []);
 
     useEffect(() => {
-        try { localStorage.setItem(ROOM_STATE_STORAGE_KEY, JSON.stringify(roomStates)); } catch { /* storage unavailable */ }
-    }, [roomStates]);
+        loadAssistants();
+        const interval = setInterval(loadAssistants, ASSISTANT_SYNC_INTERVAL_MS);
+        return () => clearInterval(interval);
+    }, [loadAssistants]);
+
+    // A lab assistant lands on their own room
+    useEffect(() => {
+        if (openedOwnRoom.current || user?.role !== 'assistant') return;
+        const own = Object.keys(assistants).find(id => assistants[id].user_id === user.id);
+        if (own) {
+            openedOwnRoom.current = true;
+            setSelectedId(own);
+        }
+    }, [assistants, user]);
+
+    // Room states are shared, so a change made on any computer reaches every open map.
+    useEffect(() => {
+        let cancelled = false;
+        const sync = async () => {
+            const startedAt = Date.now();
+            try {
+                const { data } = await api.get('/api/map/room-states');
+                if (cancelled) return;
+                // Skip rooms edited here since this request began: its answer is already out of date.
+                const fresh = Object.entries(data).filter(([id]) => !saveTimers.current[id] && (lastEditAt.current[id] || 0) < startedAt);
+                setRoomStates(prev => {
+                    const next = { ...prev };
+                    fresh.forEach(([id, { mode, present, lights, fans, acs, temp }]) => {
+                        if (next[id]) next[id] = { ...next[id], mode, present, lights, fans, acs, temp };
+                    });
+                    return next;
+                });
+                setRoomMeta(prev => ({ ...prev, ...Object.fromEntries(fresh) }));
+                setSyncFailed(false);
+            } catch (error) {
+                if (!cancelled) setSyncFailed(true);
+            }
+        };
+        sync();
+        const interval = setInterval(sync, ROOM_SYNC_INTERVAL_MS);
+        return () => { cancelled = true; clearInterval(interval); };
+    }, []);
+
+    // Sliders change many times per second: save a room once its values settle.
+    const saveRoomSoon = (id) => {
+        lastEditAt.current[id] = Date.now();
+        setRoomMeta(prev => ({ ...prev, [id]: { ...prev[id], updated_by: user?.username, updated_at: new Date().toISOString() } }));
+        clearTimeout(saveTimers.current[id]);
+        saveTimers.current[id] = setTimeout(async () => {
+            delete saveTimers.current[id];
+            const room = roomsRef.current.find(item => item.id === id);
+            const state = resolveState(room, roomStatesRef.current[id]);
+            const alert = roomLoadAlert(room, state);
+            const { mode, present, lights, fans, acs, temp } = state;
+            try {
+                const { data } = await api.put(`/api/map/room-states/${id}`, {
+                    mode, present, lights, fans, acs, temp,
+                    severity: alert?.severity ?? null,
+                    excess_kw: alert?.excessKw ?? 0
+                });
+                lastEditAt.current[id] = Date.now();
+                if (!saveTimers.current[id]) setRoomMeta(prev => ({ ...prev, [id]: data.room }));
+                setSyncFailed(false);
+            } catch (error) {
+                setSyncFailed(true);
+            }
+        }, ROOM_SAVE_DELAY_MS);
+    };
 
     // Room names, seats and devices are managed in the Rooms portal
     useEffect(() => {
@@ -354,9 +489,15 @@ function CampusMap() {
     ), [rooms, roomStates]);
 
     const selectedState = selectedRoom ? effective[selectedRoom.id] : null;
+    const canControl = selectedRoom ? canControlRoom(selectedRoom) : false;
+    const selectedEnergy = selectedRoom ? roomEnergy(selectedRoom, selectedState) : null;
     const activeBoundaryPoints = isEditingBoundary ? draftBoundaryPoints : boundaryPoints;
     const activeBoundaryPath = useMemo(() => pointsToPath(activeBoundaryPoints), [activeBoundaryPoints]);
     const buildingLoad = useMemo(() => activeRooms.reduce((sum, room) => sum + roomPower(room, effective[room.id]), 0), [activeRooms, effective]);
+    const alerts = useMemo(() => sortAlerts(activeRooms.map(room => roomLoadAlert(room, effective[room.id])).filter(Boolean)), [activeRooms, effective]);
+    const alertByRoom = useMemo(() => Object.fromEntries(alerts.map(alert => [alert.room.id, alert])), [alerts]);
+    const selectedAlert = selectedRoom ? alertByRoom[selectedRoom.id] : null;
+    const unacknowledgedAlerts = alerts.filter(alert => !isAcknowledged(alert, roomMeta[alert.room.id])).length;
 
     // ---------------------------------------------------------------- viewport
     const setZoom = (value) => {
@@ -409,7 +550,10 @@ function CampusMap() {
         const { cx, cy } = roomBox(room);
         const z = Math.max(zoomRef.current, 0.7);
         setZoom(z);
-        animate(panX, width / 2 - cx * z, { duration: 0.4, ease: 'easeOut' });
+        // Centre in the area the alert list leaves free, so it never covers the room
+        const alertList = stage.querySelector('.load-alert-center');
+        const clearWidth = alertList && width >= 768 ? width - alertList.offsetWidth - 16 : width;
+        animate(panX, clearWidth / 2 - cx * z, { duration: 0.4, ease: 'easeOut' });
         animate(panY, height / 2 - cy * z, { duration: 0.4, ease: 'easeOut' });
     }, [panX, panY]);
 
@@ -424,6 +568,7 @@ function CampusMap() {
         const stage = stageRef.current;
         if (!stage) return undefined;
         const onWheel = (event) => {
+            if (event.target.closest('.load-alert-center')) return; // let the alert list scroll
             event.preventDefault();
             const rect = stage.getBoundingClientRect();
             const factor = Math.exp(-event.deltaY * 0.0015);
@@ -441,6 +586,7 @@ function CampusMap() {
     // ---------------------------------------------------------------- room state
     const updateRoom = (patch) => {
         setRoomStates(prev => ({ ...prev, [selectedRoom.id]: { ...prev[selectedRoom.id], ...patch } }));
+        saveRoomSoon(selectedRoom.id);
     };
 
     // Touching a device switches the room to Manual, starting from the current values
@@ -449,6 +595,7 @@ function CampusMap() {
             ...prev,
             [selectedRoom.id]: { ...resolveState(selectedRoom, prev[selectedRoom.id]), mode: 'manual', [device]: value }
         }));
+        saveRoomSoon(selectedRoom.id);
     };
 
     const setMode = (mode) => {
@@ -458,6 +605,29 @@ function CampusMap() {
                 ? { ...prev[selectedRoom.id], mode: 'auto' }
                 : { ...resolveState(selectedRoom, prev[selectedRoom.id]), mode: 'manual' }
         }));
+        saveRoomSoon(selectedRoom.id);
+    };
+
+    const restoreRoomPlan = (room) => {
+        setRoomStates(prev => ({ ...prev, [room.id]: { ...prev[room.id], mode: 'auto', temp: PLAN_TEMP } }));
+        saveRoomSoon(room.id);
+    };
+
+    const acknowledgeAlert = async (alert) => {
+        const id = alert.room.id;
+        lastEditAt.current[id] = Date.now();
+        setRoomMeta(prev => ({
+            ...prev,
+            [id]: { ...prev[id], ack_severity: alert.severity, ack_by: user?.username, ack_at: new Date().toISOString() }
+        }));
+        try {
+            const { data } = await api.post(`/api/map/room-states/${id}/acknowledge`);
+            lastEditAt.current[id] = Date.now();
+            setRoomMeta(prev => ({ ...prev, [id]: data.room }));
+            setSyncFailed(false);
+        } catch (error) {
+            setSyncFailed(true);
+        }
     };
 
     const chartData = useMemo(() => {
@@ -554,6 +724,17 @@ function CampusMap() {
                             <span>Building load</span>
                             <strong>{buildingLoad.toFixed(1)} kW</strong>
                         </div>
+                        <button
+                            type="button"
+                            className={`campus-alert-kpi ${alerts.length ? `sev-${alerts[0].severity}` : 'clear'} ${unacknowledgedAlerts ? 'blink' : ''}`}
+                            onClick={() => { if (alerts.length) focusRoom(alerts[0].room); }}
+                            disabled={!alerts.length}
+                            title={alerts.length ? 'Go to the most serious alert' : 'Every room is within its recommended plan'}
+                            aria-live="polite"
+                        >
+                            {alerts.length ? <FiAlertTriangle /> : <FiCheckCircle />}
+                            {alerts.length ? <span><strong>{alerts.length}</strong> load {alerts.length === 1 ? 'alert' : 'alerts'}</span> : <span>Within plan</span>}
+                        </button>
                         <label className="campus-search">
                             <FiSearch />
                             <input
@@ -564,7 +745,12 @@ function CampusMap() {
                                 aria-label="Search rooms"
                             />
                         </label>
-                        <span className="campus-live-pill"><span className="campus-live-dot" /> Live</span>
+                        <span
+                            className={`campus-live-pill ${syncFailed ? 'failed' : ''}`}
+                            title={syncFailed ? 'Could not reach the server. Recent changes may not be saved.' : 'Synced with all open maps'}
+                        >
+                            <span className="campus-live-dot" /> {syncFailed ? 'Sync paused' : 'Live'}
+                        </span>
                         <button
                             type="button"
                             className={`campus-map-action-btn ${isEditingBoundary ? 'active' : ''}`}
@@ -576,7 +762,7 @@ function CampusMap() {
                 </div>
 
                 <div className={`campus-map-workspace ${selectedRoom ? 'has-inspector' : ''}`}>
-                    <div className="campus-map-stage" ref={stageRef}>
+                    <div className={`campus-map-stage ${alerts.length ? 'has-alerts' : ''}`} ref={stageRef}>
                         <div className="campus-map-grid" />
                         <motion.div
                             className="campus-map-artboard"
@@ -648,11 +834,15 @@ function CampusMap() {
                                     const isVisible = visibleRooms.some(item => item.id === room.id);
                                     const isSelected = selectedRoom?.id === room.id;
                                     const type = ROOM_TYPES[room.type];
+                                    const alert = alertByRoom[room.id];
+                                    const alertClass = alert
+                                        ? `has-alert sev-${alert.severity} ${isAcknowledged(alert, roomMeta[room.id]) ? '' : 'blink'}`
+                                        : '';
 
                                     return (
                                         <g
                                             key={room.id}
-                                            className={`campus-room ${isSelected ? 'selected' : ''} ${isVisible ? '' : 'muted'}`}
+                                            className={`campus-room ${isSelected ? 'selected' : ''} ${isVisible ? '' : 'muted'} ${alertClass}`}
                                             onClick={() => setSelectedId(room.id)}
                                             style={{ '--room-color': type.color, '--room-fill': type.fill }}
                                         >
@@ -663,6 +853,7 @@ function CampusMap() {
                                                 <rect x={room.x} y={room.y} width={room.w} height={room.h} rx="4" className="campus-room-shape" />
                                             )}
                                             <RoomLabel room={room} state={effective[room.id]} />
+                                            {alert && <RoomAlertBadge room={room} alert={alert} />}
                                         </g>
                                     );
                                 })}
@@ -699,7 +890,17 @@ function CampusMap() {
                                 <span key={key}><i style={{ background: ROOM_TYPES[key].color }} />{ROOM_TYPES[key].label}</span>
                             ))}
                             <span><i className="campus-legend-status" />Devices on</span>
+                            <span><i className="campus-legend-alert" />Load alert</span>
                         </div>
+
+                        <AlertCenter
+                            alerts={alerts}
+                            metaFor={id => roomMeta[id]}
+                            selectedId={selectedRoom?.id}
+                            canControlRoom={canControlRoom}
+                            onView={focusRoom}
+                            onAcknowledge={acknowledgeAlert}
+                        />
 
                         <div className={`campus-drag-hint ${isDragging ? 'active' : ''}`}>
                             <FiNavigation /> {isEditingBoundary ? 'Drag boundary points' : 'Drag to pan · scroll to zoom'}
@@ -748,6 +949,16 @@ function CampusMap() {
                                     {selectedRoom.floor}{selectedRoom.seats ? ` · ${selectedRoom.seats} seats` : ''}
                                 </p>
 
+                                {selectedAlert && (
+                                    <RoomAlertBanner
+                                        alert={selectedAlert}
+                                        meta={roomMeta[selectedRoom.id]}
+                                        canControl={canControl}
+                                        onAcknowledge={acknowledgeAlert}
+                                        onRestore={restoreRoomPlan}
+                                    />
+                                )}
+
                                 <div className="campus-kpis">
                                     <div>
                                         <small><FiUsers /> Occupancy</small>
@@ -757,9 +968,24 @@ function CampusMap() {
                                     <div>
                                         <small><FiZap /> Live load</small>
                                         <strong>{roomPower(selectedRoom, selectedState).toFixed(2)} kW</strong>
-                                        <span className="campus-kpi-note">{selectedState.mode === 'auto' ? 'Auto-optimised' : 'Manual override'}</span>
+                                        <span className="campus-kpi-note">
+                                            {selectedAlert ? 'Above recommended plan' : selectedState.mode === 'auto' ? 'Auto-optimised' : 'Manual override'}
+                                        </span>
                                     </div>
                                 </div>
+
+                                <EnergyPanel energy={selectedEnergy} severity={selectedAlert?.severity} />
+
+                                {ASSISTANT_ROOM_TYPES.includes(selectedRoom.type) && (
+                                    <LabAssistantPanel
+                                        room={selectedRoom}
+                                        assistant={assistants[selectedRoom.id]}
+                                        energy={selectedEnergy}
+                                        isAdmin={isAdmin}
+                                        isMine={assistants[selectedRoom.id]?.user_id === user?.id}
+                                        onChanged={loadAssistants}
+                                    />
+                                )}
 
                                 {selectedRoom.seats > 0 && (
                                     <section className="campus-panel">
@@ -773,6 +999,7 @@ function CampusMap() {
                                             onChange={(value) => updateRoom({ present: value })}
                                             label="Students present"
                                             tone="info"
+                                            disabled={!canControl}
                                         />
                                     </section>
                                 )}
@@ -788,6 +1015,7 @@ function CampusMap() {
                                                         type="button"
                                                         className={selectedState.mode === mode ? 'active' : ''}
                                                         aria-pressed={selectedState.mode === mode}
+                                                        disabled={!canControl}
                                                         onClick={() => setMode(mode)}
                                                     >
                                                         {mode === 'auto' ? 'Auto' : 'Manual'}
@@ -796,7 +1024,9 @@ function CampusMap() {
                                             </div>
                                         )}
                                     </div>
-                                    {selectedRoom.type !== 'utility' && (
+                                    {!canControl ? (
+                                        <p className="campus-panel-hint">View only. This room&apos;s assistant, faculty and administrators can change devices.</p>
+                                    ) : selectedRoom.type !== 'utility' && (
                                         <p className="campus-panel-hint">
                                             {selectedState.mode === 'auto'
                                                 ? 'Devices follow occupancy. Drag any control to override.'
@@ -812,6 +1042,7 @@ function CampusMap() {
                                         installed={spec.lights}
                                         kw={selectedState.lights * UNIT_KW.light}
                                         onChange={(value) => setDevice('lights', value)}
+                                        disabled={!canControl}
                                     />
                                     {selectedRoom.type !== 'utility' && (
                                         <>
@@ -823,6 +1054,7 @@ function CampusMap() {
                                                 installed={spec.fans}
                                                 kw={selectedState.fans * UNIT_KW.fan}
                                                 onChange={(value) => setDevice('fans', value)}
+                                                disabled={!canControl}
                                             />
                                             <DeviceControl
                                                 icon={TbAirConditioning}
@@ -833,6 +1065,7 @@ function CampusMap() {
                                                 kw={selectedState.acs * acKw * acFactor}
                                                 onChange={(value) => setDevice('acs', value)}
                                                 note="No air conditioning installed in classrooms"
+                                                disabled={!canControl}
                                             />
                                         </>
                                     )}
@@ -856,6 +1089,7 @@ function CampusMap() {
                                                 label="AC temperature"
                                                 unit=" °C"
                                                 tone="info"
+                                                disabled={!canControl}
                                             />
                                         </div>
                                     )}
@@ -894,6 +1128,9 @@ function CampusMap() {
                                             >
                                                 <span className="campus-room-dot" style={{ background: ROOM_TYPES[room.type].color }} />
                                                 <span className="campus-room-list-name">{room.name}</span>
+                                                {alertByRoom[room.id] && (
+                                                    <FiAlertTriangle className={`campus-room-list-alert sev-${alertByRoom[room.id].severity}`} aria-label={`${alertByRoom[room.id].severity} load alert`} />
+                                                )}
                                                 <span className="campus-room-list-meta">
                                                     {roomLevel ? `${roomLevel.pct}%` : '—'} · {roomPower(room, state).toFixed(1)} kW
                                                 </span>

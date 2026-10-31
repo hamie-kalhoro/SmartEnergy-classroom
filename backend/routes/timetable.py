@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import get_jwt_identity
 from models import db, Timetable, Classroom, Notification, User, AttendanceHistory
+from permissions import roles_required
 import pandas as pd
 
 timetable_bp = Blueprint('timetable', __name__)
@@ -16,7 +17,7 @@ def get_timetable():
     } for e in entries])
 
 @timetable_bp.route('/api/timetable', methods=['POST'])
-@jwt_required()
+@roles_required('admin')
 def add_timetable():
     data = request.json
     new_entry = Timetable(
@@ -30,7 +31,8 @@ def add_timetable():
         expected_attendance=data['attendance']
     )
     db.session.add(new_entry)
-    
+    db.session.flush()  # new_entry.classroom only loads once the row exists
+
     # System Tracking Notification
     user_id = get_jwt_identity()
     user = db.session.get(User, int(user_id))
@@ -45,7 +47,7 @@ def add_timetable():
     return jsonify({'success': True, 'id': new_entry.id})
 
 @timetable_bp.route('/api/timetable/<int:id>', methods=['DELETE'])
-@jwt_required()
+@roles_required('admin')
 def delete_timetable(id):
     entry = db.session.get(Timetable, id)
     if entry:
@@ -72,7 +74,7 @@ def delete_timetable(id):
     return jsonify({'success': False}), 404
 
 @timetable_bp.route('/api/timetable/bulk-import', methods=['POST'])
-@jwt_required()
+@roles_required('admin')
 def bulk_import_timetable():
     """Upload CSV to add multiple timetable entries at once."""
     if 'file' not in request.files:
@@ -136,7 +138,7 @@ def bulk_import_timetable():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 @timetable_bp.route('/api/timetable/attendance', methods=['POST'])
-@jwt_required()
+@roles_required('admin')
 def record_attendance():
     """Record actual attendance and feed it to the self-learning ML model."""
     data = request.json

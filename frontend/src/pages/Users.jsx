@@ -3,7 +3,7 @@ import api from '../api';
 import {
     FiUpload, FiDownload, FiCheckCircle, FiAlertCircle, FiUsers, FiMail, FiUserCheck, FiShield, FiTrash2, FiUserPlus, FiClock,
     FiCheck, FiUnlock, FiEdit2, FiKey, FiToggleLeft, FiToggleRight, FiAlertTriangle, FiStar, FiBookOpen, FiLock, FiSearch,
-    FiUser, FiFileText, FiX
+    FiUser, FiFileText, FiX, FiTool
 } from 'react-icons/fi';
 import DynamicLoader from '../components/DynamicLoader';
 import ConfirmModal from '../components/ConfirmModal';
@@ -12,9 +12,10 @@ import Portal from '../components/Portal';
 const ROLE_META = {
     admin: { label: 'Administrator', color: '#a78bfa', icon: FiShield },
     faculty: { label: 'Faculty', color: '#06b6d4', icon: FiBookOpen },
+    assistant: { label: 'Lab assistant', color: '#f59e0b', icon: FiTool },
     user: { label: 'Student', color: '#94a3b8', icon: FiUser }
 };
-const ROLE_ORDER = ['admin', 'faculty', 'user'];
+const ROLE_ORDER = ['admin', 'faculty', 'assistant', 'user'];
 const AVATAR_HUES = [158, 199, 262, 32, 340, 188, 222, 12];
 
 function initials(name = '') {
@@ -225,6 +226,7 @@ function Users({ user }) {
         inactive: users.filter(u => !u.is_active).length,
         admin: users.filter(u => u.role === 'admin').length,
         faculty: users.filter(u => u.role === 'faculty').length,
+        assistant: users.filter(u => u.role === 'assistant').length,
         user: users.filter(u => u.role === 'user').length
     };
 
@@ -250,7 +252,7 @@ function Users({ user }) {
                     <h2 className="fw-bold mb-1" style={{ letterSpacing: '-0.03em' }}>
                         User <span className="text-gradient">Management</span>
                     </h2>
-                    <p className="text-muted small m-0">Invite faculty, approve administrators and manage account access.</p>
+                    <p className="text-muted small m-0">Invite faculty, approve administrators and lab assistants, and manage account access.</p>
                 </div>
                 <div className="d-flex gap-2 flex-wrap">
                     <button className="btn btn-primary-dim" onClick={() => setShowBulkImport(true)}>
@@ -284,8 +286,8 @@ function Users({ user }) {
                     <div className="um-pending-head">
                         <span className="um-pending-icon"><FiClock /></span>
                         <div>
-                            <h3>Administrator requests</h3>
-                            <p>{pendingAdmins.length} account{pendingAdmins.length > 1 ? 's' : ''} asked for admin access and {pendingAdmins.length > 1 ? 'are' : 'is'} locked until approved.</p>
+                            <h3>Access requests</h3>
+                            <p>{pendingAdmins.length} account{pendingAdmins.length > 1 ? 's' : ''} asked for admin or lab assistant access and {pendingAdmins.length > 1 ? 'are' : 'is'} locked until approved.</p>
                         </div>
                     </div>
                     <div className="um-pending-list">
@@ -294,7 +296,7 @@ function Users({ user }) {
                                 <span className="um-avatar" style={{ '--hue': avatarHue(p.username) }}>{initials(p.username)}</span>
                                 <div className="um-user-text">
                                     <strong>{p.username}</strong>
-                                    <small>{p.email}{p.created_at ? ` · requested ${p.created_at}` : ''}</small>
+                                    <small>{p.assistant_room ? `Lab assistant for ${p.assistant_room} · ` : ''}{p.email}{p.created_at ? ` · requested ${p.created_at}` : ''}</small>
                                 </div>
                                 <button className="btn btn-sm btn-gradient" onClick={() => handleApproveAdmin(p.id)} disabled={approvingId === p.id}>
                                     {approvingId === p.id ? <DynamicLoader size={16} color="var(--loader-on-button, var(--bg-deep))" /> : <><FiCheck className="me-1" /> Approve</>}
@@ -308,7 +310,7 @@ function Users({ user }) {
             <section className="tt-card">
                 <div className="um-toolbar">
                     <div className="rooms-filters" role="tablist" aria-label="Filter by role">
-                        {[['all', 'All users', counts.total], ['admin', 'Admins', counts.admin], ['faculty', 'Faculty', counts.faculty], ['user', 'Students', counts.user]].map(([key, label, n]) => (
+                        {[['all', 'All users', counts.total], ['admin', 'Admins', counts.admin], ['faculty', 'Faculty', counts.faculty], ['assistant', 'Assistants', counts.assistant], ['user', 'Students', counts.user]].map(([key, label, n]) => (
                             <button key={key} type="button" role="tab" aria-selected={roleFilter === key} className={roleFilter === key ? 'active' : ''} onClick={() => setRoleFilter(key)}>
                                 {key !== 'all' && <i style={{ background: ROLE_META[key].color }} />}
                                 {label}<span>{n}</span>
@@ -370,6 +372,7 @@ function Users({ user }) {
                                             <span className="um-role" style={{ '--role': u.is_permanent ? '#f59e0b' : role.color }}>
                                                 {u.is_permanent ? <FiStar /> : <RoleIcon />} {u.is_permanent ? 'Core admin' : role.label}
                                             </span>
+                                            {u.assistant_rooms?.length > 0 && <small className="um-assistant-rooms">{u.assistant_rooms.join(', ')}</small>}
                                         </td>
                                         <td>
                                             <span className={`um-status ${status}`}>
@@ -574,6 +577,7 @@ function Users({ user }) {
                                                 disabled={editTarget.id === user.id}
                                             >
                                                 <option value="faculty">Faculty</option>
+                                                {editTarget.role === 'assistant' && <option value="assistant">Lab assistant</option>}
                                                 <option value="user">Student / User</option>
                                                 <option value="admin">Administrator</option>
                                             </select>

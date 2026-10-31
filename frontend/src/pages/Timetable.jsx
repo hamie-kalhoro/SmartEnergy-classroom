@@ -219,6 +219,7 @@ function Timetable({ user }) {
     const [schedules, setSchedules] = useState([]);
     const [classrooms, setClassrooms] = useState([]);
     const [loading, setLoading] = useState(true);
+    const canEdit = user?.role === 'admin';
     const [view, setView] = useState('section');
     const [activeSection, setActiveSection] = useState('1-I');
     const [activeDay, setActiveDay] = useState(() => {
@@ -424,18 +425,20 @@ function Timetable({ user }) {
                     </h2>
                     <p className="text-muted small m-0">Weekly class schedule by batch and section. Room energy plans follow these slots.</p>
                 </div>
-                <div className="d-flex gap-2 flex-wrap">
-                    <button className="btn btn-primary-dim" onClick={() => setShowImportModal(true)}>
-                        <FiUpload className="me-2" /> Bulk Import
-                    </button>
-                    <button className="btn btn-gradient" onClick={() => {
-                        const [b, s] = activeSection === UNASSIGNED ? [1, 'I'] : activeSection.split('-');
-                        setFormError('');
-                        setNewEntry(emptyEntry(Number(b), s));
-                    }}>
-                        <FiPlus className="me-2" /> Add Class
-                    </button>
-                </div>
+                {canEdit && (
+                    <div className="d-flex gap-2 flex-wrap">
+                        <button className="btn btn-primary-dim" onClick={() => setShowImportModal(true)}>
+                            <FiUpload className="me-2" /> Bulk Import
+                        </button>
+                        <button className="btn btn-gradient" onClick={() => {
+                            const [b, s] = activeSection === UNASSIGNED ? [1, 'I'] : activeSection.split('-');
+                            setFormError('');
+                            setNewEntry(emptyEntry(Number(b), s));
+                        }}>
+                            <FiPlus className="me-2" /> Add Class
+                        </button>
+                    </div>
+                )}
             </div>
 
             <div className="rooms-stats">
@@ -541,7 +544,7 @@ function Timetable({ user }) {
                                 cellsByColumn={sectionCells}
                                 breakFor={(day, slot) => BREAKS[`${day}|${slot}`]}
                                 matches={matches}
-                                onDelete={setDeleteTarget}
+                                onDelete={canEdit ? setDeleteTarget : undefined}
                             />
                         )}
                     </section>
@@ -618,7 +621,7 @@ function Timetable({ user }) {
                             breakFor={(_, slot) => BREAKS[`${activeDay}|${slot}`]}
                             compact
                             matches={matches}
-                            onDelete={setDeleteTarget}
+                            onDelete={canEdit ? setDeleteTarget : undefined}
                         />
                     )}
                 </section>

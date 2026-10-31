@@ -87,3 +87,42 @@ class Notification(db.Model):
     created_by = db.Column(db.String(80), nullable=True)     # admin username who approved
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+# Shared device state of a map room; a room without a row is still on its default plan
+class RoomLiveState(db.Model):
+    map_id = db.Column(db.String(40), primary_key=True)
+    mode = db.Column(db.String(10), default='auto')          # 'auto' | 'manual'
+    present = db.Column(db.Integer, default=0)
+    lights = db.Column(db.Integer, default=0)
+    fans = db.Column(db.Integer, default=0)
+    acs = db.Column(db.Integer, default=0)
+    temp = db.Column(db.Integer, default=24)
+    updated_by = db.Column(db.String(80), nullable=True)
+    updated_at = db.Column(db.DateTime, nullable=True)
+    alert_severity = db.Column(db.String(10), nullable=True) # None | 'warning' | 'critical'
+    ack_severity = db.Column(db.String(10), nullable=True)   # level the acknowledgement covers
+    ack_by = db.Column(db.String(80), nullable=True)
+    ack_at = db.Column(db.DateTime, nullable=True)
+    notified_severity = db.Column(db.String(10), nullable=True)
+    notified_at = db.Column(db.DateTime, nullable=True)
+
+# Who looks after a room. Rights come from this row, so an assistant only controls their own room.
+class RoomAssistant(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    classroom_id = db.Column(db.Integer, db.ForeignKey('classroom.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    status = db.Column(db.String(10), default='pending')     # 'pending' (self-signup) | 'active'
+    assigned_by = db.Column(db.String(80), nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    classroom = db.relationship('Classroom')
+    user = db.relationship('User')
+
+# Audit trail of the energy reports administrators send to assistants
+class AssistantMailLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    classroom_id = db.Column(db.Integer, db.ForeignKey('classroom.id'), nullable=False)
+    sent_to = db.Column(db.String(120), nullable=False)
+    sent_by = db.Column(db.String(80), nullable=False)
+    excess_kw = db.Column(db.Float, default=0)
+    sent_at = db.Column(db.DateTime, nullable=False)

@@ -1,9 +1,9 @@
 from flask import Blueprint, request, jsonify, current_app
-from flask_jwt_extended import jwt_required
 from werkzeug.utils import secure_filename
 import os
 import pandas as pd
 from models import db, Timetable, Classroom
+from permissions import roles_required
 from services import EnergyService
 from ml_engine import get_ml_engine
 from climate_service import get_climate_context
@@ -106,7 +106,7 @@ def get_climate():
     return jsonify(get_climate_context())
 
 @ml_bp.route('/api/ml/upload-train', methods=['POST'])
-@jwt_required()
+@roles_required('admin')
 def upload_and_train():
     """Upload a CSV dataset, digest it into history, and delete original."""
     ml = get_ml_engine()
@@ -148,7 +148,7 @@ def upload_and_train():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @ml_bp.route('/api/ml/predict-batch', methods=['POST'])
-@jwt_required()
+@roles_required('admin', 'faculty')
 def predict_batch():
     """Upload a CSV dataset and get smart predictions."""
     ml = get_ml_engine()

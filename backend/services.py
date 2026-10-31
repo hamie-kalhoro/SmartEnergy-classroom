@@ -7,8 +7,9 @@ import bcrypt
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
-from email_templates import build_activation_message
-from models import db, User, EnergyDecision, DailyEnergyLog, Notification
+from email_templates import build_activation_message, build_energy_report_message
+from models import db, User, Classroom, RoomAssistant, EnergyDecision, DailyEnergyLog, Notification
+from room_catalog import SCHEDULABLE_TYPES
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,19 @@ class EmailService:
             return True
         except Exception as e:
             logger.error("Activation email to %s failed: %s", to_email, e)
+            return False
+
+    @staticmethod
+    def send_energy_report(to_email, assistant, room_name, report, admin_name, reply_to, note, sent_at):
+        sender = os.getenv('MAIL_DEFAULT_SENDER')
+        link = f"{os.getenv('FRONTEND_URL', 'http://localhost:5173')}/map"
+        try:
+            msg = build_energy_report_message(to_email, sender, reply_to, assistant, room_name, report, admin_name, note, sent_at, link)
+            with smtplib.SMTP(os.getenv('MAIL_SERVER'), int(os.getenv('MAIL_PORT', 587)), timeout=10) as smtp:
+                smtp.starttls(); smtp.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD')); smtp.send_message(msg)
+            return True
+        except Exception as e:
+            logger.error("Energy report to %s failed: %s", to_email, e)
             return False
 
     @staticmethod
@@ -62,6 +76,31 @@ class AuthService:
         return new_user, None
 
     @staticmethod
+    def vacant_rooms():
+        """Rooms on the map that can take an assistant and do not have one yet."""
+        taken = db.session.query(RoomAssistant.classroom_id).filter_by(status='active')
+        return Classroom.query.filter(
+            Classroom.is_active.is_(True), Classroom.map_id.isnot(None),
+            Classroom.room_type.in_(SCHEDULABLE_TYPES), Classroom.id.notin_(taken)
+        ).order_by(Classroom.name).all()
+
+    @staticmethod
+    def register_assistant(username, email, password, classroom_id):
+        """A self-signup stays locked until an administrator approves it, like an admin request."""
+        if not username or not email or not password or len(password) < 6:
+            return None, "Enter your name, email and a password of at least 6 characters."
+        if User.query.filter_by(email=email).first(): return None, "Email exists"
+        if User.query.filter_by(username=username).first(): return None, "Username is already taken"
+        room = next((r for r in AuthService.vacant_rooms() if r.id == classroom_id), None)
+        if not room: return None, "That lab is not available. Please choose another."
+        new_user = User(username=username, email=email, password_hash=PasswordService.hash_password(password), role='assistant', is_active_account=False, is_pending_admin=True)
+        db.session.add(new_user); db.session.flush()
+        db.session.add(RoomAssistant(classroom_id=room.id, user_id=new_user.id, status='pending'))
+        db.session.add(Notification(type='admin_request', message=f'{username} requested lab assistant access for {room.name}', target_role='admin', related_user_id=new_user.id))
+        db.session.commit()
+        return new_user, None
+
+    @staticmethod
     def resend_activation(login_id):
         """Send a new activation email. Returns None when the account does not need one."""
         user = User.query.filter((User.username == login_id) | (User.email == login_id)).first()
@@ -78,7 +117,8 @@ class AuthService:
         token = str(uuid.uuid4()) if not auto_activate else None
         new_user = User(username=username, email=email, password_hash=PasswordService.hash_password(password), role=role, is_active_account=auto_activate, activation_token=token)
         db.session.add(new_user); db.session.commit()
-        if not auto_activate: EmailService.send_activation_email(email, username, token)
+        # Not a database column: tells the caller whether the activation email went out.
+        new_user.activation_email_sent = auto_activate or EmailService.send_activation_email(email, username, token)
         return new_user, None
 
     @staticmethod
@@ -101,7 +141,8 @@ class AuthService:
         user = db.session.get(User, user_id)
         if not user: return False, "User not found"
         user.is_pending_admin = False; user.is_active_account = True
-        db.session.add(Notification(type='admin_approved', message=f'Your admin access was approved by {approved_by}', target_role='faculty', related_user_id=user.id))
+        access = 'lab assistant' if user.role == 'assistant' else 'admin'
+        db.session.add(Notification(type='admin_approved', message=f'Your {access} access was approved by {approved_by}', target_role='faculty', related_user_id=user.id))
         db.session.commit(); return True, None
 
 class EnergyService:

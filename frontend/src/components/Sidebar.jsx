@@ -21,7 +21,7 @@ const NAV_GROUPS = [
         id: 'intelligence',
         label: 'Intelligence',
         items: [
-            { to: '/ml-lab', label: 'ML Laboratory', icon: FiCpu },
+            { to: '/ml-lab', label: 'ML Laboratory', icon: FiCpu, roles: ['admin', 'faculty'] },
             { to: '/model-status', label: 'Intelligence Profile', icon: FiActivity },
         ]
     },
@@ -142,7 +142,7 @@ function Sidebar({ user, logout, isCollapsed, onToggle }) {
 
                                 <div className={`sb-group-body ${open ? '' : 'closed'}`}>
                                     <div className="sb-links">
-                                        {group.items.map(({ to, label, icon: Icon }) => (
+                                        {group.items.filter(item => !item.roles || item.roles.includes(user?.role)).map(({ to, label, icon: Icon }) => (
                                             <NavLink
                                                 key={to}
                                                 to={to}

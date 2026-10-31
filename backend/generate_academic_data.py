@@ -169,7 +169,9 @@ def _try_build_schedule(rng):
     return schedule
 
 
-def simulate_attendance(schedule, seed=42):
+def simulate_attendance(schedule, seed=42, semesters=SEMESTERS, weeks=WEEKS_PER_SEMESTER,
+                        cancel_prob=CANCEL_PROB, holidays_per_semester=HOLIDAYS_PER_SEMESTER,
+                        attendance_shift=0.0, shock_sd=0.03, section_effect=None):
     """Simulate one row per class held, for every week of every semester (chronological order)."""
     rng = np.random.default_rng(seed)
     course_keys = {(s['batch'], s['section'], s['course']) for s in schedule}
@@ -182,24 +184,25 @@ def simulate_attendance(schedule, seed=42):
     weekly = sorted(schedule, key=lambda s: (order[s['day']], s['hour'], s['batch'], s['section']))
 
     rows = []
-    for semester, start in SEMESTERS:
-        all_days = [(w, d) for w in range(1, WEEKS_PER_SEMESTER + 1) for d in DAYS]
-        holiday_idx = rng.choice(len(all_days), HOLIDAYS_PER_SEMESTER, replace=False)
+    for semester, start in semesters:
+        all_days = [(w, d) for w in range(1, weeks + 1) for d in DAYS]
+        holiday_idx = rng.choice(len(all_days), holidays_per_semester, replace=False)
         holidays = {all_days[i] for i in holiday_idx}
-        for week in range(1, WEEKS_PER_SEMESTER + 1):
-            day_shock = {d: rng.normal(0, 0.03) for d in DAYS}  # rain, transport, campus events
+        for week in range(1, weeks + 1):
+            day_shock = {d: rng.normal(0, shock_sd) for d in DAYS}  # rain, transport, campus events
             for s in weekly:
                 key = (s['batch'], s['section'], s['course'])
                 enrolled = ENROLLMENT[s['batch']][s['section']]
                 class_date = start + timedelta(days=(week - 1) * 7 + order[s['day']])
 
-                if (week, s['day']) in holidays or rng.random() < CANCEL_PROB:
+                if (week, s['day']) in holidays or rng.random() < cancel_prob:
                     present = int(rng.binomial(enrolled, 0.03))  # a few students who didn't get the message
                 else:
                     p = (BATCH_BASE[s['batch']] + HOUR_EFFECT[s['hour']] + DAY_EFFECT[s['day']]
                          + (LAB_EFFECT if s['type'] == 'lab' else 0) + SECTION_EFFECT[s['section']]
                          + week_effect(week) + strictness[key] + drift[key] * week
-                         + day_shock[s['day']] + rng.normal(0, 0.035))
+                         + day_shock[s['day']] + rng.normal(0, 0.035) + attendance_shift
+                         + (section_effect(s, week) if section_effect else 0))
                     student_p = np.clip(p + habits[(s['batch'], s['section'])], 0.02, 0.99)
                     present = int((rng.random(enrolled) < student_p).sum())
 

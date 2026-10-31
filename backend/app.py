@@ -44,6 +44,7 @@ def create_app(config_name=None):
     from routes.ml import ml_bp
     from routes.analytics import analytics_bp
     from routes.system import system_bp
+    from routes.facility import facility_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(classroom_bp)
@@ -51,6 +52,7 @@ def create_app(config_name=None):
     app.register_blueprint(ml_bp)
     app.register_blueprint(analytics_bp)
     app.register_blueprint(system_bp)
+    app.register_blueprint(facility_bp)
 
     # Optional module: the website must still start if the hardware code cannot load.
     try:

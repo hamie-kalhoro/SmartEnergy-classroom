@@ -8,7 +8,8 @@ The system supports decisions and does not control devices. The optional hardwar
 
 - **Occupancy prediction:** a Random Forest model places each class in one of five levels: Empty, Trace, Light, Balanced or Maximum.
 - **Energy recommendations:** predictions are combined with climate rules to suggest device settings and estimate kWh savings.
-- **Campus map:** rooms are linked to an interactive map of the department.
+- **Campus map:** rooms are linked to an interactive map of the department. A room blinks with a load alert when its simulated device load rises above the recommended plan for its headcount, until someone acknowledges it. Each room shows its required and current energy use.
+- **Lab assistants:** people sign up for a room and an administrator approves them, or an administrator adds them from the map. An assistant controls only their own room, and administrators can email them a report of extra device use.
 - **Management pages:** classrooms, timetables, users and training datasets, with CSV bulk import.
 - **Accounts:** JWT login, email activation with a resend option, and admin approval for admin signups.
 - **Hardware portal:** an admin-only live view of the classroom ESP32 over USB, with a separate advisory load forecast.

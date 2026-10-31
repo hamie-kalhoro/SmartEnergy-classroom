@@ -152,7 +152,7 @@ function App() {
                             <Route path="/model-status" element={user ? <ModelStatus /> : <Navigate to="/login" />} />
                             <Route path="/map" element={user ? <CampusMap user={user} /> : <Navigate to="/login" />} />
                             <Route path="/timetable" element={user ? <Timetable user={user} /> : <Navigate to="/login" />} />
-                            <Route path="/ml-lab" element={user ? <MLDataset /> : <Navigate to="/login" />} />
+                            <Route path="/ml-lab" element={['admin', 'faculty'].includes(user?.role) ? <MLDataset user={user} /> : <Navigate to={user ? '/' : '/login'} />} />
                             <Route path="/users" element={user ? <Users user={user} /> : <Navigate to="/login" />} />
                             <Route path="/hardware" element={user?.role === 'admin' ? (
                                 <SectionBoundary title="Hardware Portal">
