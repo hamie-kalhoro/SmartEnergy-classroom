@@ -76,8 +76,10 @@ function MetricTile({ label, value, hint, tone }) {
     );
 }
 
-function MLDataset() {
-    const [mode, setMode] = useState('train');
+function MLDataset({ user }) {
+    const canTrain = user?.role === 'admin';
+    const availableModes = Object.entries(MODES).filter(([key]) => canTrain || key !== 'train');
+    const [mode, setMode] = useState(canTrain ? 'train' : 'predict');
     const [file, setFile] = useState(null);
     const [fileInfo, setFileInfo] = useState(null);
     const [dragging, setDragging] = useState(false);
@@ -163,11 +165,11 @@ function MLDataset() {
         <div className="fade-in ml-page">
             <div className="dash-header">
                 <div>
-                    <span className="rooms-eyebrow">Model training · batch inference</span>
+                    <span className="rooms-eyebrow">{canTrain ? 'Model training · batch inference' : 'Batch inference'}</span>
                     <h2 className="fw-bold mb-1" style={{ letterSpacing: '-0.03em' }}>
                         ML Dataset <span className="text-gradient">Laboratory</span>
                     </h2>
-                    <p className="text-muted small m-0">Retrain the occupancy model with new attendance data, or score a dataset in bulk.</p>
+                    <p className="text-muted small m-0">{canTrain ? 'Retrain the occupancy model with new attendance data, or score a dataset in bulk.' : 'Score a dataset in bulk with the current occupancy model.'}</p>
                 </div>
                 {profile && (
                     <div className="dash-chips">
@@ -183,7 +185,7 @@ function MLDataset() {
                 <aside className="ml-panel">
                     <span className="ml-section-title">1 · Choose an operation</span>
                     <div className="ml-modes" role="radiogroup" aria-label="Operation mode">
-                        {Object.entries(MODES).map(([key, m]) => {
+                        {availableModes.map(([key, m]) => {
                             const Icon = m.icon;
                             return (
                                 <button key={key} type="button" role="radio" aria-checked={mode === key} className={`ml-mode ${mode === key ? 'active' : ''}`} onClick={() => switchMode(key)}>

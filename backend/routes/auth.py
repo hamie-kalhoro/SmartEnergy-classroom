@@ -3,8 +3,9 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 import pandas as pd
 import os
 import time
-from models import db, User, Notification
+from models import db, User, Notification, RoomAssistant
 from services import AuthService, PasswordService, EmailService
+from permissions import roles_required
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -14,6 +15,15 @@ resend_available_at = {}
 @auth_bp.route('/api/signup', methods=['POST'])
 def signup():
     data = request.json
+    if data.get('role') == 'assistant':
+        try:
+            classroom_id = int(data.get('classroom_id'))
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'message': 'Choose the lab you assist in.'}), 400
+        user, error = AuthService.register_assistant(data.get('username'), data.get('email'), data.get('password'), classroom_id)
+        if error:
+            return jsonify({'success': False, 'message': error}), 400
+        return jsonify({'success': True, 'email_sent': True, 'pending': True, 'message': 'Your request was sent to the administrators.'})
     user, error = AuthService.register_user(
         data.get('username'), 
         data.get('email'), 
@@ -82,6 +92,11 @@ def login():
         }
     })
 
+@auth_bp.route('/api/signup/vacant-rooms', methods=['GET'])
+def vacant_rooms():
+    """Rooms a new lab assistant can choose while signing up."""
+    return jsonify([{'id': r.id, 'name': r.name, 'type': r.room_type} for r in AuthService.vacant_rooms()])
+
 @auth_bp.route('/api/verify-admin', methods=['POST'])
 def verify_admin():
     data = request.json
@@ -95,11 +110,15 @@ def verify_admin():
 def get_users():
     """Get list of all users."""
     users = User.query.all()
+    rooms = {}
+    for link in RoomAssistant.query.filter_by(status='active').all():
+        rooms.setdefault(link.user_id, []).append(link.classroom.name)
     return jsonify([{
         'id': u.id,
         'username': u.username,
         'email': u.email,
         'role': u.role,
+        'assistant_rooms': rooms.get(u.id, []),
         'is_active': u.is_active_account,
         'is_pending_admin': u.is_pending_admin,
         'is_permanent': u.is_permanent
@@ -110,29 +129,39 @@ def get_users():
 def get_pending_admins():
     """Get list of users waiting for admin approval."""
     users = User.query.filter_by(is_pending_admin=True).all()
+    requested = {link.user_id: link.classroom.name for link in RoomAssistant.query.filter_by(status='pending').all()}
     return jsonify([{
         'id': u.id,
         'username': u.username,
         'email': u.email,
         'role': u.role,
+        'assistant_room': requested.get(u.id),
         'created_at': u.created_at.strftime('%Y-%m-%d %H:%M')
     } for u in users])
 
 @auth_bp.route('/api/users/approve-admin/<int:id>', methods=['POST'])
-@jwt_required()
+@roles_required('admin')
 def approve_admin(id):
     """Approve a pending admin registration."""
     current_user_id = get_jwt_identity()
     approver = db.session.get(User, int(current_user_id))
     approved_by = approver.username if approver else None
-    
+
+    # Approving an assistant gives them the lab they asked for, if it is still free.
+    request_link = RoomAssistant.query.filter_by(user_id=id, status='pending').first()
+    if request_link:
+        if RoomAssistant.query.filter_by(classroom_id=request_link.classroom_id, status='active').first():
+            return jsonify({'success': False, 'message': f'{request_link.classroom.name} already has an assistant. Remove them from the campus map first.'}), 409
+        request_link.status = 'active'
+        request_link.assigned_by = approved_by
+
     success, error = AuthService.approve_admin(id, approved_by=approved_by)
     if not success:
         return jsonify({'success': False, 'message': error}), 400
     return jsonify({'success': True, 'message': 'Admin approved and activation email sent.'})
 
 @auth_bp.route('/api/users/activate-manual/<int:id>', methods=['POST'])
-@jwt_required()
+@roles_required('admin')
 def activate_user_manual(id):
     """Manually activate a user (failover for email service)."""
     user = db.session.get(User, id)
@@ -213,7 +242,7 @@ def clear_all_notifications():
     return jsonify({'success': True, 'message': 'All notifications cleared.'})
 
 @auth_bp.route('/api/users/create-single', methods=['POST'])
-@jwt_required()
+@roles_required('admin')
 def create_single_user():
     """Admin manually adds a single user."""
     data = request.json
@@ -234,7 +263,7 @@ def create_single_user():
     return jsonify({'success': True, 'message': msg})
 
 @auth_bp.route('/api/users/bulk-import', methods=['POST'])
-@jwt_required()
+@roles_required('admin')
 def bulk_import_users():
     """Upload CSV to add multiple faculty/users at once."""
     if 'file' not in request.files:
@@ -350,6 +379,7 @@ def delete_user(id):
         Notification.query.filter_by(related_user_id=target_user.id).update(
             {'related_user_id': None}, synchronize_session='fetch'
         )
+        RoomAssistant.query.filter_by(user_id=target_user.id).delete()
         db.session.delete(target_user)
         db.session.commit()
         return jsonify({'success': True, 'message': f'User {target_user.username} deleted successfully.'})
@@ -410,6 +440,9 @@ def update_user(id):
         if new_role not in ('admin', 'faculty', 'user'):
             return jsonify({'success': False, 'message': 'Invalid role.'}), 400
         changes.append(f'Role: {user.role} → {new_role}')
+        if user.role == 'assistant':
+            RoomAssistant.query.filter_by(user_id=user.id).delete()
+            user.is_pending_admin = False
         user.role = new_role
         if new_role == 'admin':
             user.is_pending_admin = False

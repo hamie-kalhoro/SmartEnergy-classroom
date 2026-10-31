@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api";
 import {
@@ -14,6 +14,7 @@ import {
   FiBookOpen,
   FiEye,
   FiEyeOff,
+  FiTool,
 } from "react-icons/fi";
 import useTypewriter from "../hooks/useTypewriter";
 import DynamicLoader from "../components/DynamicLoader";
@@ -25,7 +26,9 @@ function Signup() {
     email: "",
     password: "",
     role: "user",
+    classroom_id: "",
   });
+  const [vacantRooms, setVacantRooms] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -57,8 +60,14 @@ function Signup() {
     {
       key: "faculty",
       label: "Faculty",
-      desc: "Manage your classes",
+      desc: "View schedules and run batch predictions",
       icon: <FiBookOpen />,
+    },
+    {
+      key: "assistant",
+      label: "Lab Assistant",
+      desc: "Look after one lab or classroom",
+      icon: <FiTool />,
     },
     {
       key: "admin",
@@ -67,6 +76,15 @@ function Signup() {
       icon: <FiShield />,
     },
   ];
+
+  const isAssistant = formData.role === "assistant";
+
+  useEffect(() => {
+    if (!isAssistant || vacantRooms) return;
+    api.get("/api/signup/vacant-rooms")
+      .then((res) => setVacantRooms(res.data))
+      .catch(() => setError("Could not load the list of labs. Please try again."));
+  }, [isAssistant, vacantRooms]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -118,7 +136,7 @@ function Signup() {
   }
 
   if (success) {
-    const isAdminPending = formData.role === "admin";
+    const isAdminPending = formData.role === "admin" || isAssistant;
     return (
       <div
         className="min-vh-100 d-flex align-items-center justify-content-center p-4"
@@ -146,10 +164,13 @@ function Signup() {
           <p className="text-muted mb-5" style={{ fontSize: "1.05rem" }}>
             {isAdminPending ? (
               <>
-                Administrative requests require verification. Existing
-                administrators have been notified of your request for{" "}
+                {isAssistant
+                  ? "An administrator needs to approve your lab assistant request. You can sign in once they do. Your request is for "
+                  : "Administrative requests require verification. Existing administrators have been notified of your request for "}
                 <span className="text-primary fw-bold">
-                  {formData.username}
+                  {isAssistant
+                    ? vacantRooms?.find((r) => String(r.id) === String(formData.classroom_id))?.name
+                    : formData.username}
                 </span>
                 .
               </>
@@ -354,6 +375,42 @@ function Signup() {
             <form onSubmit={handleSubmit}>
               <h5 className="fw-bold mb-4">Your Details</h5>
 
+              {isAssistant && (
+                <div className="mb-4">
+                  <label className="form-label" htmlFor="assistant-room">Which lab do you assist in?</label>
+                  <div style={{ position: "relative" }}>
+                    <FiTool
+                      style={{
+                        position: "absolute",
+                        left: "1rem",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "var(--text-muted)",
+                      }}
+                    />
+                    <select
+                      id="assistant-room"
+                      className="form-select"
+                      style={{ paddingLeft: "2.75rem" }}
+                      required
+                      value={formData.classroom_id}
+                      onChange={(e) =>
+                        setFormData({ ...formData, classroom_id: e.target.value })
+                      }>
+                      <option value="">{vacantRooms ? "Select a room…" : "Loading rooms…"}</option>
+                      {vacantRooms?.map((room) => (
+                        <option key={room.id} value={room.id}>{room.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="small mt-2" style={{ color: "var(--text-muted)" }}>
+                    {vacantRooms?.length === 0
+                      ? "Every room already has an assistant. Please contact an administrator."
+                      : "Only rooms without an assistant are listed. An administrator approves your request."}
+                  </div>
+                </div>
+              )}
+
               <div className="mb-4">
                 <label className="form-label">Full Name</label>
                 <div style={{ position: "relative" }}>
@@ -481,7 +538,7 @@ function Signup() {
                 <button
                   type="submit"
                   className="btn btn-lg btn-gradient flex-grow-1"
-                  disabled={loading}>
+                  disabled={loading || (isAssistant && !vacantRooms?.length)}>
                   {loading ? (
                     <DynamicLoader size={24} color="var(--loader-on-button, var(--bg-deep))" />
                   ) : (

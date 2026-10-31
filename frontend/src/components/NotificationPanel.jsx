@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import api from '../api';
-import { FiBell, FiAlertCircle, FiCheckCircle, FiTrash2, FiClock, FiWifiOff, FiDatabase, FiActivity, FiZap } from 'react-icons/fi';
+import { FiBell, FiAlertCircle, FiAlertTriangle, FiCheckCircle, FiTrash2, FiClock, FiWifiOff, FiDatabase, FiActivity, FiZap } from 'react-icons/fi';
 
 function NotificationPanel({ user }) {
     // ─── Local State & Persistence ───
@@ -96,6 +96,7 @@ function NotificationPanel({ user }) {
             case 'user_deletion_alert': return <FiTrash2 style={{ color: '#ef4444' }} />;
             case 'admin_approved': return <FiCheckCircle style={{ color: '#10b981' }} />;
             case 'energy_report': return <FiZap style={{ color: '#00f59b' }} />;
+            case 'load_alert': return <FiAlertTriangle style={{ color: '#ef4444' }} />;
             default: return <FiActivity style={{ color: '#6366f1' }} />;
         }
     };
