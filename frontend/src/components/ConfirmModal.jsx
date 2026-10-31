@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { FiAlertTriangle, FiCheckCircle, FiHelpCircle, FiInfo, FiXCircle } from 'react-icons/fi';
 
 /**
- * SmartEnergy dialog — replaces native alert() and confirm().
+ * SmartClass dialog — replaces native alert() and confirm().
  *
  * Props:
  *   show        (bool)    — whether to display

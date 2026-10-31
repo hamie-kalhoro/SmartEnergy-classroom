@@ -1,12 +1,12 @@
 import React from 'react';
 
 /**
- * SmartEnergy brand mark: an open "power" ring with a lightning bolt through it,
+ * SmartClass brand mark: an open "power" ring with a lightning bolt through it,
  * on an emerald tile. Motion is deliberately restrained — the ring draws in once,
  * a soft sheen passes every few seconds, and the bolt brightens on hover.
  * All motion is disabled under prefers-reduced-motion (see .brand-mark in index.css).
  */
-const BrandMark = ({ size = 36, title = 'SmartEnergy' }) => (
+const BrandMark = ({ size = 36, title = 'SmartClass' }) => (
     <span className="brand-mark" style={{ width: size, height: size }} role="img" aria-label={title}>
         <svg viewBox="0 0 24 24" width={size * 0.7} height={size * 0.7} fill="none" aria-hidden="true">
             {/* Open ring, gap centred at the top like a power symbol */}

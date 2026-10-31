@@ -127,7 +127,7 @@ class LabAssistantRoutesTest(unittest.TestCase):
         return {'Authorization': f'Bearer {self.tokens[name]}'}
 
     def signup(self, **changes):
-        body = {'username': 'new1', 'email': 'new1@x.test', 'password': 'secret1', 'role': 'assistant', 'classroom_id': self.lab.id, **changes}
+        body = {'username': 'new1', 'email': 'new1@x.test', 'password': 'secret-pass', 'role': 'assistant', 'classroom_id': self.lab.id, **changes}
         return self.client.post('/api/signup', json=body)
 
     def assign(self, name='asst1'):
@@ -138,7 +138,7 @@ class LabAssistantRoutesTest(unittest.TestCase):
         db.session.add(RoomLiveState(map_id='cs-01', mode='manual', present=18, lights=8, fans=4, acs=acs, temp=24))
         db.session.commit()
 
-    def login(self, username='new1', password='secret1'):
+    def login(self, username='new1', password='secret-pass'):
         return self.client.post('/api/login', json={'username': username, 'password': password})
 
     # ---------------------------------------------------------------- signup and login

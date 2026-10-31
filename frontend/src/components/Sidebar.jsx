@@ -224,7 +224,7 @@ ${syncTooltip}` : undefined}
                 show={showLogout}
                 type="confirm"
                 icon={<FiLogOut />}
-                title="Sign out of SmartEnergy?"
+                title="Sign out of SmartClass?"
                 message="You'll need to sign in again to access the dashboard."
                 confirmText="Sign out"
                 tone="danger"

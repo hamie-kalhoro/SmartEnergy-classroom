@@ -1,17 +1,26 @@
 from datetime import timezone
 import logging
 import os
+import re
 import uuid
 import smtplib
 import bcrypt
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
-from email_templates import build_activation_message, build_energy_report_message
+from flask import current_app
+from itsdangerous import BadSignature, URLSafeTimedSerializer
+from email_templates import build_activation_message, build_energy_report_message, build_password_reset_message
 from models import db, User, Classroom, RoomAssistant, EnergyDecision, DailyEnergyLog, Notification
 from room_catalog import SCHEDULABLE_TYPES
 
 logger = logging.getLogger(__name__)
+
+MIN_PASSWORD_LENGTH = 8
+MAX_PASSWORD_BYTES = 72  # bcrypt only reads this many bytes
+RESET_TOKEN_MAX_AGE_SECONDS = 3600
+INVALID_LOGIN = "Incorrect email, username or password."
+EMAIL_PATTERN = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
 class EmailService:
     @staticmethod
@@ -31,6 +40,18 @@ class EmailService:
             return True
         except Exception as e:
             logger.error("Activation email to %s failed: %s", to_email, e)
+            return False
+
+    @staticmethod
+    def send_password_reset_email(to_email, username, link):
+        sender = os.getenv('MAIL_DEFAULT_SENDER')
+        try:
+            msg = build_password_reset_message(to_email, sender, username, link)
+            with smtplib.SMTP(os.getenv('MAIL_SERVER'), int(os.getenv('MAIL_PORT', 587)), timeout=10) as smtp:
+                smtp.starttls(); smtp.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD')); smtp.send_message(msg)
+            return True
+        except Exception as e:
+            logger.error("Password reset email to %s failed: %s", to_email, e)
             return False
 
     @staticmethod
@@ -63,14 +84,39 @@ class PasswordService:
 
 class AuthService:
     @staticmethod
+    def password_error(password):
+        if not isinstance(password, str) or len(password) < MIN_PASSWORD_LENGTH:
+            return f"Use a password of at least {MIN_PASSWORD_LENGTH} characters."
+        if len(password.encode('utf-8')) > MAX_PASSWORD_BYTES:
+            return f"Use a password of at most {MAX_PASSWORD_BYTES} characters."
+        return None
+
+    @staticmethod
+    def signup_error(username, email, password):
+        """The reason a public signup cannot be accepted, or None. The browser checks are not enough."""
+        if not isinstance(username, str) or not username.strip() or len(username) > 80:
+            return "Enter your full name."
+        if not isinstance(email, str) or not EMAIL_PATTERN.match(email) or len(email) > 120:
+            return "Enter a valid email address."
+        password_problem = AuthService.password_error(password)
+        if password_problem: return password_problem
+        if User.query.filter_by(email=email).first(): return "An account with this email already exists."
+        if User.query.filter_by(username=username).first(): return "This name is already taken. Add an initial to make it unique."
+        return None
+
+    @staticmethod
     def register_user(username, email, password, role):
-        if User.query.filter_by(email=email).first(): return None, "Email exists"
-        token = str(uuid.uuid4()); is_pending = (role == 'admin')
-        new_user = User(username=username, email=email, password_hash=PasswordService.hash_password(password), role=role, activation_token=token, is_active_account=False, is_pending_admin=is_pending)
+        """Public signup for students and faculty. Administrators create other administrators."""
+        if role not in ('user', 'faculty'): return None, "Choose student, faculty or lab assistant."
+        error = AuthService.signup_error(username, email, password)
+        if error: return None, error
+        needs_approval = (role == 'faculty')
+        token = None if needs_approval else str(uuid.uuid4())
+        new_user = User(username=username, email=email, password_hash=PasswordService.hash_password(password), role=role, activation_token=token, is_active_account=False, is_pending_admin=needs_approval)
         db.session.add(new_user); db.session.commit()
-        if is_pending:
-            db.session.add(Notification(type='admin_request', message=f'{username} requested access', target_role='admin', related_user_id=new_user.id))
-            db.session.commit(); return new_user, "Admin access pending approval."
+        if needs_approval:
+            db.session.add(Notification(type='admin_request', message=f'{username} requested faculty access', target_role='admin', related_user_id=new_user.id))
+            db.session.commit(); return new_user, None
         # Not a database column: tells the signup route whether to promise an email.
         new_user.activation_email_sent = EmailService.send_activation_email(email, username, token)
         return new_user, None
@@ -87,10 +133,8 @@ class AuthService:
     @staticmethod
     def register_assistant(username, email, password, classroom_id):
         """A self-signup stays locked until an administrator approves it, like an admin request."""
-        if not username or not email or not password or len(password) < 6:
-            return None, "Enter your name, email and a password of at least 6 characters."
-        if User.query.filter_by(email=email).first(): return None, "Email exists"
-        if User.query.filter_by(username=username).first(): return None, "Username is already taken"
+        error = AuthService.signup_error(username, email, password)
+        if error: return None, error
         room = next((r for r in AuthService.vacant_rooms() if r.id == classroom_id), None)
         if not room: return None, "That lab is not available. Please choose another."
         new_user = User(username=username, email=email, password_hash=PasswordService.hash_password(password), role='assistant', is_active_account=False, is_pending_admin=True)
@@ -123,10 +167,49 @@ class AuthService:
 
     @staticmethod
     def login_user(login_id, password):
+        if not isinstance(login_id, str) or not isinstance(password, str): return None, INVALID_LOGIN
+        if len(password.encode('utf-8')) > MAX_PASSWORD_BYTES: return None, INVALID_LOGIN
         user = User.query.filter((User.username == login_id) | (User.email == login_id)).first()
-        if not user or not PasswordService.verify_password(password, user.password_hash): return None, "Invalid login"
-        if user.is_pending_admin: return None, "Admin approval pending"
+        if not user or not PasswordService.verify_password(password, user.password_hash): return None, INVALID_LOGIN
+        if user.is_pending_admin: return None, "Your account is waiting for administrator approval."
         if not user.is_active_account: return None, "Account not activated"
+        return user, None
+
+    @staticmethod
+    def _reset_serializer(user):
+        # Signed with the password hash, so a link stops working once the password changes.
+        secret = f"{current_app.config['SECRET_KEY']}{user.password_hash}"
+        return URLSafeTimedSerializer(secret, salt='password-reset')
+
+    @staticmethod
+    def password_reset_token(user):
+        return f"{user.id}.{AuthService._reset_serializer(user).dumps(user.id)}"
+
+    @staticmethod
+    def request_password_reset(login_id):
+        """Email a reset link to an account that can sign in. Callers reply the same either way."""
+        user = User.query.filter((User.username == login_id) | (User.email == login_id)).first()
+        if not user or not user.is_active_account or user.is_pending_admin:
+            return
+        link = f"{current_app.config.get('FRONTEND_URL', 'http://localhost:5173')}/reset-password?token={AuthService.password_reset_token(user)}"
+        EmailService.send_password_reset_email(user.email, user.username, link)
+
+    @staticmethod
+    def reset_password(token, password):
+        """Returns (user, None) after changing the password, or (None, reason)."""
+        invalid = "This reset link is invalid or has expired. Request a new one."
+        user_id, separator, signed = token.partition('.') if isinstance(token, str) else ('', '', '')
+        user = db.session.get(User, int(user_id)) if separator and user_id.isdigit() else None
+        if not user or not user.is_active_account or user.is_pending_admin: return None, invalid
+        try:
+            token_user_id = AuthService._reset_serializer(user).loads(signed, max_age=RESET_TOKEN_MAX_AGE_SECONDS)
+        except BadSignature:
+            return None, invalid
+        if token_user_id != user.id: return None, invalid
+        password_problem = AuthService.password_error(password)
+        if password_problem: return None, password_problem
+        user.password_hash = PasswordService.hash_password(password)
+        db.session.commit()
         return user, None
 
     @staticmethod
@@ -141,7 +224,7 @@ class AuthService:
         user = db.session.get(User, user_id)
         if not user: return False, "User not found"
         user.is_pending_admin = False; user.is_active_account = True
-        access = 'lab assistant' if user.role == 'assistant' else 'admin'
+        access = {'assistant': 'lab assistant', 'faculty': 'faculty'}.get(user.role, 'admin')
         db.session.add(Notification(type='admin_approved', message=f'Your {access} access was approved by {approved_by}', target_role='faculty', related_user_id=user.id))
         db.session.commit(); return True, None
 

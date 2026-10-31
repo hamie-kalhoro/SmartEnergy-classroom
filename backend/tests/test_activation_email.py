@@ -16,7 +16,7 @@ from routes.auth import auth_bp, resend_available_at
 from services import EmailService
 
 SEND = 'services.EmailService.send_activation_email'
-SIGNUP = {'username': 'new', 'email': 'new@x.test', 'password': 'pw', 'role': 'user'}
+SIGNUP = {'username': 'new', 'email': 'new@x.test', 'password': 'secret-pass', 'role': 'user'}
 MAIL_ENV = {'MAIL_SERVER': 'smtp.x.test', 'MAIL_USERNAME': 'u', 'MAIL_PASSWORD': 'p', 'MAIL_DEFAULT_SENDER': 'sender@x.test'}
 
 
@@ -34,8 +34,8 @@ class ActivationTemplateTest(unittest.TestCase):
 
     def test_headers(self):
         message = self.build()
-        self.assertEqual(message['Subject'], 'Activate your SmartEnergy account')
-        self.assertEqual(message['From'], 'SmartEnergy <sender@x.test>')
+        self.assertEqual(message['Subject'], 'Activate your SmartClass account')
+        self.assertEqual(message['From'], 'SmartClass <sender@x.test>')
         self.assertEqual(message['To'], 'a@x.test')
 
     def test_both_versions_carry_the_link_and_name(self):
@@ -74,7 +74,7 @@ class ActivationTemplateTest(unittest.TestCase):
         with mock.patch('services.smtplib.SMTP') as smtp, mock.patch.dict(os.environ, MAIL_ENV):
             self.assertTrue(EmailService.send_activation_email('a@x.test', 'Neo', 'token'))
         sent = smtp.return_value.__enter__.return_value.send_message.call_args[0][0]
-        self.assertEqual(sent['Subject'], 'Activate your SmartEnergy account')
+        self.assertEqual(sent['Subject'], 'Activate your SmartClass account')
 
 
 class ActivationEmailTest(unittest.TestCase):
