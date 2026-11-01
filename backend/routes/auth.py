@@ -1,10 +1,11 @@
 from flask import Blueprint, request, jsonify, redirect, current_app
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 import pandas as pd
+import math
 import os
 import time
 from models import db, User, Notification, RoomAssistant
-from services import AuthService, PasswordService, EmailService
+from services import AuthService, PasswordService, EmailService, INVALID_LOGIN
 from permissions import roles_required
 
 auth_bp = Blueprint('auth', __name__)
@@ -12,9 +13,40 @@ auth_bp = Blueprint('auth', __name__)
 RESEND_COOLDOWN_SECONDS = 60
 resend_available_at = {}
 
+# Per process, like the resend cooldown: slows password guessing without a schema change.
+MAX_LOGIN_FAILURES = 5
+LOGIN_LOCK_SECONDS = 300
+MAX_TRACKED_LOGINS = 10000
+failed_logins = {}  # (ip, login) -> (failures, forgotten_at)
+
+def _login_key(login_id):
+    return (request.remote_addr, str(login_id or '').strip().lower())
+
+def _login_lock_response(key):
+    failures, forgotten_at = failed_logins.get(key, (0, 0))
+    remaining = forgotten_at - time.monotonic()
+    if failures < MAX_LOGIN_FAILURES or remaining <= 0:
+        return None
+    minutes = math.ceil(remaining / 60)
+    unit = 'minute' if minutes == 1 else 'minutes'
+    return jsonify({'success': False, 'message': f'Too many failed attempts. Try again in {minutes} {unit}.'}), 429
+
+def _record_login_failure(key):
+    now = time.monotonic()
+    if len(failed_logins) >= MAX_TRACKED_LOGINS:
+        for old_key in [k for k, (_, forgotten_at) in failed_logins.items() if forgotten_at <= now]:
+            del failed_logins[old_key]
+    failures, forgotten_at = failed_logins.get(key, (0, 0))
+    failed_logins[key] = ((failures if forgotten_at > now else 0) + 1, now + LOGIN_LOCK_SECONDS)
+
+def _forget_login_failures(*login_ids):
+    names = {str(login_id).strip().lower() for login_id in login_ids}
+    for key in [k for k in failed_logins if k[1] in names]:
+        del failed_logins[key]
+
 @auth_bp.route('/api/signup', methods=['POST'])
 def signup():
-    data = request.json
+    data = request.get_json(silent=True) or {}
     if data.get('role') == 'assistant':
         try:
             classroom_id = int(data.get('classroom_id'))
@@ -32,6 +64,8 @@ def signup():
     )
     if error:
         return jsonify({'success': False, 'message': error}), 400
+    if user.is_pending_admin:
+        return jsonify({'success': True, 'email_sent': True, 'pending': True, 'message': 'Your request was sent to the administrators.'})
     if not user.activation_email_sent:
         return jsonify({
             'success': True,
@@ -62,6 +96,31 @@ def resend_activation():
     # Same reply whether or not the account exists, so this cannot be used to discover accounts.
     return jsonify({'success': True, 'message': 'If this account is waiting for activation, a new email has been sent.'})
 
+@auth_bp.route('/api/forgot-password', methods=['POST'])
+def forgot_password():
+    login_id = str((request.get_json(silent=True) or {}).get('login') or '').strip()
+    if not login_id:
+        return jsonify({'success': False, 'message': 'Enter your email or username.'}), 400
+
+    key = f'reset:{login_id.lower()}'
+    now = time.monotonic()
+    if resend_available_at.get(key, 0) > now:
+        return jsonify({'success': False, 'message': 'Please wait a minute before requesting another email.'}), 429
+    resend_available_at[key] = now + RESEND_COOLDOWN_SECONDS
+
+    AuthService.request_password_reset(login_id)
+    # Same reply whether or not the account exists, so this cannot be used to discover accounts.
+    return jsonify({'success': True, 'message': 'If this account can sign in, a password reset link has been sent to its email address.'})
+
+@auth_bp.route('/api/reset-password', methods=['POST'])
+def reset_password():
+    data = request.get_json(silent=True) or {}
+    user, error = AuthService.reset_password(data.get('token'), data.get('password'))
+    if error:
+        return jsonify({'success': False, 'message': error}), 400
+    _forget_login_failures(user.username, user.email)
+    return jsonify({'success': True, 'message': 'Your password has been changed.'})
+
 @auth_bp.route('/api/activate', methods=['GET'])
 def activate():
     token = request.args.get('token')
@@ -72,12 +131,21 @@ def activate():
 
 @auth_bp.route('/api/login', methods=['POST'])
 def login():
-    data = request.json
+    data = request.get_json(silent=True) or {}
+    key = _login_key(data.get('username'))
+    locked = _login_lock_response(key)
+    if locked:
+        return locked
+
     user, error = AuthService.login_user(data.get('username'), data.get('password'))
-    
+
     if error:
+        if error == INVALID_LOGIN:
+            _record_login_failure(key)
         return jsonify({'success': False, 'message': error}), 401
-    
+
+    failed_logins.pop(key, None)
+
     # Create JWT Access Token
     access_token = create_access_token(identity=str(user.id))
         
@@ -99,10 +167,18 @@ def vacant_rooms():
 
 @auth_bp.route('/api/verify-admin', methods=['POST'])
 def verify_admin():
-    data = request.json
+    data = request.get_json(silent=True) or {}
+    # Also checks a password, so it shares the login limit instead of bypassing it.
+    key = _login_key(data.get('username'))
+    locked = _login_lock_response(key)
+    if locked:
+        return locked
     user = User.query.filter_by(username=data.get('username'), role='admin').first()
-    if user and PasswordService.verify_password(data.get('password'), user.password_hash):
+    password = data.get('password')
+    if user and isinstance(password, str) and len(password.encode('utf-8')) <= 72 and PasswordService.verify_password(password, user.password_hash):
+        failed_logins.pop(key, None)
         return jsonify({'success': True})
+    _record_login_failure(key)
     return jsonify({'success': False, 'message': 'Admin verification failed'}), 401
 
 @auth_bp.route('/api/users', methods=['GET'])
@@ -158,7 +234,7 @@ def approve_admin(id):
     success, error = AuthService.approve_admin(id, approved_by=approved_by)
     if not success:
         return jsonify({'success': False, 'message': error}), 400
-    return jsonify({'success': True, 'message': 'Admin approved and activation email sent.'})
+    return jsonify({'success': True, 'message': 'Request approved. This person can now sign in.'})
 
 @auth_bp.route('/api/users/activate-manual/<int:id>', methods=['POST'])
 @roles_required('admin')

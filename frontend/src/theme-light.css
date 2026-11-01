@@ -63,20 +63,14 @@ html[data-theme='light']:not([data-page='landing']) {
 
     --font-heading: 'Inter', sans-serif;
 
-    /* Read by the login and signup pages */
-    --auth-backdrop: none;
-    --auth-logo-bg: #047857;
-    --auth-logo-shadow: 0 1px 2px rgba(16, 24, 40, 0.1);
+    /* Read by the sign-in, signup and password pages */
+    --auth-on-primary: #ffffff;
+    --auth-color-scheme: light;
+    --auth-input-bg: #ffffff;
+    --auth-input-border: #98a2b3;
     --auth-success-bg: #ecfdf5;
     --auth-success-border: #a7f3d0;
-    --auth-success-glow: 0 1px 2px rgba(16, 24, 40, 0.1);
-    --auth-pending-bg: #b54708;
     --auth-danger-bg: #fef3f2;
-    --auth-role-selected: #ecfdf5;
-    --auth-role-icon: #f2f4f7;
-    --auth-role-selected-shadow: none;
-    --auth-role-selected-text: #475467;
-    --auth-radio-border: #d0d5dd;
     --auth-muted-opacity: 1;
 
     /* Spinner on a disabled button */

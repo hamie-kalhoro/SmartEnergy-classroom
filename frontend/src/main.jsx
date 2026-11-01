@@ -4,6 +4,7 @@ import App from './App.jsx'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './index.css'
 import './theme-light.css'
+import './mobile.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>

@@ -256,7 +256,7 @@ function Predictions() {
                         </div>
 
                         <div className="tt-grid-scroll">
-                            <table className="pred-table">
+                            <table className="pred-table pred-schedule">
                                 <thead>
                                     <tr>
                                         <th>Time</th>

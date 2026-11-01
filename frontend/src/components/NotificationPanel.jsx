@@ -125,7 +125,7 @@ function NotificationPanel({ user }) {
     }, []);
 
     return (
-        <div ref={panelRef} style={{ position: 'fixed', top: 0, right: '11.9rem', zIndex: 1001 }}>
+        <div ref={panelRef} className="notif-ceiling" style={{ position: 'fixed', top: 0, right: '11.9rem', zIndex: 1001 }}>
             {/* Bell Button — ceiling-attached */}
             <button
                 onClick={() => setOpen(!open)}
@@ -180,6 +180,7 @@ function NotificationPanel({ user }) {
             <AnimatePresence>
                 {open && (
                     <motion.div
+                        className="notif-dropdown"
                         initial={{ opacity: 0, y: -10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}

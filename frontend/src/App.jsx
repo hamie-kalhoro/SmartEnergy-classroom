@@ -1,5 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -7,6 +7,8 @@ import Classrooms from './pages/Classrooms';
 import Predictions from './pages/Predictions';
 import Sidebar from './components/Sidebar';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Timetable from './pages/Timetable';
 import MLDataset from './pages/MLDataset';
 import ModelStatus from './pages/ModelStatus';
@@ -45,7 +47,11 @@ class ErrorBoundary extends React.Component {
     }
 }
 
-function App() {
+// A reset link must open its form even if this browser already holds a session.
+const RECOVERY_ROUTES = ['/forgot-password', '/reset-password'];
+
+function AppContent() {
+    const location = useLocation();
     const [user, setUser] = useState(() => {
         try {
             const saved = localStorage.getItem('user');
@@ -74,19 +80,20 @@ function App() {
         localStorage.setItem('user', JSON.stringify(userData));
     };
 
+    const showAppShell = user && !RECOVERY_ROUTES.includes(location.pathname);
+
     const handleLogout = () => {
         setUser(null);
         localStorage.removeItem('user');
     };
 
     return (
-        <Router>
-            <div className="app-container">
+        <div className={`app-container ${showAppShell ? 'app-shell' : ''}`}>
                 {/* Ceiling Attached Controls */}
-                {user && (user.role === 'admin' || user.role === 'faculty') && (
+                {showAppShell && (user.role === 'admin' || user.role === 'faculty') && (
                     <NotificationPanel user={user} />
                 )}
-                {user && (
+                {showAppShell && (
                     <button
                         onClick={toggleTheme}
                         title="Switch Theme"
@@ -126,7 +133,7 @@ function App() {
                     </button>
                 )}
 
-                {user && <Sidebar
+                {showAppShell && <Sidebar
                     user={user}
                     theme={theme}
                     toggleTheme={toggleTheme}
@@ -134,12 +141,14 @@ function App() {
                     isCollapsed={isSidebarCollapsed}
                     onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                 />}
-                <main className="main-content" style={!user ? { padding: 0 } : {}}>
-                    {user && <LuminousBackground />}
+                <main className="main-content" style={!showAppShell ? { padding: 0 } : {}}>
+                    {showAppShell && <LuminousBackground />}
                     <div className="main-content-inner" style={{ position: 'relative', zIndex: 1, minHeight: '100%' }}>
                         <Routes>
                             <Route path="/login" element={!user ? <Login onLogin={handleLogin} theme={theme} toggleTheme={toggleTheme} /> : <Navigate to="/" />} />
                             <Route path="/signup" element={!user ? <Signup /> : <Navigate to="/" />} />
+                            <Route path="/forgot-password" element={<ForgotPassword />} />
+                            <Route path="/reset-password" element={<ResetPassword signedInAs={user?.username} onPasswordChanged={handleLogout} />} />
                             <Route path="/" element={
                                 user ? (
                                     <ErrorBoundary fallback={<div className="p-5 text-center"><h3>Something went wrong in Dashboard.</h3><button className="btn btn-primary mt-3" onClick={() => window.location.reload()}>Reload Hub</button></div>}>
@@ -163,6 +172,13 @@ function App() {
                     </div>
                 </main>
             </div>
+    );
+}
+
+function App() {
+    return (
+        <Router>
+            <AppContent />
         </Router>
     );
 }

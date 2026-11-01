@@ -1,4 +1,4 @@
-# SmartEnergy Classroom
+# SmartClass Classroom
 
 A final year project that predicts classroom occupancy from timetable and attendance data, then recommends how to run each room's lights, fans and ACs to save energy.
 

@@ -1,4 +1,4 @@
-"""Regenerate assets/email_logo.gif, the animated SmartEnergy mark used in emails.
+"""Regenerate assets/email_logo.gif, the animated SmartClass mark used in emails.
 
 Needs Pillow, which the running app does not: pip install pillow
 Run from backend/: python scripts/generate_email_logo.py

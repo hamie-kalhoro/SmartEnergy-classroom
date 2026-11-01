@@ -4,6 +4,7 @@ import { FiGrid, FiBox, FiTrendingUp, FiCalendar, FiLogOut, FiUsers, FiChevronDo
 import api from '../api';
 import ConfirmModal from './ConfirmModal';
 import BrandMark from './BrandMark';
+import MobileNav from './MobileNav';
 
 const NAV_GROUPS = [
     {
@@ -84,6 +85,7 @@ function Sidebar({ user, logout, isCollapsed, onToggle }) {
     const [openGroups, setOpenGroups] = useState(readOpenGroups);
     const [showLogout, setShowLogout] = useState(false);
     const isNarrow = useMediaQuery('(max-width: 991px)');
+    const isPhone = useMediaQuery('(max-width: 767px)');
     const collapsed = isCollapsed || isNarrow;
     const sync = useSyncStatus();
 
@@ -97,6 +99,53 @@ function Sidebar({ user, logout, isCollapsed, onToggle }) {
     const initial = (user?.username || 'U').charAt(0).toUpperCase();
     const syncTitle = sync.status.active_db === 'supabase_cloud' ? 'Supabase Cloud' : 'Local Cache';
     const syncTooltip = `${syncTitle} · ${sync.online ? `Synced (${sync.status.latency_ms}ms)` : 'Offline'}`;
+
+    const logoutModal = (
+        <ConfirmModal
+            show={showLogout}
+            type="confirm"
+            icon={<FiLogOut />}
+            title="Sign out of SmartClass?"
+            message="You'll need to sign in again to access the dashboard."
+            confirmText="Sign out"
+            tone="danger"
+            onConfirm={() => { setShowLogout(false); logout(); }}
+            onCancel={() => setShowLogout(false)}
+        >
+            <div className="cmodal-account" style={{ '--sb-status': sync.color }}>
+                <span className="cmodal-account-avatar">{initial}</span>
+                <div className="cmodal-account-text">
+                    <strong>{user?.username}</strong>
+                    <span>{user?.email || user?.role}</span>
+                </div>
+                <span className="cmodal-account-role">{user?.role}</span>
+            </div>
+            <div className="cmodal-session">
+                <span className="cmodal-session-dot" />
+                {syncTitle} · {sync.online ? 'Synced' : 'Offline'}
+            </div>
+        </ConfirmModal>
+    );
+
+    if (isPhone) {
+        const items = NAV_GROUPS
+            .filter(g => !g.adminOnly || user?.role === 'admin')
+            .flatMap(g => g.items)
+            .filter(item => !item.roles || item.roles.includes(user?.role));
+        return (
+            <>
+                <MobileNav
+                    items={items}
+                    user={user}
+                    initial={initial}
+                    sync={sync}
+                    syncTitle={syncTitle}
+                    onSignOut={() => setShowLogout(true)}
+                />
+                {logoutModal}
+            </>
+        );
+    }
 
     return (
         <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
@@ -220,30 +269,7 @@ ${syncTooltip}` : undefined}
                 </div>
             </div>
 
-            <ConfirmModal
-                show={showLogout}
-                type="confirm"
-                icon={<FiLogOut />}
-                title="Sign out of SmartEnergy?"
-                message="You'll need to sign in again to access the dashboard."
-                confirmText="Sign out"
-                tone="danger"
-                onConfirm={() => { setShowLogout(false); logout(); }}
-                onCancel={() => setShowLogout(false)}
-            >
-                <div className="cmodal-account" style={{ '--sb-status': sync.color }}>
-                    <span className="cmodal-account-avatar">{initial}</span>
-                    <div className="cmodal-account-text">
-                        <strong>{user?.username}</strong>
-                        <span>{user?.email || user?.role}</span>
-                    </div>
-                    <span className="cmodal-account-role">{user?.role}</span>
-                </div>
-                <div className="cmodal-session">
-                    <span className="cmodal-session-dot" />
-                    {syncTitle} · {sync.online ? 'Synced' : 'Offline'}
-                </div>
-            </ConfirmModal>
+            {logoutModal}
         </aside>
     );
 }

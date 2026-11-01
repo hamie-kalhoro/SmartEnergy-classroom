@@ -2135,21 +2135,6 @@ tbody tr:hover {
     user-select: none;
 }
 
-/* Role Selection Cards */
-.role-card {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
-.role-card:hover {
-    transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.04) !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-.role-card:active {
-    transform: translateY(0);
-}
-
 /* Premium Floating Sidebar Styles */
 .nav-side-btn {
     width: 48px;

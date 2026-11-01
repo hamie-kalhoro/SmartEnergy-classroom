@@ -252,7 +252,7 @@ function Users({ user }) {
                     <h2 className="fw-bold mb-1" style={{ letterSpacing: '-0.03em' }}>
                         User <span className="text-gradient">Management</span>
                     </h2>
-                    <p className="text-muted small m-0">Invite faculty, approve administrators and lab assistants, and manage account access.</p>
+                    <p className="text-muted small m-0">Invite users, approve faculty, administrators and lab assistants, and manage account access.</p>
                 </div>
                 <div className="d-flex gap-2 flex-wrap">
                     <button className="btn btn-primary-dim" onClick={() => setShowBulkImport(true)}>
@@ -287,7 +287,7 @@ function Users({ user }) {
                         <span className="um-pending-icon"><FiClock /></span>
                         <div>
                             <h3>Access requests</h3>
-                            <p>{pendingAdmins.length} account{pendingAdmins.length > 1 ? 's' : ''} asked for admin or lab assistant access and {pendingAdmins.length > 1 ? 'are' : 'is'} locked until approved.</p>
+                            <p>{pendingAdmins.length} account{pendingAdmins.length > 1 ? 's' : ''} asked for faculty, admin or lab assistant access and {pendingAdmins.length > 1 ? 'are' : 'is'} locked until approved.</p>
                         </div>
                     </div>
                     <div className="um-pending-list">
@@ -653,7 +653,7 @@ function Users({ user }) {
                                         </div>
                                         {editTarget.is_pending_admin && (
                                             <div className="small">
-                                                <div className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Admin Status</div>
+                                                <div className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Access Status</div>
                                                 <div className="text-warning fw-bold" style={{ fontSize: '0.8rem' }}>⏳ Pending Approval</div>
                                             </div>
                                         )}

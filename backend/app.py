@@ -113,7 +113,7 @@ def configure_logging(app):
         file_handler.setLevel(logging.INFO)
         app.logger.addHandler(file_handler)
         app.logger.setLevel(logging.INFO)
-        app.logger.info('SmartEnergy Backend Startup')
+        app.logger.info('SmartClass Backend Startup')
 
 def seed_database(app):
     """Initialize database and seed initial data."""
