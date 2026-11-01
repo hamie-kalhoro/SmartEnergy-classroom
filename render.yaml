@@ -1,0 +1,45 @@
+services:
+  - type: web
+    name: smartclass-energy-api
+    runtime: python
+    plan: free
+    region: singapore
+    rootDir: backend
+    branch: master
+    buildCommand: pip install -r requirements.txt
+    # One worker: the app keeps login limits and model state in memory, per process.
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120 wsgi:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.4
+      - key: FLASK_ENV
+        value: production
+      - key: FRONTEND_URL
+        value: https://smartclass-energy.vercel.app
+      - key: BACKEND_URL
+        value: https://smartclass-energy-api.onrender.com
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      # Render's free plan blocks SMTP ports 25, 465 and 587, but Brevo also accepts 2525.
+      - key: MAIL_SERVER
+        value: smtp-relay.brevo.com
+      - key: MAIL_PORT
+        value: "2525"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_DEFAULT_SENDER
+        sync: false
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: UNIVERSITY_LAT
+        value: "25.4169"
+      - key: UNIVERSITY_LON
+        value: "68.2743"
+      - key: UNIVERSITY_CITY
+        value: Jamshoro

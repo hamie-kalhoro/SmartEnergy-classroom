@@ -17,7 +17,8 @@ from services import EmailService
 
 SEND = 'services.EmailService.send_activation_email'
 SIGNUP = {'username': 'new', 'email': 'new@x.test', 'password': 'secret-pass', 'role': 'user'}
-MAIL_ENV = {'MAIL_SERVER': 'smtp.x.test', 'MAIL_USERNAME': 'u', 'MAIL_PASSWORD': 'p', 'MAIL_DEFAULT_SENDER': 'sender@x.test'}
+MAIL_ENV = {'MAIL_SERVER': 'smtp.x.test', 'MAIL_USERNAME': 'u', 'MAIL_PASSWORD': 'p', 'MAIL_DEFAULT_SENDER': 'sender@x.test', 'BREVO_API_KEY': ''}
+BREVO_ENV = {**MAIL_ENV, 'BREVO_API_KEY': 'test-key', 'FRONTEND_URL': 'https://site.test'}
 
 
 class ActivationTemplateTest(unittest.TestCase):
@@ -75,6 +76,50 @@ class ActivationTemplateTest(unittest.TestCase):
             self.assertTrue(EmailService.send_activation_email('a@x.test', 'Neo', 'token'))
         sent = smtp.return_value.__enter__.return_value.send_message.call_args[0][0]
         self.assertEqual(sent['Subject'], 'Activate your SmartClass account')
+
+
+class BrevoDeliveryTest(unittest.TestCase):
+    def send(self):
+        with mock.patch('services.requests.post') as post, mock.patch('services.smtplib.SMTP') as smtp, \
+                mock.patch.dict(os.environ, BREVO_ENV):
+            sent = EmailService.send_activation_email('a@x.test', 'Neo', 'abc-123')
+        return sent, post, smtp
+
+    def test_api_key_sends_through_the_api_instead_of_smtp(self):
+        sent, post, smtp = self.send()
+        self.assertTrue(sent)
+        smtp.assert_not_called()
+        self.assertEqual(post.call_args.kwargs['headers'], {'api-key': 'test-key'})
+        self.assertTrue(post.call_args.kwargs['timeout'])
+
+    def test_payload_matches_the_built_message(self):
+        payload = self.send()[1].call_args.kwargs['json']
+        self.assertEqual(payload['sender'], {'name': 'SmartClass', 'email': 'sender@x.test'})
+        self.assertEqual(payload['to'], [{'email': 'a@x.test'}])
+        self.assertEqual(payload['subject'], 'Activate your SmartClass account')
+        self.assertIn('abc-123', payload['htmlContent'])
+        self.assertIn('abc-123', payload['textContent'])
+        self.assertNotIn('replyTo', payload)
+
+    def test_logo_is_served_from_the_website(self):
+        html = self.send()[1].call_args.kwargs['json']['htmlContent']
+        self.assertNotIn('cid:', html)
+        self.assertIn('https://site.test/email-logo.gif', html)
+
+    def test_rejected_api_call_reports_failure(self):
+        with mock.patch('services.requests.post') as post, mock.patch.dict(os.environ, BREVO_ENV):
+            post.return_value.raise_for_status.side_effect = RuntimeError('401')
+            self.assertFalse(EmailService.send_activation_email('a@x.test', 'Neo', 'token'))
+
+    def test_energy_report_keeps_its_reply_address(self):
+        report = None
+        with mock.patch('services.build_energy_report_message') as build, mock.patch('services.requests.post') as post, \
+                mock.patch.dict(os.environ, BREVO_ENV):
+            message = build_activation_message('a@x.test', 'sender@x.test', 'Neo', 'http://x.test')
+            message['Reply-To'] = 'Admin <admin@x.test>'
+            build.return_value = message
+            self.assertTrue(EmailService.send_energy_report('a@x.test', 'Neo', 'Lab', report, 'Admin', 'admin@x.test', '', 'now'))
+        self.assertEqual(post.call_args.kwargs['json']['replyTo'], {'email': 'admin@x.test'})
 
 
 class ActivationEmailTest(unittest.TestCase):

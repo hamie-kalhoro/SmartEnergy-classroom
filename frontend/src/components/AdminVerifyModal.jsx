@@ -13,7 +13,8 @@ function AdminVerifyModal({ show, onVerify, onCancel }) {
         setLoading(true);
         setError('');
         try {
-            const res = await axios.post('/api/verify-admin', credentials);
+            // Not the shared client: its 401 handler would sign the admin out on a mistyped password.
+            const res = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/verify-admin`, credentials);
             if (res.data.success) {
                 onVerify();
             }

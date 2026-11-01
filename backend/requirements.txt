@@ -3,10 +3,12 @@ flask-cors
 flask-sqlalchemy
 flask-login
 flask-jwt-extended
-pandas
-numpy
-scikit-learn
-joblib
+# occupancy_model.pkl only loads reliably with the versions that trained it
+pandas==3.0.2
+numpy==2.4.4
+scikit-learn==1.8.0
+scipy==1.17.1
+joblib==1.5.3
 python-dotenv
 pymysql
 psycopg2-binary

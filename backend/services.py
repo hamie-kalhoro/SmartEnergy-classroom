@@ -5,12 +5,14 @@ import re
 import uuid
 import smtplib
 import bcrypt
+import requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.utils import parseaddr
 from datetime import datetime
 from flask import current_app
 from itsdangerous import BadSignature, URLSafeTimedSerializer
-from email_templates import build_activation_message, build_energy_report_message, build_password_reset_message
+from email_templates import LOGO_CID, build_activation_message, build_energy_report_message, build_password_reset_message
 from models import db, User, Classroom, RoomAssistant, EnergyDecision, DailyEnergyLog, Notification
 from room_catalog import SCHEDULABLE_TYPES
 
@@ -21,22 +23,52 @@ MAX_PASSWORD_BYTES = 72  # bcrypt only reads this many bytes
 RESET_TOKEN_MAX_AGE_SECONDS = 3600
 INVALID_LOGIN = "Incorrect email, username or password."
 EMAIL_PATTERN = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+BREVO_SEND_URL = 'https://api.brevo.com/v3/smtp/email'
+MAIL_TIMEOUT_SECONDS = 10
+
+def _message_body(message, content_type):
+    part = next((p for p in message.walk() if p.get_content_type() == content_type), None)
+    return part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8') if part else None
+
+def _send_through_brevo(message, api_key):
+    name, sender = parseaddr(message['From'])
+    payload = {
+        'sender': {'name': name or 'SmartClass', 'email': sender},
+        'to': [{'email': message['To']}],
+        'subject': message['Subject'],
+    }
+    html = _message_body(message, 'text/html')
+    text = _message_body(message, 'text/plain')
+    if html:
+        # The API takes no inline images, so the logo comes from the website instead.
+        logo_url = f"{os.getenv('FRONTEND_URL', 'http://localhost:5173')}/email-logo.gif"
+        payload['htmlContent'] = html.replace(f'cid:{LOGO_CID}', logo_url)
+    if text:
+        payload['textContent'] = text
+    if message['Reply-To']:
+        payload['replyTo'] = {'email': parseaddr(message['Reply-To'])[1]}
+    response = requests.post(BREVO_SEND_URL, json=payload, headers={'api-key': api_key}, timeout=MAIL_TIMEOUT_SECONDS)
+    response.raise_for_status()
+
+def _deliver(message):
+    """Free hosts commonly block the SMTP ports, so a Brevo API key takes priority when set."""
+    api_key = os.getenv('BREVO_API_KEY')
+    if api_key:
+        _send_through_brevo(message, api_key)
+        return
+    with smtplib.SMTP(os.getenv('MAIL_SERVER'), int(os.getenv('MAIL_PORT', 587)), timeout=MAIL_TIMEOUT_SECONDS) as smtp:
+        smtp.starttls(); smtp.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD')); smtp.send_message(message)
 
 class EmailService:
     @staticmethod
     def send_activation_email(to_email, username, token):
-        server = os.getenv('MAIL_SERVER')
-        port = int(os.getenv('MAIL_PORT', 587))
-        username_smtp = os.getenv('MAIL_USERNAME')
-        password = os.getenv('MAIL_PASSWORD')
         sender = os.getenv('MAIL_DEFAULT_SENDER')
         backend_url = os.getenv('BACKEND_URL', 'http://localhost:5000')
         activation_link = f"{backend_url}/api/activate?token={token}"
 
         try:
             msg = build_activation_message(to_email, sender, username, activation_link)
-            with smtplib.SMTP(server, port, timeout=10) as smtp:
-                smtp.starttls(); smtp.login(username_smtp, password); smtp.send_message(msg)
+            _deliver(msg)
             return True
         except Exception as e:
             logger.error("Activation email to %s failed: %s", to_email, e)
@@ -47,8 +79,7 @@ class EmailService:
         sender = os.getenv('MAIL_DEFAULT_SENDER')
         try:
             msg = build_password_reset_message(to_email, sender, username, link)
-            with smtplib.SMTP(os.getenv('MAIL_SERVER'), int(os.getenv('MAIL_PORT', 587)), timeout=10) as smtp:
-                smtp.starttls(); smtp.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD')); smtp.send_message(msg)
+            _deliver(msg)
             return True
         except Exception as e:
             logger.error("Password reset email to %s failed: %s", to_email, e)
@@ -60,8 +91,7 @@ class EmailService:
         link = f"{os.getenv('FRONTEND_URL', 'http://localhost:5173')}/map"
         try:
             msg = build_energy_report_message(to_email, sender, reply_to, assistant, room_name, report, admin_name, note, sent_at, link)
-            with smtplib.SMTP(os.getenv('MAIL_SERVER'), int(os.getenv('MAIL_PORT', 587)), timeout=10) as smtp:
-                smtp.starttls(); smtp.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD')); smtp.send_message(msg)
+            _deliver(msg)
             return True
         except Exception as e:
             logger.error("Energy report to %s failed: %s", to_email, e)
@@ -72,8 +102,7 @@ class EmailService:
         html = f"<h3>Security Alert: User Deleted</h3><p>Admin {admin_name} removed {target_user_name} ({target_role}).</p>"
         try:
             msg = MIMEMultipart(); msg['From'] = os.getenv('MAIL_DEFAULT_SENDER'); msg['To'] = superior_email; msg['Subject'] = "⚠️ SECURITY LOG: User Deletion"; msg.attach(MIMEText(html, 'html'))
-            with smtplib.SMTP(os.getenv('MAIL_SERVER'), int(os.getenv('MAIL_PORT', 587))) as smtp:
-                smtp.starttls(); smtp.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD')); smtp.send_message(msg)
+            _deliver(msg)
         except: pass
 
 class PasswordService:
