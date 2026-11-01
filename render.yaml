@@ -24,7 +24,14 @@ services:
         generateValue: true
       - key: DATABASE_URL
         sync: false
-      - key: BREVO_API_KEY
+      # Render's free plan blocks SMTP ports 25, 465 and 587, but Brevo also accepts 2525.
+      - key: MAIL_SERVER
+        value: smtp-relay.brevo.com
+      - key: MAIL_PORT
+        value: "2525"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
         sync: false
       - key: MAIL_DEFAULT_SENDER
         sync: false
