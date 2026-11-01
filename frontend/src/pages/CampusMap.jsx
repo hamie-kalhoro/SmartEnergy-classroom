@@ -366,6 +366,8 @@ function CampusMap({ user }) {
     const isAdmin = user?.role === 'admin';
     const stageRef = useRef(null);
     const svgRef = useRef(null);
+    const inspectorRef = useRef(null);
+    const revealInspector = useRef(false);
     const zoomRef = useRef(1);
     const panX = useMotionValue(0);
     const panY = useMotionValue(0);
@@ -577,6 +579,57 @@ function CampusMap({ user }) {
         stage.addEventListener('wheel', onWheel, { passive: false });
         return () => stage.removeEventListener('wheel', onWheel);
     }, [zoomAt]);
+
+    // Pinch zoom around the midpoint between two fingers
+    useEffect(() => {
+        const stage = stageRef.current;
+        if (!stage) return undefined;
+        let pinch = null;
+        const spread = ([a, b]) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+        const onTouchStart = (event) => {
+            if (event.touches.length !== 2 || event.target.closest('.load-alert-center')) return;
+            pinch = { spread: spread(event.touches), zoom: zoomRef.current };
+        };
+        const onTouchMove = (event) => {
+            if (!pinch || event.touches.length < 2) return;
+            event.preventDefault();
+            const [a, b] = event.touches;
+            const rect = stage.getBoundingClientRect();
+            zoomAt(
+                pinch.zoom * (spread(event.touches) / pinch.spread),
+                (a.clientX + b.clientX) / 2 - rect.left,
+                (a.clientY + b.clientY) / 2 - rect.top,
+                false
+            );
+        };
+        const onTouchEnd = (event) => {
+            if (event.touches.length === 0) pinch = null;
+        };
+        // The artboard's drag must not also move the map until every finger has lifted
+        const holdDrag = (event) => {
+            if (pinch) event.stopPropagation();
+        };
+        stage.addEventListener('touchstart', onTouchStart, { passive: true });
+        stage.addEventListener('touchmove', onTouchMove, { passive: false });
+        stage.addEventListener('touchend', onTouchEnd);
+        stage.addEventListener('touchcancel', onTouchEnd);
+        stage.addEventListener('pointermove', holdDrag, true);
+        return () => {
+            stage.removeEventListener('touchstart', onTouchStart);
+            stage.removeEventListener('touchmove', onTouchMove);
+            stage.removeEventListener('touchend', onTouchEnd);
+            stage.removeEventListener('touchcancel', onTouchEnd);
+            stage.removeEventListener('pointermove', holdDrag, true);
+        };
+    }, [zoomAt]);
+
+    // On a phone the inspector sits below the map, so a tap has to bring it into view
+    const selectRoom = (room) => {
+        setSelectedId(room.id);
+        if (!window.matchMedia('(max-width: 767px)').matches) return;
+        if (room.id === selectedId) inspectorRef.current?.scrollIntoView({ block: 'start' });
+        else revealInspector.current = true;
+    };
 
     const zoomFromCenter = (delta) => {
         const rect = stageRef.current.getBoundingClientRect();
@@ -843,7 +896,7 @@ function CampusMap({ user }) {
                                         <g
                                             key={room.id}
                                             className={`campus-room ${isSelected ? 'selected' : ''} ${isVisible ? '' : 'muted'} ${alertClass}`}
-                                            onClick={() => setSelectedId(room.id)}
+                                            onClick={() => selectRoom(room)}
                                             style={{ '--room-color': type.color, '--room-fill': type.fill }}
                                         >
                                             <title>{room.name}</title>
@@ -903,7 +956,7 @@ function CampusMap({ user }) {
                         />
 
                         <div className={`campus-drag-hint ${isDragging ? 'active' : ''}`}>
-                            <FiNavigation /> {isEditingBoundary ? 'Drag boundary points' : 'Drag to pan · scroll to zoom'}
+                            <FiNavigation /> {isEditingBoundary ? 'Drag boundary points' : `Drag to pan · ${window.matchMedia('(pointer: coarse)').matches ? 'pinch' : 'scroll'} to zoom`}
                         </div>
 
                         {isEditingBoundary && (
@@ -931,9 +984,15 @@ function CampusMap({ user }) {
                         {selectedRoom && (
                             <motion.aside
                                 key={selectedRoom.id}
+                                ref={inspectorRef}
                                 className="campus-inspector"
                                 initial={{ opacity: 0, x: 16 }}
                                 animate={{ opacity: 1, x: 0 }}
+                                onAnimationComplete={() => {
+                                    if (!revealInspector.current) return;
+                                    revealInspector.current = false;
+                                    inspectorRef.current?.scrollIntoView({ block: 'start' });
+                                }}
                                 exit={{ opacity: 0, x: 16 }}
                                 transition={{ duration: 0.18 }}
                             >

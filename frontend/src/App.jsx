@@ -88,7 +88,7 @@ function AppContent() {
     };
 
     return (
-        <div className="app-container">
+        <div className={`app-container ${showAppShell ? 'app-shell' : ''}`}>
                 {/* Ceiling Attached Controls */}
                 {showAppShell && (user.role === 'admin' || user.role === 'faculty') && (
                     <NotificationPanel user={user} />
