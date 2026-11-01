@@ -10,6 +10,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_talisman import Talisman
 from flask_jwt_extended import JWTManager
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import config_by_name
 from models import db, User, Classroom, Timetable
@@ -32,6 +33,9 @@ def create_app(config_name=None):
     
     # Security Headers
     is_dev = app.config.get('DEBUG', True)
+    if not is_dev:
+        # Hosting ends HTTPS at its proxy; without this, force_https redirects forever.
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     Talisman(app, content_security_policy=None, force_https=not is_dev)
     
     # Logging

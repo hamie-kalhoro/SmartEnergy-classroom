@@ -17,6 +17,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, 'occupancy_model.pkl')
 MASTER_HISTORY_PATH = os.path.join(SECURE_DATA_DIR, 'processed_history.csv')
 TRAINING_LOG_PATH = os.path.join(SECURE_DATA_DIR, 'training_history.json')
+# Aggregate metrics for occupancy_model.pkl (no attendance rows), for servers without
+# secure_data/. Refresh with scripts/export_model_profile.py after training.
+PROFILE_SNAPSHOT_PATH = os.path.join(BASE_DIR, 'model_profile.json')
 
 # The model predicts the occupancy level of an UPCOMING class. It may only use what is
 # known before the class starts: the schedule (day, hour, type, batch, section, week)
@@ -210,6 +213,9 @@ class MLEngine:
             return None, "No usable rows: the CSV needs an 'attendance' column (percentage 0-100)."
 
         history_df = self._load_history()
+        if history_df is None and os.path.exists(PROFILE_SNAPSHOT_PATH):
+            # Training on the upload alone would replace the real model with a far weaker one.
+            return None, "Retraining is not available on this server because the attendance history is kept private. Train locally, then redeploy the model."
         cumulative_df = processed_new if history_df is None else pd.concat([history_df, processed_new], ignore_index=True)
         self._save_history(cumulative_df)
         return self.train_from_history()
@@ -225,6 +231,12 @@ class MLEngine:
                 history = json.load(f)
 
         df = self._load_history()
+        if df is None and os.path.exists(PROFILE_SNAPSHOT_PATH):
+            with open(PROFILE_SNAPSHOT_PATH, 'r') as f:
+                self._profile_cache = json.load(f)
+            self._profile_cache_time = time.time()
+            return self._profile_cache
+
         if df is None:
             profile = {
                 "total_hours": 0,
@@ -610,6 +622,8 @@ class MLEngine:
     
     def add_to_history(self, day, hour, sub_type, attendance, subject=None):
         """Add one recorded class attendance to the history and retrain if threshold met."""
+        if not os.path.exists(MASTER_HISTORY_PATH) and os.path.exists(PROFILE_SNAPSHOT_PATH):
+            return False  # Same reason as digest_and_train: no history to build on here.
         processed = self._normalize(pd.DataFrame([{
             'semester': 'live', 'day': day, 'hour': hour, 'type': sub_type,
             'attendance': attendance, 'subject': subject or '',
